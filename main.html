@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - PDF Upload</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome!</h1>
+        <div class="upload-box">
+            <h2>Upload your PDFs</h2>
+            <form id="uploadForm">
+                <div class="file-input-wrapper">
+                    <input type="file" id="pdfFile" accept=".pdf" multiple>
+                    <label for="pdfFile" class="custom-file-input">Choose PDFs</label>
+                </div>
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-text">
+                        <span>Drag and drop PDFs here</span>
+                        <span class="small">or use the button above</span>
+                    </div>
+                </div>
+                <div class="file-list" id="fileList">
+                    <h3>Selected Files</h3>
+                    <ul id="selectedFiles"></ul>
+                </div>
+                <button type="submit">Submit All Files</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('pdfFile');
+        const fileList = document.getElementById('selectedFiles');
+        const selectedFiles = new Set();
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when dragging over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('drop-zone-active');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('drop-zone-active');
+        }
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle file input selection
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            [...files].forEach(file => {
+                if (file.type === 'application/pdf') {
+                    selectedFiles.add(file);
+                    updateFileList();
+                }
+            });
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                
+                const fileName = document.createElement('span');
+                fileName.textContent = file.name;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.className = 'remove-file';
+                removeBtn.onclick = (e) => {
+                    e.preventDefault();
+                    selectedFiles.delete(file);
+                    updateFileList();
+                };
+                
+                li.appendChild(fileName);
+                li.appendChild(removeBtn);
+                fileList.appendChild(li);
+            });
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (selectedFiles.size === 0) {
+                alert('Please select at least one PDF file.');
+                return;
+            }
+            // Add your form submission logic here
+            alert(`${selectedFiles.size} PDF(s) uploaded successfully!`);
+        });
+    </script>
+</body>
+</html>
