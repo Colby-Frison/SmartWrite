@@ -52,6 +52,16 @@
             e.stopPropagation();
         }
 
+        // Handle click on drop zone
+        dropZone.addEventListener('click', function(e) {
+            fileInput.click();
+        });
+
+        // Prevent the click on the input from bubbling to the drop zone
+        fileInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
         // Highlight drop zone when dragging over it
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, highlight, false);
