@@ -7,23 +7,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <nav class="navbar">
+        <a href="main.html" class="brand">SmartWrite</a>
+        <div class="nav-links">
+            <a href="about.html">About</a>
+            <a href="help.html">Help</a>
+            <a href="faq.html">FAQ</a>
+        </div>
+    </nav>
     <div class="container">
-        <h1>Welcome!</h1>
         <div class="upload-box">
             <h2>Upload your PDFs</h2>
             <form id="uploadForm">
-                <div class="file-input-wrapper">
-                    <input type="file" id="pdfFile" accept=".pdf" multiple>
-                    <label for="pdfFile" class="custom-file-input">Choose PDFs</label>
-                </div>
                 <div class="drop-zone" id="dropZone">
+                    <input type="file" id="pdfFile" accept=".pdf" multiple>
                     <div class="drop-zone-text">
-                        <span>Drag and drop PDFs here</span>
-                        <span class="small">or use the button above</span>
+                        <span>Drop PDFs here or click to browse</span>
+                        <span class="small">Supports multiple files</span>
                     </div>
                 </div>
                 <div class="file-list" id="fileList">
-                    <h3>Selected Files</h3>
+                    <h3>Selected Files : </h3>
                     <ul id="selectedFiles"></ul>
                 </div>
                 <button type="submit">Submit All Files</button>

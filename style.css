@@ -5,17 +5,72 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-body {
-    min-height: 100vh;
+html, body {
+    height: 100%;
+    overflow: hidden;
     background: #29272c;
+}
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #1f1e22;
+    padding: 0.8rem 2rem;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    height: 60px;
+}
+
+.brand {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: #b8b8b8;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #ffffff;
+}
+
+.nav-links a.active {
+    color: #ffffff;
+    position: relative;
+}
+
+.nav-links a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #8675e9;
 }
 
 .container {
-    text-align: center;
-    padding: 2rem;
+    height: calc(100vh - 60px);
+    margin-top: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
 }
 
 h1 {
@@ -27,30 +82,51 @@ h1 {
 
 .upload-box {
     background: #2a2830;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     width: 100%;
     max-width: 400px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    max-height: calc(100vh - 100px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 h2 {
     color: #ffffff;
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
+    text-align: center;
 }
 
 h3 {
     color: #ffffff;
     margin: 1.5rem 0 1rem;
-    font-size: 1.2rem;
+    font-size: 1rem;
     text-align: left;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.header-row h2 {
+    margin-bottom: 0;
+}
+
+.header-row .file-input-wrapper {
+    margin-bottom: 0;
 }
 
 .file-input-wrapper {
     margin-bottom: 1rem;
     position: relative;
+    text-align: center;
 }
 
 input[type="file"] {
@@ -76,10 +152,27 @@ input[type="file"] {
 .drop-zone {
     border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    padding: 2rem 1rem;
+    padding: 2.5rem 1rem;
     margin: 1rem 0;
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    position: relative;
+}
+
+.drop-zone:hover {
+    border-color: #8675e9;
+    background: rgba(134, 117, 233, 0.1);
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
 
 .drop-zone-active {
@@ -92,6 +185,7 @@ input[type="file"] {
     flex-direction: column;
     align-items: center;
     color: #b8b8b8;
+    pointer-events: none;
 }
 
 .drop-zone-text .small {
@@ -175,4 +269,55 @@ button[type="submit"]:hover {
 
 #selectedFiles::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* Remove unused styles */
+.header-row, .file-input-wrapper, .custom-file-input {
+    display: none;
+}
+
+.content-box {
+    background: #2a2830;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 800px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.content-box h1 {
+    color: #ffffff;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    text-align: left;
+}
+
+.content-box h2 {
+    color: #ffffff;
+    margin: 1.5rem 0 1rem;
+    font-size: 1.3rem;
+    text-align: left;
+}
+
+.content-box p {
+    color: #b8b8b8;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.faq-item {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.help-section {
+    margin-bottom: 2rem;
 }
