@@ -36,6 +36,31 @@ html, body {
 .nav-links {
     display: flex;
     gap: 2rem;
+    align-items: center;
+}
+
+.nav-icons {
+    display: flex;
+    align-items: center;
+    margin-left: 2rem;
+    gap: 0.5rem;
+}
+
+.icon-link {
+    color: #b8b8b8;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+}
+
+.icon-link:hover {
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.icon-separator {
+    color: rgba(255, 255, 255, 0.2);
+    margin: 0 0.5rem;
 }
 
 .nav-links a {
@@ -320,4 +345,85 @@ button[type="submit"]:hover {
 
 .help-section {
     margin-bottom: 2rem;
+}
+
+.profile-box {
+    max-width: 600px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-avatar {
+    font-size: 4rem;
+    color: #8675e9;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.info-group {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-group h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-align: left;
+    color: #ffffff;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-item .label {
+    color: #b8b8b8;
+    font-size: 0.9rem;
+}
+
+.info-item .value {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.edit-profile-btn {
+    background: #8675e9;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 2rem;
+    width: auto;
+    align-self: flex-end;
+}
+
+.edit-profile-btn:hover {
+    background: #7667d4;
+    transform: translateY(-1px);
 }
