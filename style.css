@@ -35,15 +35,20 @@ html, body {
 
 .nav-links {
     display: flex;
-    gap: 2rem;
     align-items: center;
+    gap: 2rem;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
 }
 
 .nav-icons {
     display: flex;
     align-items: center;
-    margin-left: 2rem;
-    gap: 0.5rem;
+    gap: 1rem;
 }
 
 .icon-link {
@@ -59,8 +64,7 @@ html, body {
 }
 
 .icon-separator {
-    color: rgba(255, 255, 255, 0.2);
-    margin: 0 0.5rem;
+    color: #666;
 }
 
 .nav-links a {
@@ -93,9 +97,17 @@ html, body {
     height: calc(100vh - 60px);
     margin-top: 60px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     padding: 1.5rem;
+    gap: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.container.center-upload {
+    justify-content: center;
+    padding-right: calc(50% - 200px);
+    padding-left: calc(50% - 200px);
 }
 
 h1 {
@@ -106,6 +118,7 @@ h1 {
 }
 
 .upload-box {
+    flex: 0 0 400px;
     background: #2a2830;
     padding: 1.5rem;
     border-radius: 10px;
@@ -117,6 +130,11 @@ h1 {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+.container.center-upload .upload-box {
+    flex: 0 0 400px;
+    margin: 0 auto;
 }
 
 h2 {
@@ -426,4 +444,74 @@ button[type="submit"]:hover {
 .edit-profile-btn:hover {
     background: #7667d4;
     transform: translateY(-1px);
+}
+
+.pdf-viewer-container {
+    display: none;
+    flex: 1;
+    height: calc(100vh - 100px);
+    background: #2a2830;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-direction: column;
+}
+
+.pdf-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    overflow-x: auto;
+}
+
+.pdf-tab {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    color: #b8b8b8;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.pdf-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pdf-tab.active {
+    background: #8675e9;
+    color: white;
+    border-color: #8675e9;
+}
+
+.pdf-viewer {
+    flex: 1;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 0 0 10px 10px;
+}
+
+.pdf-viewer embed {
+    border: none;
+}
+
+/* Scrollbar styling for tabs */
+.pdf-tabs::-webkit-scrollbar {
+    height: 6px;
+}
+
+.pdf-tabs::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.pdf-tabs::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.pdf-tabs::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }

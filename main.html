@@ -11,9 +11,11 @@
     <nav class="navbar">
         <a href="main.html" class="brand">SmartWrite</a>
         <div class="nav-links">
-            <a href="about.html">About</a>
-            <a href="help.html">Help</a>
-            <a href="faq.html">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <a href="#settings" class="icon-link"><i class="fas fa-cog"></i></a>
                 <span class="icon-separator">|</span>
@@ -21,7 +23,7 @@
             </div>
         </div>
     </nav>
-    <div class="container">
+    <div class="container center-upload">
         <div class="upload-box">
             <h2>Upload your PDFs</h2>
             <form id="uploadForm">
@@ -38,6 +40,10 @@
                 </div>
                 <button type="submit">Submit All Files</button>
             </form>
+        </div>
+        <div class="pdf-viewer-container" id="pdfViewerContainer">
+            <div class="pdf-tabs" id="pdfTabs"></div>
+            <div class="pdf-viewer" id="pdfViewer"></div>
         </div>
     </div>
 
@@ -104,6 +110,9 @@
                 if (file.type === 'application/pdf') {
                     selectedFiles.add(file);
                     updateFileList();
+                    showPdfViewer();
+                    createPdfTabs();
+                    displayPdf(file);
                 }
             });
         }
@@ -124,12 +133,71 @@
                     e.preventDefault();
                     selectedFiles.delete(file);
                     updateFileList();
+                    updatePdfViewer();
                 };
                 
                 li.appendChild(fileName);
                 li.appendChild(removeBtn);
                 fileList.appendChild(li);
             });
+        }
+
+        function updatePdfViewer() {
+            const container = document.getElementById('pdfViewerContainer');
+            if (selectedFiles.size === 0) {
+                container.style.display = 'none';
+                document.querySelector('.container').classList.add('center-upload');
+            } else {
+                container.style.display = 'flex';
+                document.querySelector('.container').classList.remove('center-upload');
+                createPdfTabs();
+                // Display the last added PDF
+                const lastFile = Array.from(selectedFiles).pop();
+                displayPdf(lastFile);
+            }
+        }
+
+        function showPdfViewer() {
+            const container = document.getElementById('pdfViewerContainer');
+            container.style.display = 'flex';
+            document.querySelector('.container').classList.remove('center-upload');
+        }
+
+        function createPdfTabs() {
+            const tabsContainer = document.getElementById('pdfTabs');
+            tabsContainer.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const tab = document.createElement('button');
+                tab.className = 'pdf-tab';
+                if (index === selectedFiles.size - 1) tab.classList.add('active');
+                tab.textContent = file.name;
+                tab.onclick = () => displayPdf(file);
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function displayPdf(file) {
+            const viewer = document.getElementById('pdfViewer');
+            const fileUrl = URL.createObjectURL(file);
+            
+            // Update active tab
+            document.querySelectorAll('.pdf-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent === file.name) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Create or update embed element
+            viewer.innerHTML = `
+                <embed 
+                    src="${fileUrl}" 
+                    type="application/pdf" 
+                    width="100%" 
+                    height="100%"
+                >
+            `;
         }
 
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
