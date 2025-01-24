@@ -477,6 +477,8 @@ button[type="submit"]:hover {
     display: flex;
     align-items: center;
     gap: 8px;
+    user-select: none;
+    min-width: 100px;
 }
 
 .pdf-tab:hover {
@@ -549,6 +551,8 @@ button[type="submit"]:hover {
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
+    pointer-events: none;
+    flex: 1;
 }
 
 .tab-close {
@@ -556,16 +560,18 @@ button[type="submit"]:hover {
     border: none;
     color: #b8b8b8;
     font-size: 1.2rem;
-    padding: 0 0 2px 0;
+    padding: 4px;
     cursor: pointer;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .tab-close:hover {

@@ -248,19 +248,21 @@
                 const tabContent = document.createElement('span');
                 tabContent.className = 'tab-content';
                 tabContent.textContent = file.name;
-                tabContent.onclick = () => displayPdf(file);
                 
                 // Create close button
                 const closeBtn = document.createElement('button');
                 closeBtn.className = 'tab-close';
                 closeBtn.innerHTML = '×';
                 closeBtn.onclick = (e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Prevent tab click when clicking close button
                     selectedFiles.delete(file);
                     updateFileList();
                     updatePdfViewer();
                     savePDFsToStorage();
                 };
+                
+                // Add click handler to the entire tab
+                tab.onclick = () => displayPdf(file);
                 
                 tab.appendChild(tabContent);
                 tab.appendChild(closeBtn);
