@@ -6,6 +6,8 @@
     <title>Welcome - PDF Upload</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 </head>
 <body>
     <nav class="navbar">
@@ -52,6 +54,61 @@
         const fileInput = document.getElementById('pdfFile');
         const fileList = document.getElementById('selectedFiles');
         const selectedFiles = new Set();
+        
+        // Load saved PDFs on page load
+        window.addEventListener('load', loadSavedPDFs);
+
+        function loadSavedPDFs() {
+            const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+            savedPDFs.forEach(pdfData => {
+                const file = base64ToFile(pdfData.data, pdfData.name, 'application/pdf');
+                selectedFiles.add(file);
+            });
+            if (selectedFiles.size > 0) {
+                updateFileList();
+                updatePdfViewer();
+            }
+        }
+
+        function savePDFsToStorage() {
+            const pdfsToSave = Array.from(selectedFiles).map(file => ({
+                name: file.name,
+                data: null // Will be filled with base64 data
+            }));
+
+            // Convert each file to base64
+            const promises = pdfsToSave.map((pdfData, index) => {
+                const file = Array.from(selectedFiles)[index];
+                return fileToBase64(file).then(base64Data => {
+                    pdfData.data = base64Data;
+                });
+            });
+
+            Promise.all(promises).then(() => {
+                localStorage.setItem('savedPDFs', JSON.stringify(pdfsToSave));
+            });
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function base64ToFile(base64Data, filename, mimeType) {
+            const byteString = atob(base64Data.split(',')[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            
+            return new File([ab], filename, { type: mimeType });
+        }
 
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -113,6 +170,7 @@
                     showPdfViewer();
                     createPdfTabs();
                     displayPdf(file);
+                    savePDFsToStorage(); // Save after adding new files
                 }
             });
         }
@@ -134,6 +192,7 @@
                     selectedFiles.delete(file);
                     updateFileList();
                     updatePdfViewer();
+                    savePDFsToStorage(); // Save after removing files
                 };
                 
                 li.appendChild(fileName);
@@ -189,15 +248,48 @@
                 }
             });
 
-            // Create or update embed element
+            // Set up PDF.js viewer
             viewer.innerHTML = `
-                <embed 
-                    src="${fileUrl}" 
-                    type="application/pdf" 
-                    width="100%" 
-                    height="100%"
-                >
+                <div id="pdfViewerCanvas" class="pdfViewerCanvas"></div>
             `;
+
+            // Initialize PDF.js
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            // Load and render the PDF
+            pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
+                const numPages = pdf.numPages;
+                const container = document.getElementById('pdfViewerCanvas');
+                
+                // Create and render each page
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-container';
+                    container.appendChild(pageContainer);
+
+                    pdf.getPage(pageNum).then(function(page) {
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        const viewport = page.getViewport({ scale: 1.5 });
+
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        pageContainer.appendChild(canvas);
+                        page.render(renderContext);
+                    });
+                }
+            });
+
+            // Clean up URL object
+            viewer.onload = () => {
+                URL.revokeObjectURL(fileUrl);
+            };
         }
 
         document.getElementById('uploadForm').addEventListener('submit', function(e) {

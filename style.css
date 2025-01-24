@@ -488,13 +488,36 @@ button[type="submit"]:hover {
 
 .pdf-viewer {
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     background: #fff;
     border-radius: 0 0 10px 10px;
+    min-height: 500px;
+    position: relative;
+    padding: 20px;
 }
 
-.pdf-viewer embed {
-    border: none;
+.pdfViewerCanvas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.pdf-page-container {
+    background: white;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    width: fit-content;
+    max-width: 95%;
+}
+
+.pdf-page-container canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* Scrollbar styling for tabs */
