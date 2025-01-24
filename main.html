@@ -36,11 +36,11 @@
                         <span class="small">Supports multiple files</span>
                     </div>
                 </div>
-                <div class="file-list" id="fileList">
+                <div class="file-list hidden" id="fileList">
                     <h3>Selected Files : </h3>
                     <ul id="selectedFiles"></ul>
                 </div>
-                <button type="submit">Submit All Files</button>
+                <button type="submit" class="hidden" id="submitButton">Submit All Files</button>
             </form>
         </div>
         <div class="pdf-viewer-container" id="pdfViewerContainer">
@@ -54,6 +54,8 @@
         const fileInput = document.getElementById('pdfFile');
         const fileList = document.getElementById('selectedFiles');
         const selectedFiles = new Set();
+        const pdfCache = new Map(); // Cache for loaded PDF documents
+        const pdfUrlCache = new Map(); // Cache for PDF URLs
         
         // Load saved PDFs on page load
         window.addEventListener('load', loadSavedPDFs);
@@ -176,29 +178,39 @@
         }
 
         function updateFileList() {
-            fileList.innerHTML = '';
-            selectedFiles.forEach(file => {
-                const li = document.createElement('li');
-                li.className = 'file-item';
+            const fileList = document.getElementById('fileList');
+            const submitButton = document.getElementById('submitButton');
+            const selectedFilesList = document.getElementById('selectedFiles');
+            
+            selectedFilesList.innerHTML = '';
+            
+            if (selectedFiles.size > 0) {
+                fileList.classList.remove('hidden');
+                submitButton.classList.remove('hidden');
                 
-                const fileName = document.createElement('span');
-                fileName.textContent = file.name;
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.textContent = '×';
-                removeBtn.className = 'remove-file';
-                removeBtn.onclick = (e) => {
-                    e.preventDefault();
-                    selectedFiles.delete(file);
-                    updateFileList();
-                    updatePdfViewer();
-                    savePDFsToStorage(); // Save after removing files
-                };
-                
-                li.appendChild(fileName);
-                li.appendChild(removeBtn);
-                fileList.appendChild(li);
-            });
+                selectedFiles.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    
+                    const fileName = document.createElement('span');
+                    fileName.textContent = file.name;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '×';
+                    removeBtn.className = 'remove-file';
+                    removeBtn.onclick = (e) => {
+                        e.preventDefault();
+                        removeFile(file);
+                    };
+                    
+                    li.appendChild(fileName);
+                    li.appendChild(removeBtn);
+                    selectedFilesList.appendChild(li);
+                });
+            } else {
+                fileList.classList.add('hidden');
+                submitButton.classList.add('hidden');
+            }
         }
 
         function updatePdfViewer() {
@@ -227,23 +239,38 @@
             tabsContainer.innerHTML = '';
             
             selectedFiles.forEach((file, index) => {
-                const tab = document.createElement('button');
+                const tab = document.createElement('div');
                 tab.className = 'pdf-tab';
                 if (index === selectedFiles.size - 1) tab.classList.add('active');
-                tab.textContent = file.name;
-                tab.onclick = () => displayPdf(file);
+                
+                // Create tab content wrapper
+                const tabContent = document.createElement('span');
+                tabContent.className = 'tab-content';
+                tabContent.textContent = file.name;
+                tabContent.onclick = () => displayPdf(file);
+                
+                // Create close button
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'tab-close';
+                closeBtn.innerHTML = '×';
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFile(file);
+                };
+                
+                tab.appendChild(tabContent);
+                tab.appendChild(closeBtn);
                 tabsContainer.appendChild(tab);
             });
         }
 
         function displayPdf(file) {
             const viewer = document.getElementById('pdfViewer');
-            const fileUrl = URL.createObjectURL(file);
             
             // Update active tab
             document.querySelectorAll('.pdf-tab').forEach(tab => {
                 tab.classList.remove('active');
-                if (tab.textContent === file.name) {
+                if (tab.querySelector('.tab-content').textContent === file.name) {
                     tab.classList.add('active');
                 }
             });
@@ -253,11 +280,18 @@
                 <div id="pdfViewerCanvas" class="pdfViewerCanvas"></div>
             `;
 
+            // Get or create URL
+            let fileUrl = pdfUrlCache.get(file.name);
+            if (!fileUrl) {
+                fileUrl = URL.createObjectURL(file);
+                pdfUrlCache.set(file.name, fileUrl);
+            }
+
             // Initialize PDF.js
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-            // Load and render the PDF
-            pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
+            // Use cached PDF document if available
+            const renderPdf = (pdf) => {
                 const numPages = pdf.numPages;
                 const container = document.getElementById('pdfViewerCanvas');
                 
@@ -284,12 +318,30 @@
                         page.render(renderContext);
                     });
                 }
-            });
-
-            // Clean up URL object
-            viewer.onload = () => {
-                URL.revokeObjectURL(fileUrl);
             };
+
+            if (pdfCache.has(file.name)) {
+                renderPdf(pdfCache.get(file.name));
+            } else {
+                // Load and cache the PDF document
+                pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
+                    pdfCache.set(file.name, pdf);
+                    renderPdf(pdf);
+                });
+            }
+        }
+
+        function removeFile(file) {
+            // Clean up caches when removing file
+            if (pdfUrlCache.has(file.name)) {
+                URL.revokeObjectURL(pdfUrlCache.get(file.name));
+                pdfUrlCache.delete(file.name);
+            }
+            pdfCache.delete(file.name);
+            selectedFiles.delete(file);
+            updateFileList();
+            updatePdfViewer();
+            savePDFsToStorage();
         }
 
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
