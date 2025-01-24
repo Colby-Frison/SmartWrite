@@ -54,8 +54,6 @@
         const fileInput = document.getElementById('pdfFile');
         const fileList = document.getElementById('selectedFiles');
         const selectedFiles = new Set();
-        const pdfCache = new Map(); // Cache for loaded PDF documents
-        const pdfUrlCache = new Map(); // Cache for PDF URLs
         
         // Load saved PDFs on page load
         window.addEventListener('load', loadSavedPDFs);
@@ -200,7 +198,10 @@
                     removeBtn.className = 'remove-file';
                     removeBtn.onclick = (e) => {
                         e.preventDefault();
-                        removeFile(file);
+                        selectedFiles.delete(file);
+                        updateFileList();
+                        updatePdfViewer();
+                        savePDFsToStorage();
                     };
                     
                     li.appendChild(fileName);
@@ -255,7 +256,10 @@
                 closeBtn.innerHTML = '×';
                 closeBtn.onclick = (e) => {
                     e.stopPropagation();
-                    removeFile(file);
+                    selectedFiles.delete(file);
+                    updateFileList();
+                    updatePdfViewer();
+                    savePDFsToStorage();
                 };
                 
                 tab.appendChild(tabContent);
@@ -266,6 +270,59 @@
 
         function displayPdf(file) {
             const viewer = document.getElementById('pdfViewer');
+            const fileUrl = URL.createObjectURL(file);
+            
+            // Create a unique ID for this PDF's container
+            const pdfContainerId = `pdf-container-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            
+            // Check if this PDF is already rendered
+            if (!document.getElementById(pdfContainerId)) {
+                const pdfContainer = document.createElement('div');
+                pdfContainer.id = pdfContainerId;
+                pdfContainer.className = 'pdf-single-viewer hidden';
+                viewer.appendChild(pdfContainer);
+
+                // Initialize PDF.js
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                // Load and render the PDF
+                pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
+                    const numPages = pdf.numPages;
+                    const container = document.createElement('div');
+                    container.className = 'pdfViewerCanvas';
+                    pdfContainer.appendChild(container);
+                    
+                    // Create and render each page
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'pdf-page-container';
+                        container.appendChild(pageContainer);
+
+                        pdf.getPage(pageNum).then(function(page) {
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            const viewport = page.getViewport({ scale: 1.5 });
+
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            const renderContext = {
+                                canvasContext: context,
+                                viewport: viewport
+                            };
+
+                            pageContainer.appendChild(canvas);
+                            page.render(renderContext);
+                        });
+                    }
+                });
+            }
+
+            // Hide all PDF containers and show the selected one
+            document.querySelectorAll('.pdf-single-viewer').forEach(container => {
+                container.classList.add('hidden');
+            });
+            document.getElementById(pdfContainerId).classList.remove('hidden');
             
             // Update active tab
             document.querySelectorAll('.pdf-tab').forEach(tab => {
@@ -274,74 +331,6 @@
                     tab.classList.add('active');
                 }
             });
-
-            // Set up PDF.js viewer
-            viewer.innerHTML = `
-                <div id="pdfViewerCanvas" class="pdfViewerCanvas"></div>
-            `;
-
-            // Get or create URL
-            let fileUrl = pdfUrlCache.get(file.name);
-            if (!fileUrl) {
-                fileUrl = URL.createObjectURL(file);
-                pdfUrlCache.set(file.name, fileUrl);
-            }
-
-            // Initialize PDF.js
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-            // Use cached PDF document if available
-            const renderPdf = (pdf) => {
-                const numPages = pdf.numPages;
-                const container = document.getElementById('pdfViewerCanvas');
-                
-                // Create and render each page
-                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                    const pageContainer = document.createElement('div');
-                    pageContainer.className = 'pdf-page-container';
-                    container.appendChild(pageContainer);
-
-                    pdf.getPage(pageNum).then(function(page) {
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        const viewport = page.getViewport({ scale: 1.5 });
-
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        const renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
-
-                        pageContainer.appendChild(canvas);
-                        page.render(renderContext);
-                    });
-                }
-            };
-
-            if (pdfCache.has(file.name)) {
-                renderPdf(pdfCache.get(file.name));
-            } else {
-                // Load and cache the PDF document
-                pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
-                    pdfCache.set(file.name, pdf);
-                    renderPdf(pdf);
-                });
-            }
-        }
-
-        function removeFile(file) {
-            // Clean up caches when removing file
-            if (pdfUrlCache.has(file.name)) {
-                URL.revokeObjectURL(pdfUrlCache.get(file.name));
-                pdfUrlCache.delete(file.name);
-            }
-            pdfCache.delete(file.name);
-            selectedFiles.delete(file);
-            updateFileList();
-            updatePdfViewer();
-            savePDFsToStorage();
         }
 
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
