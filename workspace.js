@@ -67,11 +67,77 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadSavedPDFs() {
         const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
         if (savedPDFs.length > 0) {
-            savedPDFs.forEach(pdfData => {
-                const file = base64ToFile(pdfData.data, pdfData.name, 'application/pdf');
-                displayPdf(file);
-            });
+            createPdfTabs(savedPDFs);
+            displayPdf(savedPDFs[0]); // Display first PDF
         }
+    }
+
+    function base64ToFile(base64Data, filename) {
+        const byteString = atob(base64Data.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        
+        return new File([ab], filename, { type: 'application/pdf' });
+    }
+
+    function createPdfTabs(pdfs) {
+        const tabsContainer = document.getElementById('pdfTabs');
+        tabsContainer.innerHTML = '';
+        
+        pdfs.forEach((pdf, index) => {
+            const tab = document.createElement('div');
+            tab.className = 'pdf-tab' + (index === 0 ? ' active' : '');
+            tab.innerHTML = `<span class="tab-content">${pdf.name}</span>`;
+            tab.onclick = () => displayPdf(pdf);
+            tabsContainer.appendChild(tab);
+        });
+    }
+
+    function displayPdf(pdfData) {
+        const viewer = document.getElementById('pdfViewer');
+        const file = base64ToFile(pdfData.data, pdfData.name);
+        const fileUrl = URL.createObjectURL(file);
+
+        // Update active tab
+        document.querySelectorAll('.pdf-tab').forEach(tab => {
+            tab.classList.toggle('active', 
+                tab.querySelector('.tab-content').textContent === pdfData.name);
+        });
+
+        // Initialize PDF.js
+        pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
+            viewer.innerHTML = ''; // Clear previous PDF
+            const container = document.createElement('div');
+            container.className = 'pdfViewerCanvas';
+            viewer.appendChild(container);
+            
+            // Render all pages
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                pdf.getPage(pageNum).then(function(page) {
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-container';
+                    container.appendChild(pageContainer);
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    const viewport = page.getViewport({ scale: 1.5 });
+
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    });
+
+                    pageContainer.appendChild(canvas);
+                });
+            }
+        });
     }
 
     // Initialize PDF.js

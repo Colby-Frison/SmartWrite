@@ -161,6 +161,7 @@ html, body {
 
 .container.center-upload.with-pdf {
     justify-content: flex-start;
+    padding-right: 400px; /* Make space for PDF viewer */
 }
 
 h1, h2, h3 {
@@ -658,8 +659,10 @@ button[type="submit"]:hover {
     border: 1px solid var(--border-color);
     overflow: hidden;
     height: calc(100vh - 100px);
-    min-width: 200px;
-    max-width: 1000px;
+    position: fixed;
+    right: 2rem;
+    top: 80px;
+    width: 380px;
 }
 
 .pdf-tabs {

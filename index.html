@@ -364,13 +364,14 @@
             });
         }
 
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (selectedFiles.size === 0) {
                 alert('Please select at least one PDF file.');
                 return;
             }
-            // Redirect to workspace page
+            // Save PDFs before redirecting
+            await savePDFsToStorage();
             window.location.href = 'workspace.html';
         });
     </script>
