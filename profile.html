@@ -41,8 +41,15 @@
     <div class="container">
         <div class="content-box profile-box">
             <div class="profile-header">
-                <div class="profile-avatar">
-                    <i class="fas fa-user-circle"></i>
+                <div class="profile-avatar" id="avatarContainer">
+                    <input type="file" id="avatarUpload" accept="image/*" class="hidden">
+                    <label for="avatarUpload" class="avatar-upload">
+                        <i class="fas fa-user-circle" id="defaultAvatar"></i>
+                        <img id="avatarImage" class="hidden" alt="Profile Picture">
+                        <div class="avatar-overlay hidden">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </label>
                 </div>
                 <h1>User Profile</h1>
             </div>
@@ -51,11 +58,13 @@
                     <h2>Account Information</h2>
                     <div class="info-item">
                         <span class="label">Username:</span>
-                        <span class="value">johndoe</span>
+                        <span class="value" id="usernameDisplay">johndoe</span>
+                        <input type="text" class="edit-input hidden" id="usernameInput" value="johndoe" pattern="[a-zA-Z0-9_]{3,20}">
                     </div>
                     <div class="info-item">
                         <span class="label">Email:</span>
-                        <span class="value">john.doe@example.com</span>
+                        <span class="value" id="emailDisplay">john.doe@example.com</span>
+                        <input type="email" class="edit-input hidden" id="emailInput" value="john.doe@example.com">
                     </div>
                     <div class="info-item">
                         <span class="label">Member Since:</span>
@@ -74,9 +83,14 @@
                     </div>
                 </div>
             </div>
-            <button class="edit-profile-btn">Edit Profile</button>
+            <div class="profile-actions">
+                <button class="edit-profile-btn" id="editProfileBtn">Edit Profile</button>
+                <button class="save-profile-btn hidden" id="saveProfileBtn">Save Changes</button>
+                <button class="cancel-profile-btn hidden" id="cancelProfileBtn">Cancel</button>
+            </div>
         </div>
     </div>
     <script src="theme.js"></script>
+    <script src="profile.js"></script>
 </body>
 </html> 
