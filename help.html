@@ -15,9 +15,26 @@
             <a href="help.html" class="active">Help</a>
             <a href="faq.html">FAQ</a>
             <div class="nav-icons">
-                <a href="#settings" class="icon-link"><i class="fas fa-cog"></i></a>
-                <span class="icon-separator">|</span>
-                <a href="profile.html" class="icon-link"><i class="fas fa-user"></i></a>
+                <div class="dropdown">
+                    <button class="dropdown-trigger">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle"></i>
+                            Profile
+                        </a>
+                        <a href="settings.html" class="dropdown-item">
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -31,5 +48,6 @@
             </div>
         </div>
     </div>
+    <script src="theme.js"></script>
 </body>
 </html> 

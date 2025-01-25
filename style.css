@@ -1,3 +1,34 @@
+:root {
+    /* Dark theme variables (default) */
+    --bg-primary: #29272c;
+    --bg-secondary: #2a2830;
+    --bg-tertiary: #1f1e22;
+    --text-primary: #ffffff;
+    --text-secondary: #b8b8b8;
+    --accent-primary: #8675e9;
+    --accent-secondary: #7667d4;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --danger: #ff6b6b;
+    --success: #00d1a7;
+    --pdf-bg: #ffffff;
+}
+
+:root[data-theme="light"] {
+    --bg-primary: #f5f5f7;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #ffffff;
+    --text-primary: #1f1e22;
+    --text-secondary: #666666;
+    --accent-primary: #8675e9;
+    --accent-secondary: #7667d4;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --danger: #ff6b6b;
+    --success: #00d1a7;
+    --pdf-bg: #ffffff;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -8,7 +39,8 @@
 html, body {
     height: 100%;
     overflow: hidden;
-    background: #29272c;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .navbar {
@@ -16,7 +48,7 @@ html, body {
     top: 0;
     left: 0;
     right: 0;
-    background: #1f1e22;
+    background: var(--bg-tertiary);
     padding: 0.8rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -24,10 +56,11 @@ html, body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     height: 60px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .brand {
-    color: #ffffff;
+    color: var(--text-primary);
     font-size: 1.5rem;
     font-weight: bold;
     text-decoration: none;
@@ -68,14 +101,14 @@ html, body {
 }
 
 .nav-links a {
-    color: #b8b8b8;
+    color: var(--text-secondary);
     text-decoration: none;
     font-size: 1rem;
     transition: color 0.3s ease;
 }
 
 .nav-links a:hover {
-    color: #ffffff;
+    color: var(--text-primary);
 }
 
 .nav-links a.active {
@@ -119,13 +152,13 @@ h1 {
 
 .upload-box {
     flex: 0 0 400px;
-    background: #2a2830;
+    background: var(--bg-secondary);
     padding: 1.5rem;
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     width: 100%;
     max-width: 400px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     max-height: calc(100vh - 100px);
     overflow: hidden;
     display: flex;
@@ -259,6 +292,34 @@ input[type="file"] {
     border-radius: 4px;
     color: #ffffff;
     font-size: 0.9rem;
+    gap: 8px;
+}
+
+.file-item span {
+    flex: 1;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+}
+
+/* Scrollbar styling for file items */
+.file-item span::-webkit-scrollbar {
+    height: 4px;
+}
+
+.file-item span::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.file-item span::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.file-item span::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .remove-file {
@@ -269,6 +330,7 @@ input[type="file"] {
     font-size: 1.2rem;
     padding: 0 0.5rem;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 .remove-file:hover {
@@ -320,14 +382,14 @@ button[type="submit"]:hover {
 }
 
 .content-box {
-    background: #2a2830;
+    background: var(--bg-secondary);
     padding: 2rem;
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     text-align: center;
 }
 
@@ -377,14 +439,14 @@ button[type="submit"]:hover {
 }
 
 .profile-box {
-    background: #2a2830;
+    background: var(--bg-secondary);
     padding: 2rem;
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     max-width: 600px;
     width: 100%;
     margin: 0 auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
 }
 
 .profile-header {
@@ -422,7 +484,7 @@ button[type="submit"]:hover {
     justify-content: space-between;
     align-items: center;
     padding: 0.8rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .info-item:last-child {
@@ -431,12 +493,12 @@ button[type="submit"]:hover {
 }
 
 .info-item .label {
-    color: #b8b8b8;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .info-item .value {
-    color: #ffffff;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -462,16 +524,17 @@ button[type="submit"]:hover {
 
 .pdf-viewer-container {
     display: none;
-    flex: 1;
+    flex: 0 1 auto;
     flex-direction: column;
-    background: #2a2830;
+    background: var(--bg-secondary);
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     overflow: hidden;
     margin: 0 auto;
-    max-width: calc(100% - 432px); /* 400px for upload-box + 32px for gap */
     height: calc(100vh - 100px);
+    min-width: 200px;
+    max-width: min(calc(100% - 432px), 1000px);
 }
 
 .pdf-tabs {
@@ -483,11 +546,11 @@ button[type="submit"]:hover {
 }
 
 .pdf-tab {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 0.5rem 1rem;
-    color: #b8b8b8;
+    color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.3s ease;
@@ -496,17 +559,18 @@ button[type="submit"]:hover {
     gap: 8px;
     user-select: none;
     min-width: 100px;
+    max-width: 300px;
 }
 
 .pdf-tab:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--hover-bg);
     transform: translateY(-1px);
 }
 
 .pdf-tab.active {
-    background: #8675e9;
+    background: var(--accent-primary);
     color: white;
-    border-color: #8675e9;
+    border-color: var(--accent-primary);
     box-shadow: 0 2px 8px rgba(134, 117, 233, 0.3);
     transform: translateY(-1px);
 }
@@ -520,6 +584,8 @@ button[type="submit"]:hover {
     min-height: 500px;
     position: relative;
     padding: 20px;
+    width: fit-content;
+    margin: 0 auto;
 }
 
 .pdfViewerCanvas {
@@ -528,6 +594,7 @@ button[type="submit"]:hover {
     align-items: center;
     gap: 20px;
     padding: 20px 0;
+    width: fit-content;
 }
 
 .pdf-page-container {
@@ -536,7 +603,7 @@ button[type="submit"]:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     width: fit-content;
-    max-width: 95%;
+    margin: 0 auto;
 }
 
 .pdf-page-container canvas {
@@ -565,11 +632,33 @@ button[type="submit"]:hover {
 }
 
 .tab-content {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 100%;
+    overflow-x: auto;
+    text-overflow: unset;
     pointer-events: none;
     flex: 1;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+}
+
+/* Scrollbar styling for tab content */
+.tab-content::-webkit-scrollbar {
+    height: 4px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.tab-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .tab-close {
@@ -618,4 +707,136 @@ button[type="submit"]:hover {
 
 .pdf-single-viewer.hidden {
     display: none;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-trigger {
+    background: none;
+    border: none;
+    color: #b8b8b8;
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dropdown-trigger:hover {
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0.5rem 0;
+}
+
+/* Remove unused styles */
+.icon-separator {
+    display: none;
+}
+
+.settings-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+.settings-select option {
+    background: #2a2830;
+    color: #ffffff;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: #ffffff;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #8675e9;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
 }
