@@ -243,12 +243,13 @@
 
         function updatePdfViewer() {
             const container = document.getElementById('pdfViewerContainer');
+            const mainContainer = document.querySelector('.container');
             if (selectedFiles.size === 0) {
                 container.style.display = 'none';
-                document.querySelector('.container').classList.add('center-upload');
+                mainContainer.classList.remove('with-pdf');
             } else {
                 container.style.display = 'flex';
-                document.querySelector('.container').classList.remove('center-upload');
+                mainContainer.classList.add('with-pdf');
                 createPdfTabs();
                 // Display the last added PDF
                 const lastFile = Array.from(selectedFiles).pop();
@@ -258,8 +259,9 @@
 
         function showPdfViewer() {
             const container = document.getElementById('pdfViewerContainer');
+            const mainContainer = document.querySelector('.container');
             container.style.display = 'flex';
-            document.querySelector('.container').classList.remove('center-upload');
+            mainContainer.classList.add('with-pdf');
         }
 
         function createPdfTabs() {
@@ -368,8 +370,8 @@
                 alert('Please select at least one PDF file.');
                 return;
             }
-            // Add your form submission logic here
-            alert(`${selectedFiles.size} PDF(s) uploaded successfully!`);
+            // Redirect to workspace page
+            window.location.href = 'workspace.html';
         });
     </script>
     <script src="theme.js"></script>
