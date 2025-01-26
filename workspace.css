@@ -8,16 +8,57 @@
 
 /* Sidebar Styles */
 .sidebar {
+    min-width: 75px;
     width: 300px;
+    max-width: 500px;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     transition: width 0.3s ease;
+    position: relative;
+}
+
+.sidebar::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: ew-resize;
+    background: transparent;
 }
 
 .sidebar.collapsed {
     width: 0;
+    min-width: 0;
+    padding: 0;
+    border-right: none;
+    resize: none;
+}
+
+.sidebar.collapsed * {
+    visibility: hidden;
+}
+
+.sidebar-toggle-collapsed {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: none;
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.collapsed + .main-content .sidebar-toggle-collapsed {
+    display: block;
 }
 
 .sidebar-header {
@@ -26,6 +67,23 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
+    min-height: 60px;
+}
+
+.sidebar-header .dropdown-trigger {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.sidebar-header .dropdown-trigger:hover {
+    background: var(--hover-bg);
 }
 
 .toggle-sidebar {
@@ -127,14 +185,30 @@
     flex-direction: column;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
+    position: relative;
 }
 
 /* Chat Section */
 .chat-section {
+    min-width: 75px;
     width: 400px;
+    max-width: 800px;
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    position: relative;
+}
+
+.chat-section::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    cursor: ew-resize;
+    background: transparent;
 }
 
 .chat-header {
@@ -213,4 +287,62 @@
 #sendMessage:hover {
     background: var(--accent-secondary);
     transform: translateY(-1px);
+}
+
+/* PDF Controls */
+.pdf-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    background: var(--bg-secondary);
+    padding: 0.25rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(8px);
+}
+
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-primary);
+}
+
+.zoom-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.zoom-btn:hover {
+    background: var(--hover-bg);
+    transform: translateY(-1px);
+}
+
+.zoom-level {
+    min-width: 48px;
+    text-align: center;
+    font-weight: 500;
+    color: var(--text-primary);
+    user-select: none;
+    font-size: 0.9rem;
+}
+
+.sidebar .dropdown-menu {
+    left: 100%;
+    right: auto;
+    top: 0;
 } 

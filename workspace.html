@@ -14,7 +14,26 @@
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>Notes</h2>
+            <div class="dropdown">
+                <button class="dropdown-trigger">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <a href="profile.html" class="dropdown-item">
+                        <i class="fas fa-user-circle"></i>
+                        Profile
+                    </a>
+                    <a href="settings.html" class="dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#logout" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
             <button id="toggleSidebar" class="toggle-sidebar">
                 <i class="fas fa-chevron-left"></i>
             </button>
@@ -37,17 +56,30 @@
 
     <!-- Main Content Area -->
     <div class="main-content">
+        <!-- Sidebar Toggle Button (Visible when sidebar is collapsed) -->
+        <button class="sidebar-toggle-collapsed" id="reopenSidebar">
+            <i class="fas fa-bars"></i>
+        </button>
+
         <!-- PDF Viewer Section -->
         <div class="pdf-section">
-            <div class="pdf-tabs" id="pdfTabs"></div>
+            <!-- PDF Controls -->
+            <div class="pdf-controls">
+                <div class="zoom-control">
+                    <button class="zoom-btn" id="zoomOut">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" id="zoomIn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
             <div class="pdf-viewer" id="pdfViewer"></div>
         </div>
 
         <!-- Chat Section -->
         <div class="chat-section">
-            <div class="chat-header">
-                <h2>AI Assistant</h2>
-            </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message assistant">
                     <div class="message-content">

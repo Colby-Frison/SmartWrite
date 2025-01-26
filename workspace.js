@@ -1,10 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.getElementById('toggleSidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const reopenSidebar = document.getElementById('reopenSidebar');
     
-    toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
+    toggleSidebar.addEventListener('click', () => {
+        sidebar.classList.add('collapsed');
+    });
+
+    reopenSidebar.addEventListener('click', () => {
+        sidebar.classList.remove('collapsed');
     });
 
     // Chat Input Auto-resize
@@ -63,12 +68,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // PDF Zoom Controls
+    const zoomIn = document.getElementById('zoomIn');
+    const zoomOut = document.getElementById('zoomOut');
+    const zoomLevel = document.getElementById('zoomLevel');
+    let currentScale = 1.5;
+    const ZOOM_STEP = 0.25;
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 3;
+
+    zoomIn.addEventListener('click', () => {
+        if (currentScale < MAX_ZOOM) {
+            currentScale += ZOOM_STEP;
+            updateZoom();
+        }
+    });
+
+    zoomOut.addEventListener('click', () => {
+        if (currentScale > MIN_ZOOM) {
+            currentScale -= ZOOM_STEP;
+            updateZoom();
+        }
+    });
+
+    function updateZoom() {
+        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+        displayCurrentPDF();
+    }
+
     // Load PDFs from localStorage
+    let currentPDF = null;
+
     function loadSavedPDFs() {
         const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
         if (savedPDFs.length > 0) {
-            createPdfTabs(savedPDFs);
-            displayPdf(savedPDFs[0]); // Display first PDF
+            currentPDF = savedPDFs[0];
+            displayCurrentPDF();
         }
     }
 
@@ -84,29 +119,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return new File([ab], filename, { type: 'application/pdf' });
     }
 
-    function createPdfTabs(pdfs) {
-        const tabsContainer = document.getElementById('pdfTabs');
-        tabsContainer.innerHTML = '';
-        
-        pdfs.forEach((pdf, index) => {
-            const tab = document.createElement('div');
-            tab.className = 'pdf-tab' + (index === 0 ? ' active' : '');
-            tab.innerHTML = `<span class="tab-content">${pdf.name}</span>`;
-            tab.onclick = () => displayPdf(pdf);
-            tabsContainer.appendChild(tab);
-        });
-    }
+    function displayCurrentPDF() {
+        if (!currentPDF) return;
 
-    function displayPdf(pdfData) {
         const viewer = document.getElementById('pdfViewer');
-        const file = base64ToFile(pdfData.data, pdfData.name);
+        const file = base64ToFile(currentPDF.data, currentPDF.name);
         const fileUrl = URL.createObjectURL(file);
-
-        // Update active tab
-        document.querySelectorAll('.pdf-tab').forEach(tab => {
-            tab.classList.toggle('active', 
-                tab.querySelector('.tab-content').textContent === pdfData.name);
-        });
 
         // Initialize PDF.js
         pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
@@ -124,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
-                    const viewport = page.getViewport({ scale: 1.5 });
+                    const viewport = page.getViewport({ scale: currentScale });
 
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
@@ -143,4 +161,49 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     loadSavedPDFs();
+
+    // Resize functionality
+    const chatSection = document.querySelector('.chat-section');
+    let isResizing = false;
+    let currentResizer = null;
+
+    // Mouse events for sidebar resize
+    sidebar.addEventListener('mousedown', function(e) {
+        const rect = sidebar.getBoundingClientRect();
+        if (e.clientX > rect.right - 5 && e.clientX < rect.right + 5) {
+            isResizing = true;
+            currentResizer = sidebar;
+        }
+    });
+
+    // Mouse events for chat section resize
+    chatSection.addEventListener('mousedown', function(e) {
+        const rect = chatSection.getBoundingClientRect();
+        if (e.clientX > rect.left - 5 && e.clientX < rect.left + 5) {
+            isResizing = true;
+            currentResizer = chatSection;
+        }
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+
+        if (currentResizer === sidebar) {
+            const newWidth = e.clientX;
+            if (newWidth >= 75 && newWidth <= 500) {
+                currentResizer.style.width = newWidth + 'px';
+            }
+        } else if (currentResizer === chatSection) {
+            const rect = chatSection.parentElement.getBoundingClientRect();
+            const newWidth = rect.right - e.clientX;
+            if (newWidth >= 75 && newWidth <= 800) {
+                currentResizer.style.width = newWidth + 'px';
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', function() {
+        isResizing = false;
+        currentResizer = null;
+    });
 }); 

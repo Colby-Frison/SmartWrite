@@ -160,8 +160,8 @@ html, body {
 }
 
 .container.center-upload.with-pdf {
-    justify-content: flex-start;
-    padding-right: 400px; /* Make space for PDF viewer */
+    justify-content: space-between;
+    padding: 2rem 4rem;
 }
 
 h1, h2, h3 {
@@ -181,6 +181,7 @@ h1, h2, h3 {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 .container.center-upload .upload-box {
@@ -651,7 +652,7 @@ button[type="submit"]:hover {
 
 .pdf-viewer-container {
     display: none;
-    flex: 1;
+    flex: 0 1 600px;
     flex-direction: column;
     background: var(--bg-secondary);
     border-radius: 10px;
@@ -659,10 +660,6 @@ button[type="submit"]:hover {
     border: 1px solid var(--border-color);
     overflow: hidden;
     height: calc(100vh - 100px);
-    position: fixed;
-    right: 2rem;
-    top: 80px;
-    width: 380px;
 }
 
 .pdf-tabs {
