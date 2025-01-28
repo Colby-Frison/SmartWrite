@@ -157,11 +157,14 @@ html, body {
     align-items: center;
     padding: 2rem;
     gap: 2rem;
+    display: flex;
+    flex-wrap: wrap;
 }
 
 .container.center-upload.with-pdf {
-    justify-content: space-between;
-    padding: 2rem 4rem;
+    justify-content: center;
+    padding: 2rem;
+    gap: 2rem;
 }
 
 h1, h2, h3 {
@@ -169,7 +172,7 @@ h1, h2, h3 {
 }
 
 .upload-box {
-    flex: 0 0 400px;
+    flex: 0 1 400px;
     background: var(--bg-secondary);
     padding: 1.5rem;
     border-radius: 10px;
@@ -659,7 +662,8 @@ button[type="submit"]:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     overflow: hidden;
-    height: calc(100vh - 100px);
+    height: 800px;
+    min-width: 300px;
 }
 
 .pdf-tabs {
@@ -706,7 +710,7 @@ button[type="submit"]:hover {
     overflow-x: hidden;
     background: #fff;
     border-radius: 0 0 10px 10px;
-    min-height: 500px;
+    height: 740px; /* Fixed height (800px container - 60px tabs) */
     position: relative;
     padding: 20px;
     width: fit-content;
