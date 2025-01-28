@@ -34,6 +34,8 @@
     padding: 0;
     box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-primary);
 }
 
 html, body {
@@ -715,6 +717,8 @@ button[type="submit"]:hover {
     padding: 20px;
     width: fit-content;
     margin: 0 auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-primary);
 }
 
 .pdfViewerCanvas {
@@ -990,4 +994,67 @@ input:checked + .toggle-slider:before {
 
 .container::-webkit-scrollbar-thumb:hover {
     background: var(--hover-bg);
+}
+
+.pdf-viewer::-webkit-scrollbar {
+    width: 12px;
+}
+
+.pdf-viewer::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 0px;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 6px;
+    border: 3px solid var(--bg-primary);
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-secondary);
+}
+
+/* Firefox scrollbar styling */
+.pdf-viewer {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) var(--bg-primary);
+}
+
+/* Add consistent styling for all scrollbars in the app */
+*::-webkit-scrollbar {
+    width: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    border: 2px solid var(--bg-primary);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Horizontal scrollbar */
+*::-webkit-scrollbar:horizontal {
+    height: 10px;
+}
+
+/* Light theme scrollbar adjustments */
+:root[data-theme="light"] * {
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+:root[data-theme="light"] *::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--bg-primary);
+}
+
+:root[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
 }

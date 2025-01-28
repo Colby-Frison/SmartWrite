@@ -18,9 +18,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chatMessages');
 
     chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+        if (this.value.trim()) {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            this.style.overflowY = 'auto';
+        } else {
+            this.style.height = 'auto';
+            this.style.overflowY = 'hidden';
+        }
     });
+
+    // Clear input and reset styles
+    function clearChatInput() {
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        chatInput.style.overflowY = 'hidden';
+    }
 
     // Send Message Function
     function sendMessage() {
@@ -30,9 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add user message
         addMessage(message, 'user');
 
-        // Clear input
-        chatInput.value = '';
-        chatInput.style.height = 'auto';
+        // Clear input and reset styles
+        clearChatInput();
 
         // Simulate AI response (replace with actual API call)
         setTimeout(() => {
