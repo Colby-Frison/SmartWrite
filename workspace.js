@@ -84,29 +84,53 @@ document.addEventListener('DOMContentLoaded', function() {
     const zoomIn = document.getElementById('zoomIn');
     const zoomOut = document.getElementById('zoomOut');
     const zoomLevel = document.getElementById('zoomLevel');
-    let currentScale = 1.5;
+    const zoomControl = document.querySelector('.zoom-control');
+    let currentScale = 1.0;
     const ZOOM_STEP = 0.25;
+    const WHEEL_ZOOM_STEP = 0.1; // Smaller step for smoother wheel zooming
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 3;
+    const BASE_WIDTH = 680;
 
+    function updateZoom() {
+        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+        const containers = document.querySelectorAll('.pdf-page-container');
+        containers.forEach(container => {
+            container.style.width = `${BASE_WIDTH * currentScale}px`;
+        });
+    }
+
+    // Mouse wheel zoom
+    zoomControl.addEventListener('wheel', (e) => {
+        e.preventDefault(); // Prevent page scroll
+        
+        if (e.deltaY < 0) { // Scroll up = zoom in
+            if (currentScale < MAX_ZOOM) {
+                currentScale = Math.min(currentScale + WHEEL_ZOOM_STEP, MAX_ZOOM);
+                updateZoom();
+            }
+        } else { // Scroll down = zoom out
+            if (currentScale > MIN_ZOOM) {
+                currentScale = Math.max(currentScale - WHEEL_ZOOM_STEP, MIN_ZOOM);
+                updateZoom();
+            }
+        }
+    });
+
+    // Existing button zoom controls
     zoomIn.addEventListener('click', () => {
         if (currentScale < MAX_ZOOM) {
-            currentScale += ZOOM_STEP;
+            currentScale = Math.min(currentScale + ZOOM_STEP, MAX_ZOOM);
             updateZoom();
         }
     });
 
     zoomOut.addEventListener('click', () => {
         if (currentScale > MIN_ZOOM) {
-            currentScale -= ZOOM_STEP;
+            currentScale = Math.max(currentScale - ZOOM_STEP, MIN_ZOOM);
             updateZoom();
         }
     });
-
-    function updateZoom() {
-        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
-        displayCurrentPDF();
-    }
 
     // Load PDFs from localStorage
     let currentPDF = null;
@@ -145,28 +169,42 @@ document.addEventListener('DOMContentLoaded', function() {
             container.className = 'pdfViewerCanvas';
             viewer.appendChild(container);
             
-            // Render all pages
+            // Create an array of promises for rendering all pages
+            const pagePromises = [];
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                pdf.getPage(pageNum).then(function(page) {
-                    const pageContainer = document.createElement('div');
-                    pageContainer.className = 'pdf-page-container';
-                    container.appendChild(pageContainer);
+                pagePromises.push(
+                    pdf.getPage(pageNum).then(function(page) {
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'pdf-page-container';
+                        container.appendChild(pageContainer);
 
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    const viewport = page.getViewport({ scale: currentScale });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        
+                        // Calculate scale to fit the base width
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const scale = BASE_WIDTH / viewport.width;
+                        const scaledViewport = page.getViewport({ scale: scale });
 
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
 
-                    page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    });
-
-                    pageContainer.appendChild(canvas);
-                });
+                        return page.render({
+                            canvasContext: context,
+                            viewport: scaledViewport
+                        }).promise.then(() => {
+                            pageContainer.appendChild(canvas);
+                        });
+                    })
+                );
             }
+            
+            // Wait for all pages to be rendered
+            return Promise.all(pagePromises).then(() => {
+                updateZoom(); // Apply current zoom after rendering
+            });
+        }).catch(error => {
+            console.error('Error rendering PDF:', error);
         });
     }
 

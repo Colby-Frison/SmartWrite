@@ -35,6 +35,9 @@
     padding: 0;
     border-right: none;
     resize: none;
+    flex-basis: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
 
 .sidebar.collapsed * {
@@ -180,12 +183,18 @@
 /* PDF Section */
 .pdf-section {
     flex: 1;
-    min-width: 328px; /* 1.75 * 187.5px */
+    min-width: calc(328px + 20px); /* Base min-width + some padding */
+    width: calc(100% - 700px); /* Full width minus sidebar (300px) and chat (400px) */
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
     position: relative;
     overflow: hidden;
+}
+
+.sidebar.collapsed ~ .main-content .pdf-section {
+    width: calc(100% - 400px); /* Full width minus only chat section when sidebar is collapsed */
+    min-width: 328px;
 }
 
 .pdf-viewer {
@@ -196,45 +205,59 @@
     background: var(--bg-primary);
     position: relative;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
+    padding: 1rem;
 }
 
 .pdfViewerCanvas {
-    padding: 2rem;
+    padding: .5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: .5rem;
     min-width: min-content;
+    width: fit-content;
+    margin: 0 auto;
 }
 
 .pdf-page-container {
     background: white;
-    padding: 1rem;
+    padding: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 0px;
-    width: fit-content;
+    width: 680px; /* Reduced from 800px to achieve same size at 100% */
 }
 
-/* Add consistent styling for PDF viewer scrollbar */
+.pdf-page-container canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Adjust scrollbar styling for better visibility */
 .pdf-viewer::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
 
 .pdf-viewer::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--bg-primary);
+    border-radius: 5px;
 }
 
 .pdf-viewer::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    border-radius: 5px;
     border: 2px solid var(--bg-primary);
 }
 
 .pdf-viewer::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+.pdf-viewer::-webkit-scrollbar-corner {
+    background: var(--bg-primary);
 }
 
 /* Firefox scrollbar styling */
