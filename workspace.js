@@ -133,14 +133,52 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Load PDFs from localStorage
-    let currentPDF = null;
+    let pdfs = [];
+    let currentPdfIndex = 0;
 
     function loadSavedPDFs() {
         const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
         if (savedPDFs.length > 0) {
-            currentPDF = savedPDFs[0];
+            pdfs = savedPDFs;
+            updatePdfFilesBar();
             displayCurrentPDF();
         }
+    }
+
+    function updatePdfFilesBar() {
+        const pdfFiles = document.getElementById('pdfFiles');
+        pdfFiles.innerHTML = '';
+        
+        pdfs.forEach((pdf, index) => {
+            const tab = document.createElement('div');
+            tab.className = `pdf-file-tab ${index === currentPdfIndex ? 'active' : ''}`;
+            
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-file-pdf';
+            
+            const name = document.createElement('span');
+            name.textContent = pdf.name;
+            
+            tab.appendChild(icon);
+            tab.appendChild(name);
+            
+            tab.addEventListener('click', () => {
+                if (currentPdfIndex !== index) {
+                    currentPdfIndex = index;
+                    updatePdfFilesBar(); // Update active state
+                    displayCurrentPDF();
+                }
+            });
+            
+            pdfFiles.appendChild(tab);
+        });
+
+        // Add horizontal scroll on wheel
+        pdfFiles.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const scrollSpeed = 50;
+            pdfFiles.scrollLeft += e.deltaY * (scrollSpeed / 100);
+        });
     }
 
     function base64ToFile(base64Data, filename) {
@@ -156,8 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayCurrentPDF() {
-        if (!currentPDF) return;
+        if (pdfs.length === 0 || currentPdfIndex >= pdfs.length) return;
 
+        const currentPDF = pdfs[currentPdfIndex];
         const viewer = document.getElementById('pdfViewer');
         const file = base64ToFile(currentPDF.data, currentPDF.name);
         const fileUrl = URL.createObjectURL(file);
@@ -207,6 +246,27 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error rendering PDF:', error);
         });
     }
+
+    // Add keyboard shortcuts for switching PDFs
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentPdfIndex > 0) {
+                    currentPdfIndex--;
+                    updatePdfFilesBar();
+                    displayCurrentPDF();
+                }
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (currentPdfIndex < pdfs.length - 1) {
+                    currentPdfIndex++;
+                    updatePdfFilesBar();
+                    displayCurrentPDF();
+                }
+            }
+        }
+    });
 
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';

@@ -226,44 +226,13 @@
     padding: 0.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 0px;
-    width: 680px; /* Reduced from 800px to achieve same size at 100% */
+    width: 680px;
 }
 
 .pdf-page-container canvas {
     width: 100%;
     height: auto;
     display: block;
-}
-
-/* Adjust scrollbar styling for better visibility */
-.pdf-viewer::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-.pdf-viewer::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-    border-radius: 5px;
-}
-
-.pdf-viewer::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
-    border: 2px solid var(--bg-primary);
-}
-
-.pdf-viewer::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.pdf-viewer::-webkit-scrollbar-corner {
-    background: var(--bg-primary);
-}
-
-/* Firefox scrollbar styling */
-.pdf-viewer {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 /* Chat Section */
@@ -476,4 +445,141 @@
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-color);
     border-top: 1px solid var(--border-color);
+}
+
+.pdf-file-bar {
+    height: 50px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    overflow: hidden;
+}
+
+.pdf-files {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    width: 100%;
+}
+
+.pdf-file-tab {
+    padding: 0.5rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.pdf-file-tab:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.pdf-file-tab.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.pdf-file-tab i {
+    font-size: 0.8rem;
+}
+
+/* Scrollbar styling for PDF files bar */
+.pdf-files::-webkit-scrollbar {
+    height: 6px;
+}
+
+.pdf-files::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pdf-files::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.pdf-files::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Global scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.2);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.3);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Hide scrollbar buttons */
+*::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Remove any existing scrollbar overrides */
+.pdf-viewer::-webkit-scrollbar,
+.pdf-files::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+#chatInput::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.pdf-viewer::-webkit-scrollbar-track,
+.pdf-files::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track,
+#chatInput::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb,
+.pdf-files::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+#chatInput::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.2);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb:hover,
+.pdf-files::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover,
+#chatInput::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.3);
 } 
