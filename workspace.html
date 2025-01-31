@@ -105,6 +105,85 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h2 class="modal-title">Settings</h2>
+                <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3 class="modal-section-title">Appearance</h3>
+                    <div class="settings-group">
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">Dark Mode</div>
+                                <div class="settings-item-description">Toggle dark/light theme</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h3 class="modal-section-title">PDF Viewer</h3>
+                    <div class="settings-group">
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">Default Zoom Level</div>
+                                <div class="settings-item-description">Set the default zoom level for PDFs</div>
+                            </div>
+                            <select class="settings-select" id="defaultZoom">
+                                <option value="0.5">50%</option>
+                                <option value="0.75">75%</option>
+                                <option value="1" selected>100%</option>
+                                <option value="1.25">125%</option>
+                                <option value="1.5">150%</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn modal-btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
+            <button class="modal-btn modal-btn-primary" onclick="saveSettings()">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Profile</h2>
+                <button class="modal-close" onclick="closeModal('profileModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form class="profile-form" id="profileForm">
+                    <div class="form-group">
+                        <label class="form-label" for="displayName">Display Name</label>
+                        <input type="text" id="displayName" class="form-input" placeholder="Enter your display name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" class="form-input" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bio">Bio</label>
+                        <textarea id="bio" class="form-input" rows="3" placeholder="Tell us about yourself"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('profileModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <script src="theme.js"></script>
     <script src="workspace.js"></script>
 </body>

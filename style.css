@@ -35,7 +35,7 @@
     box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     scrollbar-width: thin;
-    scrollbar-color: rgba(128, 128, 128, 0.15) transparent;
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 
 html, body {
@@ -997,34 +997,50 @@ input:checked + .toggle-slider:before {
 }
 
 .pdf-viewer::-webkit-scrollbar {
-    width: 12px;
+    width: 8px;
+    height: 8px;
 }
 
 .pdf-viewer::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-    border-radius: 0px;
+    display: none;
 }
 
 .pdf-viewer::-webkit-scrollbar-thumb {
-    background: var(--accent-primary);
-    border-radius: 6px;
-    border: 3px solid var(--bg-primary);
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 8px;
+    border: none;
 }
 
 .pdf-viewer::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-secondary);
+    background: rgba(128, 128, 128, 0.5);
 }
 
-/* Firefox scrollbar styling */
+.pdf-viewer::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Firefox scrollbar styling - global */
+* {
+    scrollbar-width: thin;  /* Thinnest available option in Firefox */
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+/* Firefox scrollbar styling for PDF viewer */
 .pdf-viewer {
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-primary) var(--bg-primary);
+    scrollbar-width: thin;  /* Thinnest available option in Firefox */
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+/* Light theme Firefox scrollbar adjustments */
+:root[data-theme="light"] * {
+    scrollbar-width: thin;  /* Thinnest available option in Firefox */
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 
 /* Add consistent styling for all scrollbars in the app */
 *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 *::-webkit-scrollbar-track {
@@ -1032,16 +1048,13 @@ input:checked + .toggle-slider:before {
 }
 
 *::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.15);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 12px;
+    border: none;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.25);
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: rgba(128, 128, 128, 0.5);
 }
 
 *::-webkit-scrollbar-corner {
@@ -1049,24 +1062,89 @@ input:checked + .toggle-slider:before {
 }
 
 *::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
     display: none;
 }
 
 /* Horizontal scrollbar */
 *::-webkit-scrollbar:horizontal {
-    height: 10px;
+    height: 6px;
 }
 
 /* Light theme scrollbar adjustments */
 :root[data-theme="light"] * {
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 
 :root[data-theme="light"] *::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border: 2px solid var(--bg-primary);
+    background: rgba(128, 128, 128, 0.3);
 }
 
 :root[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(128, 128, 128, 0.5);
+}
+
+/* Remove all other scrollbar styling */
+.container::-webkit-scrollbar,
+.pdf-viewer::-webkit-scrollbar,
+.pdf-files::-webkit-scrollbar,
+#chatInput::-webkit-scrollbar,
+#selectedFiles::-webkit-scrollbar,
+.file-item span::-webkit-scrollbar,
+.pdf-tabs::-webkit-scrollbar,
+.tab-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.container::-webkit-scrollbar-track,
+.pdf-viewer::-webkit-scrollbar-track,
+.pdf-files::-webkit-scrollbar-track,
+#chatInput::-webkit-scrollbar-track,
+#selectedFiles::-webkit-scrollbar-track,
+.file-item span::-webkit-scrollbar-track,
+.pdf-tabs::-webkit-scrollbar-track,
+.tab-content::-webkit-scrollbar-track {
+    display: none;
+}
+
+.container::-webkit-scrollbar-thumb,
+.pdf-viewer::-webkit-scrollbar-thumb,
+.pdf-files::-webkit-scrollbar-thumb,
+#chatInput::-webkit-scrollbar-thumb,
+#selectedFiles::-webkit-scrollbar-thumb,
+.file-item span::-webkit-scrollbar-thumb,
+.pdf-tabs::-webkit-scrollbar-thumb,
+.tab-content::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 12px;
+    border: none;
+}
+
+.container::-webkit-scrollbar-thumb:hover,
+.pdf-viewer::-webkit-scrollbar-thumb:hover,
+.pdf-files::-webkit-scrollbar-thumb:hover,
+#chatInput::-webkit-scrollbar-thumb:hover,
+#selectedFiles::-webkit-scrollbar-thumb:hover,
+.file-item span::-webkit-scrollbar-thumb:hover,
+.pdf-tabs::-webkit-scrollbar-thumb:hover,
+.tab-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+/* Send button styling */
+#sendMessage {
+    padding: 0.75rem;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#sendMessage:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
 }

@@ -123,7 +123,6 @@
 
 .note-item:hover {
     background: var(--hover-bg);
-    border-color: var(--accent-primary);
 }
 
 .note-title {
@@ -330,40 +329,6 @@
     border-color: var(--accent-primary);
 }
 
-/* Scrollbar styling for chat input when visible */
-#chatInput::-webkit-scrollbar {
-    width: 8px;
-}
-
-#chatInput::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-#chatInput::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    border: 2px solid var(--bg-tertiary);
-}
-
-#chatInput::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-#sendMessage {
-    padding: 0.75rem;
-    background: var(--accent-primary);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-#sendMessage:hover {
-    background: var(--accent-secondary);
-    transform: translateY(-1px);
-}
-
 /* PDF Controls */
 .pdf-controls {
     position: absolute;
@@ -418,19 +383,19 @@
 
 .sidebar .dropdown-menu {
     left: 0;
-    transform: translateX(-11%);
-    top: calc(100% + 0.5rem);
+    transform: translateX(-10%);
+    top: calc(100% + 1rem);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-10px) translateX(-11%);
-    transition: all 0.3s ease;
+    transform: translateY(-10px) translateX(-5%);
+    transition: all 0.2s ease;
 }
 
 .sidebar .dropdown:hover .dropdown-menu,
 .sidebar .dropdown:focus-within .dropdown-menu {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0) translateX(-11%);
+    transform: translateY(0) translateX(-5%);
 }
 
 /* Add a small triangle pointer to the dropdown */
@@ -438,7 +403,7 @@
     content: '';
     position: absolute;
     top: -5px;
-    left: 20%;
+    left: 15%;
     transform: translateX(-50%) rotate(45deg);
     width: 10px;
     height: 10px;
@@ -496,90 +461,190 @@
     font-size: 0.8rem;
 }
 
-/* Scrollbar styling for PDF files bar */
-.pdf-files::-webkit-scrollbar {
-    height: 6px;
-}
-
-.pdf-files::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.pdf-files::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
-}
-
-.pdf-files::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* Global scrollbar styling */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(128, 128, 128, 0.2) transparent;
-}
-
-*::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.3);
-    border: 2px solid transparent;
-    background-clip: padding-box;
-}
-
-*::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-/* Hide scrollbar buttons */
-*::-webkit-scrollbar-button {
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
 }
 
-/* Remove any existing scrollbar overrides */
-.pdf-viewer::-webkit-scrollbar,
-.pdf-files::-webkit-scrollbar,
-.chat-messages::-webkit-scrollbar,
-#chatInput::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+.modal-overlay.active {
+    display: flex;
 }
 
-.pdf-viewer::-webkit-scrollbar-track,
-.pdf-files::-webkit-scrollbar-track,
-.chat-messages::-webkit-scrollbar-track,
-#chatInput::-webkit-scrollbar-track {
-    background: transparent;
+.modal-window {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    animation: modalSlideIn 0.3s ease;
 }
 
-.pdf-viewer::-webkit-scrollbar-thumb,
-.pdf-files::-webkit-scrollbar-thumb,
-.chat-messages::-webkit-scrollbar-thumb,
-#chatInput::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
-.pdf-viewer::-webkit-scrollbar-thumb:hover,
-.pdf-files::-webkit-scrollbar-thumb:hover,
-.chat-messages::-webkit-scrollbar-thumb:hover,
-#chatInput::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.3);
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-section {
+    margin-bottom: 1.5rem;
+}
+
+.modal-section:last-child {
+    margin-bottom: 0;
+}
+
+.modal-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.settings-item-label {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.settings-item-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.form-input {
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.modal-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.modal-btn-secondary:hover {
+    background: var(--hover-bg);
+}
+
+.modal-btn-primary {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+}
+
+.modal-btn-primary:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
 } 
