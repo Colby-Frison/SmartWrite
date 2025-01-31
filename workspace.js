@@ -1,3 +1,49 @@
+// Modal Functions
+window.openModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+window.saveSettings = function() {
+    const themeToggle = document.getElementById('themeToggle');
+    const defaultZoom = document.getElementById('defaultZoom');
+    
+    // Save settings to localStorage
+    localStorage.setItem('darkMode', themeToggle.checked);
+    localStorage.setItem('defaultZoom', defaultZoom.value);
+    
+    // Apply settings
+    document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+    // Update zoom level if a PDF is open
+    if (currentPDF) {
+        setZoomLevel(parseFloat(defaultZoom.value));
+    }
+    
+    closeModal('settingsModal');
+}
+
+window.saveProfile = function() {
+    const displayName = document.getElementById('displayName').value;
+    const email = document.getElementById('email').value;
+    const bio = document.getElementById('bio').value;
+    
+    // Save profile data to localStorage
+    localStorage.setItem('userProfile', JSON.stringify({
+        displayName,
+        email,
+        bio
+    }));
+    
+    closeModal('profileModal');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
@@ -317,20 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentResizer = null;
     });
 
-    // Modal Functions
-    function openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    // Close modal when clicking outside
+    // Initialize modal event listeners
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -339,80 +372,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Settings functions
-    function saveSettings() {
-        const themeToggle = document.getElementById('themeToggle');
-        const defaultZoom = document.getElementById('defaultZoom');
-        
-        // Save settings to localStorage
-        localStorage.setItem('darkMode', themeToggle.checked);
-        localStorage.setItem('defaultZoom', defaultZoom.value);
-        
-        // Apply settings
-        document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
-        // Update zoom level if a PDF is open
-        if (currentPDF) {
-            setZoomLevel(parseFloat(defaultZoom.value));
-        }
-        
-        closeModal('settingsModal');
-    }
-
-    // Profile functions
-    function saveProfile() {
-        const displayName = document.getElementById('displayName').value;
-        const email = document.getElementById('email').value;
-        const bio = document.getElementById('bio').value;
-        
-        // Save profile data to localStorage
-        localStorage.setItem('userProfile', JSON.stringify({
-            displayName,
-            email,
-            bio
-        }));
-        
-        closeModal('profileModal');
-    }
-
-    // Load saved settings and profile on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        // Load settings
-        const savedTheme = localStorage.getItem('darkMode');
-        const savedZoom = localStorage.getItem('defaultZoom');
-        
-        if (savedTheme !== null) {
-            document.getElementById('themeToggle').checked = savedTheme === 'true';
-        }
-        if (savedZoom) {
-            document.getElementById('defaultZoom').value = savedZoom;
-        }
-        
-        // Load profile
-        const savedProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        if (savedProfile) {
-            document.getElementById('displayName').value = savedProfile.displayName || '';
-            document.getElementById('email').value = savedProfile.email || '';
-            document.getElementById('bio').value = savedProfile.bio || '';
-        }
+    // Handle modal triggers
+    document.querySelectorAll('.dropdown-item[data-modal]').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const modalId = item.getAttribute('data-modal');
+            openModal(modalId);
+        });
     });
 
-    // Update dropdown menu click handlers
-    document.addEventListener('DOMContentLoaded', () => {
-        const settingsLink = document.querySelector('.dropdown-item[href="settings.html"]');
-        const profileLink = document.querySelector('.dropdown-item[href="profile.html"]');
-        
-        if (settingsLink) {
-            settingsLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal('settingsModal');
-            });
-        }
-        
-        if (profileLink) {
-            profileLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal('profileModal');
-            });
-        }
-    });
+    // Load saved settings and profile
+    const savedTheme = localStorage.getItem('darkMode');
+    const savedZoom = localStorage.getItem('defaultZoom');
+    
+    if (savedTheme !== null) {
+        document.getElementById('themeToggle').checked = savedTheme === 'true';
+    }
+    if (savedZoom) {
+        document.getElementById('defaultZoom').value = savedZoom;
+    }
+    
+    // Load profile
+    const savedProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (savedProfile) {
+        document.getElementById('displayName').value = savedProfile.displayName || '';
+        document.getElementById('email').value = savedProfile.email || '';
+        document.getElementById('bio').value = savedProfile.bio || '';
+    }
 }); 
