@@ -647,4 +647,25 @@
 .modal-btn-primary:hover {
     background: var(--accent-secondary);
     transform: translateY(-1px);
+}
+
+.settings-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+.settings-button:hover {
+    color: var(--text-primary);
+    background: var(--hover-bg);
 } 

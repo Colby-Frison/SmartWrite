@@ -14,26 +14,9 @@
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="dropdown">
-                <button class="dropdown-trigger">
-                    <i class="fas fa-user"></i>
-                </button>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" data-modal="profileModal">
-                        <i class="fas fa-user"></i>
-                        Profile
-                    </a>
-                    <a class="dropdown-item" data-modal="settingsModal">
-                        <i class="fas fa-cog"></i>
-                        Settings
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="index.html">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Sign Out
-                    </a>
-                </div>
-            </div>
+            <button class="settings-button" onclick="openModal('settingsModal')">
+                <i class="fas fa-cog"></i>
+            </button>
             <button id="toggleSidebar" class="toggle-sidebar">
                 <i class="fas fa-chevron-left"></i>
             </button>
@@ -146,40 +129,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="modal-btn modal-btn-secondary" onclick="closeModal('settingsModal')">Cancel</button>
-            <button class="modal-btn modal-btn-primary" onclick="saveSettings()">Save Changes</button>
-        </div>
-    </div>
-
-    <!-- Profile Modal -->
-    <div id="profileModal" class="modal-overlay">
-        <div class="modal-window">
-            <div class="modal-header">
-                <h2 class="modal-title">Edit Profile</h2>
-                <button class="modal-close" onclick="closeModal('profileModal')"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <form class="profile-form" id="profileForm">
-                    <div class="form-group">
-                        <label class="form-label" for="displayName">Display Name</label>
-                        <input type="text" id="displayName" class="form-input" placeholder="Enter your display name">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="email">Email</label>
-                        <input type="email" id="email" class="form-input" placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="bio">Bio</label>
-                        <textarea id="bio" class="form-input" rows="3" placeholder="Tell us about yourself"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" onclick="closeModal('profileModal')">Cancel</button>
-                <button class="modal-btn modal-btn-primary" onclick="saveProfile()">Save Changes</button>
             </div>
         </div>
     </div>
