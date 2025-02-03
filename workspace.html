@@ -11,6 +11,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 </head>
 <body class="workspace">
+    <!-- Window Controls -->
+    <div class="window-controls">
+        <button class="window-control minimize" onclick="window.electronAPI.minimizeWindow()">
+            <i class="fas fa-minus"></i>
+        </button>
+        <button class="window-control maximize" onclick="window.electronAPI.maximizeWindow()">
+            <i class="fas fa-square"></i>
+        </button>
+        <button class="window-control close" onclick="window.electronAPI.closeWindow()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
