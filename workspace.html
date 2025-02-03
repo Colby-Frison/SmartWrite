@@ -96,36 +96,145 @@
                 <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div class="modal-section">
-                    <h3 class="modal-section-title">Appearance</h3>
-                    <div class="settings-group">
-                        <div class="settings-item">
-                            <div>
-                                <div class="settings-item-label">Dark Mode</div>
-                                <div class="settings-item-description">Toggle dark/light theme</div>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="themeToggle">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
+                <div class="settings-wrapper">
+                    <div class="settings-sidebar">
+                        <ul>
+                            <li data-setting="appearance" class="active">
+                                <i class="fas fa-palette"></i>
+                                Appearance
+                            </li>
+                            <li data-setting="editor">
+                                <i class="fas fa-edit"></i>
+                                Editor
+                            </li>
+                            <li data-setting="pdf-viewer">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF Viewer
+                            </li>
+                            <li data-setting="hotkeys">
+                                <i class="fas fa-keyboard"></i>
+                                Hotkeys
+                            </li>
+                            <li data-setting="about">
+                                <i class="fas fa-info-circle"></i>
+                                About
+                            </li>
+                        </ul>
                     </div>
-                </div>
-                <div class="modal-section">
-                    <h3 class="modal-section-title">PDF Viewer</h3>
-                    <div class="settings-group">
-                        <div class="settings-item">
-                            <div>
-                                <div class="settings-item-label">Default Zoom Level</div>
-                                <div class="settings-item-description">Set the default zoom level for PDFs</div>
+                    <div class="settings-content">
+                        <!-- Appearance Panel -->
+                        <div id="appearance-panel" class="settings-panel">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Theme</div>
+                                    <div class="settings-item-description">Choose between light and dark theme</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="themeToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
-                            <select class="settings-select" id="defaultZoom">
-                                <option value="0.5">50%</option>
-                                <option value="0.75">75%</option>
-                                <option value="1" selected>100%</option>
-                                <option value="1.25">125%</option>
-                                <option value="1.5">150%</option>
-                            </select>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Font Size</div>
+                                    <div class="settings-item-description">Adjust the base font size for the application</div>
+                                </div>
+                                <select class="settings-select" id="fontSize">
+                                    <option value="12">12px</option>
+                                    <option value="14" selected>14px</option>
+                                    <option value="16">16px</option>
+                                    <option value="18">18px</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Editor Panel -->
+                        <div id="editor-panel" class="settings-panel" style="display: none;">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Auto Save</div>
+                                    <div class="settings-item-description">Automatically save changes as you type</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="autoSave" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Spell Check</div>
+                                    <div class="settings-item-description">Enable spell checking in the editor</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="spellCheck">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- PDF Viewer Panel -->
+                        <div id="pdf-viewer-panel" class="settings-panel" style="display: none;">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Default Zoom Level</div>
+                                    <div class="settings-item-description">Set the default zoom level for PDFs</div>
+                                </div>
+                                <select class="settings-select" id="defaultZoom">
+                                    <option value="0.5">50%</option>
+                                    <option value="0.75">75%</option>
+                                    <option value="1" selected>100%</option>
+                                    <option value="1.25">125%</option>
+                                    <option value="1.5">150%</option>
+                                </select>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Smooth Scrolling</div>
+                                    <div class="settings-item-description">Enable smooth scrolling in PDF viewer</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="smoothScroll" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Hotkeys Panel -->
+                        <div id="hotkeys-panel" class="settings-panel" style="display: none;">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Toggle Sidebar</div>
+                                    <div class="settings-item-description">Ctrl/Cmd + B</div>
+                                </div>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Switch PDF</div>
+                                    <div class="settings-item-description">Ctrl/Cmd + Left/Right Arrow</div>
+                                </div>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Zoom In/Out</div>
+                                    <div class="settings-item-description">Ctrl/Cmd + +/- or scroll with Ctrl</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- About Panel -->
+                        <div id="about-panel" class="settings-panel" style="display: none;">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Version</div>
+                                    <div class="settings-item-description">1.0.0</div>
+                                </div>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Created By</div>
+                                    <div class="settings-item-description">Your Team Name</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -399,4 +399,202 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('email').value = savedProfile.email || '';
         document.getElementById('bio').value = savedProfile.bio || '';
     }
+
+    // Initialize settings from localStorage
+    initializeSettings();
+    
+    // Handle settings sidebar navigation
+    const sidebarItems = document.querySelectorAll('.settings-sidebar li');
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Remove active class from all items
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            // Hide all panels
+            document.querySelectorAll('.settings-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            
+            // Show selected panel
+            const panelId = this.getAttribute('data-setting') + '-panel';
+            const selectedPanel = document.getElementById(panelId);
+            if (selectedPanel) {
+                selectedPanel.style.display = 'block';
+            }
+        });
+    });
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        });
+    }
+
+    // PDF zoom functionality
+    const zoomSelect = document.getElementById('defaultZoom');
+    if (zoomSelect) {
+        zoomSelect.addEventListener('change', function() {
+            const zoomLevel = parseFloat(this.value);
+            localStorage.setItem('defaultZoom', zoomLevel);
+            // If there's a PDF open, update its zoom
+            if (typeof currentPDF !== 'undefined' && currentPDF) {
+                setZoomLevel(zoomLevel);
+            }
+        });
+    }
+});
+
+// Settings functionality
+function initializeSettings() {
+    // Theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.checked = savedTheme === 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+
+    // Font Size
+    const savedFontSize = localStorage.getItem('fontSize') || '14';
+    const fontSelect = document.getElementById('fontSize');
+    if (fontSelect) {
+        fontSelect.value = savedFontSize;
+        document.documentElement.style.fontSize = savedFontSize + 'px';
+    }
+
+    // Auto Save
+    const savedAutoSave = localStorage.getItem('autoSave') !== 'false';
+    const autoSaveToggle = document.getElementById('autoSave');
+    if (autoSaveToggle) {
+        autoSaveToggle.checked = savedAutoSave;
+    }
+
+    // Spell Check
+    const savedSpellCheck = localStorage.getItem('spellCheck') === 'true';
+    const spellCheckToggle = document.getElementById('spellCheck');
+    if (spellCheckToggle) {
+        spellCheckToggle.checked = savedSpellCheck;
+    }
+
+    // PDF Zoom
+    const savedZoom = localStorage.getItem('defaultZoom') || '1';
+    const zoomSelect = document.getElementById('defaultZoom');
+    if (zoomSelect) {
+        zoomSelect.value = savedZoom;
+    }
+
+    // Smooth Scroll
+    const savedSmoothScroll = localStorage.getItem('smoothScroll') !== 'false';
+    const smoothScrollToggle = document.getElementById('smoothScroll');
+    if (smoothScrollToggle) {
+        smoothScrollToggle.checked = savedSmoothScroll;
+        const pdfViewer = document.getElementById('pdfViewer');
+        if (pdfViewer) {
+            pdfViewer.style.scrollBehavior = savedSmoothScroll ? 'smooth' : 'auto';
+        }
+    }
+
+    // Show the first panel by default
+    const firstPanel = document.querySelector('.settings-panel');
+    if (firstPanel) {
+        firstPanel.style.display = 'block';
+    }
+}
+
+// Settings event handlers
+function setupSettingsHandlers() {
+    // Tab switching
+    const sidebarItems = document.querySelectorAll('.settings-sidebar li');
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Update active tab
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+
+            // Show corresponding panel
+            const panels = document.querySelectorAll('.settings-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+            
+            const targetPanel = document.getElementById(this.getAttribute('data-setting') + '-panel');
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        });
+    });
+
+    // Theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        });
+    }
+
+    // Font size
+    const fontSelect = document.getElementById('fontSize');
+    if (fontSelect) {
+        fontSelect.addEventListener('change', function() {
+            document.documentElement.style.fontSize = this.value + 'px';
+            localStorage.setItem('fontSize', this.value);
+        });
+    }
+
+    // Auto save
+    const autoSaveToggle = document.getElementById('autoSave');
+    if (autoSaveToggle) {
+        autoSaveToggle.addEventListener('change', function() {
+            localStorage.setItem('autoSave', this.checked);
+        });
+    }
+
+    // Spell check
+    const spellCheckToggle = document.getElementById('spellCheck');
+    if (spellCheckToggle) {
+        spellCheckToggle.addEventListener('change', function() {
+            localStorage.setItem('spellCheck', this.checked);
+            const textInputs = document.querySelectorAll('textarea, [contenteditable="true"]');
+            textInputs.forEach(input => {
+                input.spellcheck = this.checked;
+            });
+        });
+    }
+
+    // PDF zoom
+    const zoomSelect = document.getElementById('defaultZoom');
+    if (zoomSelect) {
+        zoomSelect.addEventListener('change', function() {
+            localStorage.setItem('defaultZoom', this.value);
+            if (typeof currentPDF !== 'undefined' && currentPDF) {
+                setZoomLevel(parseFloat(this.value));
+            }
+        });
+    }
+
+    // Smooth scroll
+    const smoothScrollToggle = document.getElementById('smoothScroll');
+    if (smoothScrollToggle) {
+        smoothScrollToggle.addEventListener('change', function() {
+            localStorage.setItem('smoothScroll', this.checked);
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (pdfViewer) {
+                pdfViewer.style.scrollBehavior = this.checked ? 'smooth' : 'auto';
+            }
+        });
+    }
+}
+
+// Initialize everything when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSettings();
+    setupSettingsHandlers();
+    
+    // Rest of your existing DOMContentLoaded code...
 }); 

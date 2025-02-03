@@ -668,4 +668,175 @@
 .settings-button:hover {
     color: var(--text-primary);
     background: var(--hover-bg);
+}
+
+/* Settings Modal Styles */
+.settings-wrapper {
+    display: flex;
+    height: 100%;
+    min-height: 400px;
+}
+
+.settings-sidebar {
+    width: 200px;
+    border-right: 1px solid var(--border-color);
+    padding: 1rem 0;
+    background: var(--bg-tertiary);
+}
+
+.settings-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.settings-sidebar li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.settings-sidebar li i {
+    width: 16px;
+    text-align: center;
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.settings-sidebar li:hover {
+    color: var(--text-primary);
+    background: var(--hover-bg);
+}
+
+.settings-sidebar li:hover i {
+    opacity: 1;
+}
+
+.settings-sidebar li.active {
+    color: var(--accent-primary);
+    background: var(--hover-bg);
+}
+
+.settings-sidebar li.active i {
+    opacity: 1;
+}
+
+.settings-content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.settings-panel {
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+    display: none;
+}
+
+.settings-panel[style*="display: block"] {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: var(--bg-tertiary);
+}
+
+.settings-item:hover {
+    background: var(--hover-bg);
+}
+
+.settings-item-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.settings-item-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.settings-select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    min-width: 120px;
+    cursor: pointer;
+}
+
+.settings-select:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+}
+
+.settings-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Modal adjustments for settings */
+.modal-window {
+    width: 800px;
+    max-width: 90vw;
+    height: 80vh;
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Hotkeys panel specific styles */
+#hotkeys-panel .settings-item {
+    cursor: default;
+}
+
+#hotkeys-panel .settings-item:hover {
+    background: var(--bg-tertiary);
+}
+
+#hotkeys-panel .settings-item-description {
+    color: var(--accent-primary);
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+/* About panel specific styles */
+#about-panel .settings-item {
+    cursor: default;
+}
+
+#about-panel .settings-item:hover {
+    background: var(--bg-tertiary);
+}
+
+#about-panel .settings-item-description {
+    color: var(--text-primary);
 } 
