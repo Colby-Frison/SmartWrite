@@ -2,65 +2,103 @@
 .workspace {
     display: flex;
     height: 100vh;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
     background: var(--bg-primary);
 }
 
 /* Sidebar Styles */
 .sidebar {
-    min-width: 187.5px;
     width: 300px;
-    max-width: 500px;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-color);
+    background: #252526;
+    border-right: 1px solid #3c3c3c;
     display: flex;
     flex-direction: column;
     position: relative;
+    transition: width 0.3s ease;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
-.sidebar::after {
-    content: '';
-    position: absolute;
-    right: -3px;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    cursor: ew-resize;
-    background: transparent;
+/* Hover tab styles */
+.sidebar-hover-tab {
+    position: fixed;
+    left: 300px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    opacity: 1;
+    transition: left 0.3s ease, opacity 0.2s ease;
+    z-index: 1000;
 }
 
+.sidebar.collapsed .sidebar-hover-tab {
+    left: 0;
+}
+
+.sidebar-toggle {
+    width: 20px;
+    height: 60px;
+    background: #2d2d2d;
+    border: 1px solid #3c3c3c;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    color: #cccccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    background: #3d3d3d;
+    color: #ffffff;
+}
+
+.sidebar-toggle i {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+/* Collapsed state */
 .sidebar.collapsed {
     width: 0;
-    min-width: 0;
-    padding: 0;
     border-right: none;
-    resize: none;
-    flex-basis: 0;
-    flex-grow: 0;
-    flex-shrink: 0;
 }
 
-.sidebar.collapsed * {
-    visibility: hidden;
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
 }
 
-.sidebar-toggle-collapsed {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1000;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 0.5rem;
-    cursor: pointer;
-    display: none;
-    color: var(--text-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+/* Main content */
+.main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background: var(--bg-primary);
+    position: relative;
+    z-index: 1;
 }
 
-.sidebar.collapsed + .main-content .sidebar-toggle-collapsed {
-    display: block;
+/* Remove old toggle buttons */
+.sidebar-toggle-collapsed,
+.toggle-sidebar,
+.sidebar-toggle-button,
+.sidebar-edge-toggle,
+.sidebar-toggle-area {
+    display: none !important;
+}
+
+/* Ensure content is visible in sidebar */
+.sidebar.collapsed .sidebar-header,
+.sidebar.collapsed .notes-list,
+.sidebar.collapsed .sidebar-footer {
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .sidebar-header {
@@ -68,8 +106,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    min-height: 60px;
+    border-bottom: 1px solid #3c3c3c;
 }
 
 .sidebar-header .dropdown-trigger {
@@ -88,23 +125,6 @@
     background: var(--hover-bg);
 }
 
-.toggle-sidebar {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.toggle-sidebar:hover {
-    color: var(--text-primary);
-}
-
-.sidebar.collapsed .toggle-sidebar i {
-    transform: rotate(180deg);
-}
-
 .notes-list {
     flex: 1;
     overflow-y: auto;
@@ -113,16 +133,16 @@
 
 .note-item {
     padding: 1rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid #3c3c3c;
     border-radius: 8px;
     margin-bottom: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--bg-tertiary);
+    transition: background-color 0.2s ease;
+    background: #2d2d2d;
 }
 
 .note-item:hover {
-    background: var(--hover-bg);
+    background: #3d3d3d;
 }
 
 .note-title {
@@ -149,7 +169,7 @@
 
 .sidebar-footer {
     padding: 1rem;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid #3c3c3c;
 }
 
 .new-note-btn {
@@ -164,36 +184,22 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease;
 }
 
 .new-note-btn:hover {
     background: var(--accent-secondary);
-    transform: translateY(-1px);
-}
-
-/* Main Content Area */
-.main-content {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
 }
 
 /* PDF Section */
 .pdf-section {
     flex: 1;
-    min-width: calc(328px + 20px); /* Base min-width + some padding */
-    width: calc(100% - 700px); /* Full width minus sidebar (300px) and chat (400px) */
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
     position: relative;
     overflow: hidden;
-}
-
-.sidebar.collapsed ~ .main-content .pdf-section {
-    width: calc(100% - 400px); /* Full width minus only chat section when sidebar is collapsed */
-    min-width: 328px;
+    z-index: 2;
 }
 
 .pdf-viewer {
@@ -207,6 +213,7 @@
     justify-content: flex-start;
     align-items: flex-start;
     padding: 1rem;
+    scroll-behavior: smooth;
 }
 
 .pdfViewerCanvas {
@@ -218,6 +225,7 @@
     min-width: min-content;
     width: fit-content;
     margin: 0 auto;
+    padding: 0 0%;
 }
 
 .pdf-page-container {
@@ -226,6 +234,10 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 0px;
     width: 680px;
+    position: relative;
+    left: 0;
+    transition: left 0.3s ease;
+    margin: 0 auto;
 }
 
 .pdf-page-container canvas {
@@ -234,16 +246,30 @@
     display: block;
 }
 
+/* Custom scrollbar styling */
+.pdf-viewer::-webkit-scrollbar {
+    height: 12px;
+    background: var(--bg-secondary);
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 6px;
+    border: 2px solid var(--bg-secondary);
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.7);
+}
+
 /* Chat Section */
 .chat-section {
-    min-width: 187.5px;
     width: 400px;
-    max-width: 800px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-color);
-    position: relative;
 }
 
 .chat-section::before {
@@ -652,22 +678,14 @@
 .settings-button {
     background: none;
     border: none;
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    padding: 0.5rem;
+    color: #cccccc;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
+    padding: 0.5rem;
+    transition: color 0.2s ease;
 }
 
 .settings-button:hover {
-    color: var(--text-primary);
-    background: var(--hover-bg);
+    color: #ffffff;
 }
 
 /* Settings Modal Styles */
@@ -852,33 +870,30 @@
 }
 
 .window-control {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     width: 46px;
     height: 32px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
+    color: #ffffff80;
+    font-size: 10px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s, color 0.2s;
+    padding: 0;
+    margin: 0;
+    -webkit-app-region: no-drag;
 }
 
 .window-control:hover {
-    background: var(--hover-bg);
-}
-
-.window-control.minimize:hover {
-    color: var(--text-primary);
-}
-
-.window-control.maximize:hover {
-    color: var(--text-primary);
+    background: #ffffff20;
+    color: #fff;
 }
 
 .window-control.close:hover {
     background: #e81123;
-    color: white;
+    color: #fff;
 }
 
 /* Make the top bar draggable */
@@ -889,4 +904,128 @@
 /* Prevent dragging on interactive elements */
 .nav-links, .nav-menu, .nav-icons, .dropdown {
     -webkit-app-region: no-drag;
+}
+
+/* Title bar styles - Only visible in Electron */
+#titlebar {
+    display: none;
+    height: 32px;
+    background: #1e1e1e;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    color: #fff;
+    border-bottom: 1px solid #333;
+}
+
+.electron-only #titlebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titlebar-drag-region {
+    flex-grow: 1;
+    -webkit-app-region: drag;
+    height: 32px;
+    display: flex;
+    align-items: center;
+}
+
+.window-title {
+    margin-left: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ffffff80;
+}
+
+.window-controls-container {
+    display: flex;
+    height: 32px;
+    -webkit-app-region: no-drag;
+}
+
+/* Electron-specific adjustments */
+.electron-only.workspace {
+    padding-top: 32px;
+}
+
+/* Main panel */
+.main-panel {
+    flex-grow: 1;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    position: relative;
+}
+
+.electron-only .main-panel {
+    height: calc(100vh - 32px);
+}
+
+/* Ensure other elements respect the titlebar */
+.electron-only .navbar {
+    top: 32px;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #252526;
+}
+
+.sidebar-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: #cccccc;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-item:hover {
+    background-color: #2a2d2e;
+}
+
+.sidebar-item.active {
+    background-color: #37373d;
+    color: #ffffff;
+}
+
+.sidebar-item i {
+    margin-right: 8px;
+    color: #858585;
+}
+
+.sidebar-item.active i {
+    color: #ffffff;
+}
+
+.sidebar-item-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Scrollbar styles for sidebar */
+.sidebar-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: #252526;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
 } 

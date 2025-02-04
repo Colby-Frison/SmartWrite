@@ -11,26 +11,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 </head>
 <body class="workspace">
-    <!-- Window Controls -->
-    <div class="window-controls">
-        <button class="window-control minimize" onclick="window.electronAPI.minimizeWindow()">
-            <i class="fas fa-minus"></i>
-        </button>
-        <button class="window-control maximize" onclick="window.electronAPI.maximizeWindow()">
-            <i class="fas fa-square"></i>
-        </button>
-        <button class="window-control close" onclick="window.electronAPI.closeWindow()">
-            <i class="fas fa-times"></i>
-        </button>
+    <div id="titlebar" class="electron-only">
+        <div class="titlebar-drag-region">
+            <div class="window-title">SmartWrite</div>
+        </div>
+        <div class="window-controls-container">
+            <button class="window-control minimize" onclick="window.electronAPI.minimizeWindow()">&#8722;</button>
+            <button class="window-control maximize" onclick="window.electronAPI.maximizeWindow()">&#9633;</button>
+            <button class="window-control close" onclick="window.electronAPI.closeWindow()">&#10005;</button>
+        </div>
     </div>
+    <button class="sidebar-toggle-button">
+        <i class="fas fa-chevron-right"></i>
+    </button>
     <!-- Collapsible Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="settings-button" onclick="openModal('settingsModal')">
                 <i class="fas fa-cog"></i>
-            </button>
-            <button id="toggleSidebar" class="toggle-sidebar">
-                <i class="fas fa-chevron-left"></i>
             </button>
         </div>
         <div class="notes-list">
@@ -45,6 +43,11 @@
             <button class="new-note-btn">
                 <i class="fas fa-plus"></i>
                 New Note
+            </button>
+        </div>
+        <div class="sidebar-hover-tab">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
             </button>
         </div>
     </div>

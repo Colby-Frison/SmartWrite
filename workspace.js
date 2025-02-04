@@ -47,16 +47,31 @@ window.saveProfile = function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const reopenSidebar = document.getElementById('reopenSidebar');
+    const toggle = document.querySelector('.sidebar-toggle');
+    const mainContent = document.querySelector('.main-content');
+    const pdfSection = document.querySelector('.pdf-section');
     
-    toggleSidebar.addEventListener('click', () => {
-        sidebar.classList.add('collapsed');
-    });
-
-    reopenSidebar.addEventListener('click', () => {
-        sidebar.classList.remove('collapsed');
-    });
+    if (toggle && sidebar) {
+        toggle.onclick = (e) => {
+            e.preventDefault();
+            sidebar.classList.toggle('collapsed');
+            
+            // Force layout recalculation and center the PDF
+            if (pdfSection) {
+                pdfSection.style.width = sidebar.classList.contains('collapsed') 
+                    ? 'calc(100% - 400px)' // Collapsed - only account for chat section
+                    : 'calc(100% - 700px)'; // Expanded - account for sidebar and chat
+                
+                // Center the PDF viewer horizontally after width change
+                setTimeout(() => {
+                    const pdfViewer = document.querySelector('.pdf-viewer');
+                    if (pdfViewer) {
+                        pdfViewer.scrollLeft = (pdfViewer.scrollWidth - pdfViewer.clientWidth) / 2;
+                    }
+                }, 50); // Small delay to ensure width transition is complete
+            }
+        };
+    }
 
     // Chat Input Auto-resize
     const chatInput = document.getElementById('chatInput');
@@ -126,171 +141,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // PDF Zoom Controls
-    const zoomIn = document.getElementById('zoomIn');
-    const zoomOut = document.getElementById('zoomOut');
-    const zoomLevel = document.getElementById('zoomLevel');
-    const zoomControl = document.querySelector('.zoom-control');
-    let currentScale = 1.0;
-    const ZOOM_STEP = 0.25;
-    const WHEEL_ZOOM_STEP = 0.1; // Smaller step for smoother wheel zooming
-    const MIN_ZOOM = 0.5;
-    const MAX_ZOOM = 3;
-    const BASE_WIDTH = 680;
-
-    function updateZoom() {
-        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
-        const containers = document.querySelectorAll('.pdf-page-container');
-        containers.forEach(container => {
-            container.style.width = `${BASE_WIDTH * currentScale}px`;
-        });
-    }
-
-    // Mouse wheel zoom
-    zoomControl.addEventListener('wheel', (e) => {
-        e.preventDefault(); // Prevent page scroll
-        
-        if (e.deltaY < 0) { // Scroll up = zoom in
-            if (currentScale < MAX_ZOOM) {
-                currentScale = Math.min(currentScale + WHEEL_ZOOM_STEP, MAX_ZOOM);
-                updateZoom();
-            }
-        } else { // Scroll down = zoom out
-            if (currentScale > MIN_ZOOM) {
-                currentScale = Math.max(currentScale - WHEEL_ZOOM_STEP, MIN_ZOOM);
-                updateZoom();
-            }
+    // PDF functionality
+    const viewer = document.getElementById('pdfViewer');
+    
+    // Initialize PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    // Load saved PDFs
+    const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+    if (savedPDFs.length > 0 && viewer) {
+        const pdfData = savedPDFs[0];
+        const byteCharacters = atob(pdfData.data.split(',')[1]);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteArray[i] = byteCharacters.charCodeAt(i);
         }
-    });
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
 
-    // Existing button zoom controls
-    zoomIn.addEventListener('click', () => {
-        if (currentScale < MAX_ZOOM) {
-            currentScale = Math.min(currentScale + ZOOM_STEP, MAX_ZOOM);
-            updateZoom();
-        }
-    });
-
-    zoomOut.addEventListener('click', () => {
-        if (currentScale > MIN_ZOOM) {
-            currentScale = Math.max(currentScale - ZOOM_STEP, MIN_ZOOM);
-            updateZoom();
-        }
-    });
-
-    // Load PDFs from localStorage
-    let pdfs = [];
-    let currentPdfIndex = 0;
-
-    function loadSavedPDFs() {
-        const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
-        if (savedPDFs.length > 0) {
-            pdfs = savedPDFs;
-            updatePdfFilesBar();
-            displayCurrentPDF();
-        }
-    }
-
-    function updatePdfFilesBar() {
-        const pdfFiles = document.getElementById('pdfFiles');
-        pdfFiles.innerHTML = '';
-        
-        pdfs.forEach((pdf, index) => {
-            const tab = document.createElement('div');
-            tab.className = `pdf-file-tab ${index === currentPdfIndex ? 'active' : ''}`;
-            
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-file-pdf';
-            
-            const name = document.createElement('span');
-            name.textContent = pdf.name;
-            
-            tab.appendChild(icon);
-            tab.appendChild(name);
-            
-            tab.addEventListener('click', () => {
-                if (currentPdfIndex !== index) {
-                    currentPdfIndex = index;
-                    updatePdfFilesBar(); // Update active state
-                    displayCurrentPDF();
-                }
-            });
-            
-            pdfFiles.appendChild(tab);
-        });
-
-        // Add horizontal scroll on wheel
-        pdfFiles.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const scrollSpeed = 50;
-            pdfFiles.scrollLeft += e.deltaY * (scrollSpeed / 100);
-        });
-    }
-
-    function base64ToFile(base64Data, filename) {
-        const byteString = atob(base64Data.split(',')[1]);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        
-        return new File([ab], filename, { type: 'application/pdf' });
-    }
-
-    function displayCurrentPDF() {
-        if (pdfs.length === 0 || currentPdfIndex >= pdfs.length) return;
-
-        const currentPDF = pdfs[currentPdfIndex];
-        const viewer = document.getElementById('pdfViewer');
-        const file = base64ToFile(currentPDF.data, currentPDF.name);
-        const fileUrl = URL.createObjectURL(file);
-
-        // Initialize PDF.js
-        pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
-            viewer.innerHTML = ''; // Clear previous PDF
+        pdfjsLib.getDocument(url).promise.then(pdf => {
+            viewer.innerHTML = '';
             const container = document.createElement('div');
             container.className = 'pdfViewerCanvas';
             viewer.appendChild(container);
             
-            // Create an array of promises for rendering all pages
-            const pagePromises = [];
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                pagePromises.push(
-                    pdf.getPage(pageNum).then(function(page) {
-                        const pageContainer = document.createElement('div');
-                        pageContainer.className = 'pdf-page-container';
-                        container.appendChild(pageContainer);
+            pdf.getPage(1).then(page => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: 1.0 });
+                const scale = 680 / viewport.width;
+                const scaledViewport = page.getViewport({ scale });
 
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        
-                        // Calculate scale to fit the base width
-                        const viewport = page.getViewport({ scale: 1.0 });
-                        const scale = BASE_WIDTH / viewport.width;
-                        const scaledViewport = page.getViewport({ scale: scale });
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
 
-                        canvas.height = scaledViewport.height;
-                        canvas.width = scaledViewport.width;
+                page.render({
+                    canvasContext: ctx,
+                    viewport: scaledViewport
+                });
 
-                        return page.render({
-                            canvasContext: context,
-                            viewport: scaledViewport
-                        }).promise.then(() => {
-                            pageContainer.appendChild(canvas);
-                        });
-                    })
-                );
-            }
-            
-            // Wait for all pages to be rendered
-            return Promise.all(pagePromises).then(() => {
-                updateZoom(); // Apply current zoom after rendering
+                container.appendChild(canvas);
             });
-        }).catch(error => {
-            console.error('Error rendering PDF:', error);
-        });
+        }).catch(console.error);
     }
 
     // Add keyboard shortcuts for switching PDFs
@@ -314,8 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    // Initialize
     loadSavedPDFs();
 
     // Resize functionality
@@ -447,6 +338,80 @@ document.addEventListener('DOMContentLoaded', function() {
                 setZoomLevel(zoomLevel);
             }
         });
+    }
+
+    // Sidebar toggle functionality
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    function toggleSidebar() {
+        if (!sidebar || !sidebarToggle) return;
+        
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        sidebar.classList.toggle('collapsed');
+        
+        // Update icon rotation
+        const icon = sidebarToggle.querySelector('i');
+        if (icon) {
+            icon.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        
+        // Save state
+        localStorage.setItem('sidebarCollapsed', !isCollapsed);
+    }
+
+    // Add click event listener
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
+
+    // Restore sidebar state on load
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        toggleSidebar();
+    }
+
+    // Center PDF viewer scroll position
+    const pdfViewer = document.querySelector('.pdf-viewer');
+    if (pdfViewer) {
+        pdfViewer.addEventListener('load', function() {
+            // Center the scroll position
+            setTimeout(() => {
+                const scrollWidth = pdfViewer.scrollWidth - pdfViewer.clientWidth;
+                pdfViewer.scrollLeft = scrollWidth / 2;
+            }, 100);
+        }, true);
+
+        // Also center when PDF is loaded
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    const scrollWidth = pdfViewer.scrollWidth - pdfViewer.clientWidth;
+                    pdfViewer.scrollLeft = scrollWidth / 2;
+                }
+            });
+        });
+
+        observer.observe(pdfViewer, { childList: true, subtree: true });
+    }
+
+    // Add this after PDF.js initialization
+    if (viewer) {
+        // Center the PDF viewer horizontally when it loads
+        const centerPdfViewer = () => {
+            viewer.scrollLeft = (viewer.scrollWidth - viewer.clientWidth) / 2;
+        };
+
+        // Center when PDF is loaded
+        viewer.addEventListener('load', centerPdfViewer);
+        
+        // Also center when window is resized
+        window.addEventListener('resize', centerPdfViewer);
+        
+        // Initial centering
+        setTimeout(centerPdfViewer, 100); // Small delay to ensure content is loaded
     }
 });
 

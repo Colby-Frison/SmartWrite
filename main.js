@@ -8,18 +8,30 @@ function createWindow() {
         height: 800,
         minWidth: 800,
         minHeight: 600,
+        frame: false,
+        backgroundColor: '#1e1e1e',
         webPreferences: {
-            nodeIntegration: true,
+            nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
         },
-        frame: false,
-        titleBarStyle: 'hidden',
-        backgroundColor: '#29272c'
+        show: false // Prevent white flash on load
     });
 
     // Load the index.html file
-    mainWindow.loadFile('index.html');
+    mainWindow.loadFile('workspace.html');
+
+    // Add electron-only class to body when app loads
+    mainWindow.webContents.on('did-finish-load', () => {
+        mainWindow.webContents.executeJavaScript(`
+            document.body.classList.add('electron-only');
+        `);
+    });
+
+    // Prevent flickering on load
+    mainWindow.on('ready-to-show', () => {
+        mainWindow.show();
+    });
 
     // Open DevTools in development
     if (process.env.NODE_ENV === 'development') {
