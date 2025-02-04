@@ -80,8 +80,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     chatInput.addEventListener('input', function() {
         if (this.value.trim()) {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
             this.style.overflowY = 'auto';
         } else {
             this.style.height = 'auto';
@@ -143,10 +143,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // PDF functionality
     const viewer = document.getElementById('pdfViewer');
+    let currentScale = 1.0;
+    let currentPDF = null;
     
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
+    // Add zoom controls
+    const zoomIn = document.getElementById('zoomIn');
+    const zoomOut = document.getElementById('zoomOut');
+    const zoomLevel = document.getElementById('zoomLevel');
+
+    function updateZoom(newScale) {
+        currentScale = newScale;
+        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+        
+        // Update all canvases with new width
+        document.querySelectorAll('.pdf-page-container canvas').forEach(canvas => {
+            const baseWidth = 680; // Base width
+            canvas.style.width = `${baseWidth * currentScale}px`;
+        });
+    }
+
+    // Add scroll-to-zoom on zoom level hover
+    if (zoomLevel) {
+        zoomLevel.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newScale = Math.max(0.25, Math.min(3.0, currentScale + delta));
+            updateZoom(newScale);
+        });
+    }
+
+    if (zoomIn) {
+        zoomIn.addEventListener('click', () => {
+            updateZoom(Math.min(currentScale + 0.25, 3.0));
+        });
+    }
+
+    if (zoomOut) {
+        zoomOut.addEventListener('click', () => {
+            updateZoom(Math.max(currentScale - 0.25, 0.25));
+        });
+    }
+
+    // Add mouse wheel zoom with Ctrl key
+    viewer.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const newScale = Math.max(0.25, Math.min(3.0, currentScale + delta));
+            updateZoom(newScale);
+        }
+    });
+
     // Load saved PDFs
     const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
     if (savedPDFs.length > 0 && viewer) {
@@ -160,28 +210,57 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = URL.createObjectURL(blob);
 
         pdfjsLib.getDocument(url).promise.then(pdf => {
+            currentPDF = pdf;
             viewer.innerHTML = '';
             const container = document.createElement('div');
             container.className = 'pdfViewerCanvas';
             viewer.appendChild(container);
             
-            pdf.getPage(1).then(page => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const viewport = page.getViewport({ scale: 1.0 });
-                const scale = 680 / viewport.width;
-                const scaledViewport = page.getViewport({ scale });
-
-                canvas.height = scaledViewport.height;
-                canvas.width = scaledViewport.width;
-
-                page.render({
-                    canvasContext: ctx,
-                    viewport: scaledViewport
-                });
-
-                container.appendChild(canvas);
-            });
+            // Load and render all pages
+            async function renderPages() {
+                try {
+                    // Get all pages
+                    const numPages = pdf.numPages;
+                    
+                    // Render each page
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const scale = 680 / viewport.width; // Base width / original width
+                        const scaledViewport = page.getViewport({ scale });
+                        
+                        // Create page container
+                        const pageContainer = document.createElement('div');
+                        pageContainer.className = 'pdf-page-container';
+                        container.appendChild(pageContainer);
+                        
+                        // Create canvas
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
+                        
+                        // Add canvas to page container
+                        pageContainer.appendChild(canvas);
+                        
+                        // Render the page
+                        await page.render({
+                            canvasContext: context,
+                            viewport: scaledViewport
+                        }).promise;
+                    }
+                    
+                    // Apply initial zoom if needed
+                    if (currentScale !== 1.0) {
+                        updateZoom(currentScale);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error rendering PDF pages:', error);
+                }
+            }
+            
+            renderPages();
         }).catch(console.error);
     }
 
@@ -229,6 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.clientX > rect.left - 5 && e.clientX < rect.left + 5) {
             isResizing = true;
             currentResizer = chatSection;
+            document.body.style.cursor = 'ew-resize';
+            e.preventDefault();
         }
     });
 
@@ -243,15 +324,29 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (currentResizer === chatSection) {
             const rect = chatSection.parentElement.getBoundingClientRect();
             const newWidth = rect.right - e.clientX;
-            if (newWidth >= 75 && newWidth <= 800) {
+            
+            // Apply constraints
+            if (newWidth >= 300 && newWidth <= 800) {
                 currentResizer.style.width = newWidth + 'px';
+                
+                // Save the width preference
+                localStorage.setItem('chatSectionWidth', newWidth);
+                
+                // Center the PDF viewer after resize
+                const pdfViewer = document.querySelector('.pdf-viewer');
+                if (pdfViewer) {
+                    pdfViewer.scrollLeft = (pdfViewer.scrollWidth - pdfViewer.clientWidth) / 2;
+                }
             }
         }
     });
 
     document.addEventListener('mouseup', function() {
+        if (isResizing) {
         isResizing = false;
         currentResizer = null;
+            document.body.style.cursor = '';
+        }
     });
 
     // Initialize modal event listeners
@@ -412,6 +507,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initial centering
         setTimeout(centerPdfViewer, 100); // Small delay to ensure content is loaded
+    }
+
+    // Restore chat section width from localStorage
+    const savedChatWidth = localStorage.getItem('chatSectionWidth');
+    if (savedChatWidth && chatSection) {
+        chatSection.style.width = `${savedChatWidth}px`;
     }
 });
 
