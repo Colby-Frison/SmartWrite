@@ -325,8 +325,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const rect = chatSection.parentElement.getBoundingClientRect();
             const newWidth = rect.right - e.clientX;
             
-            // Apply constraints
-            if (newWidth >= 300 && newWidth <= 800) {
+            // Apply constraints - updated minimum to 200px
+            if (newWidth >= 200 && newWidth <= 800) {
                 currentResizer.style.width = newWidth + 'px';
                 
                 // Save the width preference

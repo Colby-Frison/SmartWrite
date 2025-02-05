@@ -29,9 +29,25 @@
     transform: translateY(-50%);
     width: 20px;
     height: 60px;
-    opacity: 1;
+    opacity: 0;
     transition: left 0.3s ease, opacity 0.2s ease;
     z-index: 1000;
+}
+
+/* Add hover area */
+.sidebar-hover-tab::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    bottom: -20px;
+    left: 0;
+    right: -20px;
+    z-index: -1;
+}
+
+.sidebar:hover .sidebar-hover-tab,
+.sidebar-hover-tab:hover {
+    opacity: 1;
 }
 
 .sidebar.collapsed .sidebar-hover-tab {
@@ -52,6 +68,8 @@
     justify-content: center;
     padding: 0;
     transition: background-color 0.2s ease, color 0.2s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-toggle:hover {
@@ -273,9 +291,8 @@
 
 /* Chat Section */
 .chat-section {
-    width: 400px;
-    min-width: 300px;
-    max-width: 800px;
+    min-width: 200px;
+    max-width: 600px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -564,7 +581,6 @@
 
 .pdf-files {
     scrollbar-width: thin;
-    scrollbar-height: thin;
     scrollbar-color: var(--border-color) transparent;
 }
 
