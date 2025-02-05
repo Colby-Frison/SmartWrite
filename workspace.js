@@ -514,6 +514,37 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedChatWidth && chatSection) {
         chatSection.style.width = `${savedChatWidth}px`;
     }
+
+    // Initialize PDF tabs
+    loadSavedPDFs();
+    
+    // Add file input change handler for new PDFs
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type === 'application/pdf') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const pdfData = {
+                            name: file.name,
+                            data: e.target.result
+                        };
+                        // Add to saved PDFs
+                        const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+                        savedPDFs.push(pdfData);
+                        localStorage.setItem('savedPDFs', JSON.stringify(savedPDFs));
+                        
+                        // Add tab and load PDF
+                        addPdfTab(file.name, e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    }
 });
 
 // Settings functionality
@@ -663,4 +694,203 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSettingsHandlers();
     
     // Rest of your existing DOMContentLoaded code...
+});
+
+// PDF management
+let pdfs = [];
+let currentPdfIndex = -1;
+
+// Load saved PDFs function
+function loadSavedPDFs() {
+    const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+    
+    // Clear existing PDFs array and tabs
+    pdfs = [];
+    const pdfFiles = document.getElementById('pdfFiles');
+    if (pdfFiles) {
+        pdfFiles.innerHTML = '';
+    }
+    
+    // Add each saved PDF as a tab
+    savedPDFs.forEach((pdfData, index) => {
+        addPdfTab(pdfData.name || `PDF ${index + 1}`, pdfData.data);
+    });
+    
+    // Switch to first PDF if available
+    if (savedPDFs.length > 0) {
+        switchToPdf(0);
+    }
+}
+
+// Update PDF management functions
+function addPdfTab(name, data) {
+    const pdfFiles = document.getElementById('pdfFiles');
+    if (!pdfFiles) return null;
+    
+    const tab = document.createElement('div');
+    tab.className = 'pdf-file-tab';
+    tab.dataset.index = pdfs.length;
+    
+    const content = document.createElement('span');
+    content.className = 'tab-content';
+    content.textContent = name;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-close';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    
+    tab.appendChild(content);
+    tab.appendChild(closeBtn);
+    pdfFiles.appendChild(tab);
+    
+    // Store PDF data
+    pdfs.push({ name, data });
+    
+    // Event listeners
+    tab.addEventListener('click', (e) => {
+        if (e.target.closest('.tab-close')) return;
+        const index = parseInt(tab.dataset.index);
+        switchToPdf(index);
+    });
+    
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const index = parseInt(tab.dataset.index);
+        closePdf(index);
+    });
+    
+    // Switch to the new PDF if it's the first one
+    if (pdfs.length === 1) {
+        switchToPdf(0);
+    }
+    
+    return tab;
+}
+
+function closePdf(index) {
+    // Remove the PDF from the array
+    pdfs.splice(index, 1); // Fixed: Changed from splice(index, 0) to splice(index, 1)
+    
+    // Update localStorage
+    localStorage.setItem('savedPDFs', JSON.stringify(pdfs));
+    
+    // Remove the tab
+    const tabs = document.querySelectorAll('.pdf-file-tab');
+    tabs[index].remove();
+    
+    // Update remaining tabs' indices
+    tabs.forEach((tab, i) => {
+        if (i > index) {
+            tab.dataset.index = i - 1;
+        }
+    });
+    
+    // Switch to another PDF if necessary
+    if (currentPdfIndex === index) {
+        if (index > 0) {
+            switchToPdf(index - 1);
+        } else if (pdfs.length > 0) {
+            switchToPdf(0);
+        } else {
+            // No PDFs left
+            currentPdfIndex = -1;
+            document.querySelector('.pdf-viewer').innerHTML = '';
+        }
+    } else if (currentPdfIndex > index) {
+        currentPdfIndex--;
+    }
+}
+
+function switchToPdf(index) {
+    if (index === currentPdfIndex) return;
+    
+    // Update tabs
+    document.querySelectorAll('.pdf-file-tab').forEach(tab => {
+        tab.classList.toggle('active', parseInt(tab.dataset.index) === index);
+    });
+    
+    currentPdfIndex = index;
+    const pdf = pdfs[index];
+    
+    // Load the PDF
+    if (pdf) {
+        loadPdf(pdf.data);
+    }
+}
+
+async function loadPdf(data) {
+    const viewer = document.getElementById('pdfViewer');
+    if (!viewer) return;
+    
+    try {
+        // Convert base64 to Uint8Array if necessary
+        let pdfData = data;
+        if (typeof data === 'string' && data.startsWith('data:')) {
+            const byteCharacters = atob(data.split(',')[1]);
+            const byteArray = new Uint8Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteArray[i] = byteCharacters.charCodeAt(i);
+            }
+            pdfData = byteArray;
+        }
+        
+        const pdf = await pdfjsLib.getDocument(pdfData).promise;
+        viewer.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'pdfViewerCanvas';
+        viewer.appendChild(container);
+        
+        // Load and render all pages
+        const numPages = pdf.numPages;
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const scale = 680 / viewport.width;
+            const scaledViewport = page.getViewport({ scale });
+            
+            const pageContainer = document.createElement('div');
+            pageContainer.className = 'pdf-page-container';
+            container.appendChild(pageContainer);
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = scaledViewport.height;
+            canvas.width = scaledViewport.width;
+            
+            pageContainer.appendChild(canvas);
+            
+            await page.render({
+                canvasContext: context,
+                viewport: scaledViewport
+            }).promise;
+        }
+        
+        // Apply current zoom if needed
+        if (currentScale !== 1.0) {
+            updateZoom(currentScale);
+        }
+        
+    } catch (error) {
+        console.error('Error loading PDF:', error);
+    }
+}
+
+// Add keyboard shortcuts for switching PDFs
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                // Switch to previous PDF
+                if (currentPdfIndex > 0) {
+                    switchToPdf(currentPdfIndex - 1);
+                }
+            } else {
+                // Switch to next PDF
+                if (currentPdfIndex < pdfs.length - 1) {
+                    switchToPdf(currentPdfIndex + 1);
+                }
+            }
+        }
+    }
 }); 
