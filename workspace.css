@@ -11,8 +11,8 @@
 /* Sidebar Styles */
 .sidebar {
     width: 300px;
-    background: #252526;
-    border-right: 1px solid #3c3c3c;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     position: relative;
@@ -41,11 +41,11 @@
 .sidebar-toggle {
     width: 20px;
     height: 60px;
-    background: #2d2d2d;
-    border: 1px solid #3c3c3c;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     border-left: none;
     border-radius: 0 4px 4px 0;
-    color: #cccccc;
+    color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -55,8 +55,8 @@
 }
 
 .sidebar-toggle:hover {
-    background: #3d3d3d;
-    color: #ffffff;
+    background: var(--hover-bg);
+    color: var(--text-primary);
 }
 
 .sidebar-toggle i {
@@ -133,16 +133,16 @@
 
 .note-item {
     padding: 1rem;
-    border: 1px solid #3c3c3c;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 1rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    background: #2d2d2d;
+    background: var(--bg-tertiary);
 }
 
 .note-item:hover {
-    background: #3d3d3d;
+    background: var(--hover-bg);
 }
 
 .note-title {
