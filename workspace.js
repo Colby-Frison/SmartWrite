@@ -1,15 +1,19 @@
 // Modal Functions
-window.openModal = function(modalId) {
+function openModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
-window.closeModal = function(modalId) {
+function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.classList.remove('active');
     document.body.style.overflow = '';
 }
+
+// Make functions available globally
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 window.saveSettings = function() {
     const themeToggle = document.getElementById('themeToggle');
@@ -230,22 +234,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         const scaledViewport = page.getViewport({ scale });
                         
                         // Create page container
-                        const pageContainer = document.createElement('div');
-                        pageContainer.className = 'pdf-page-container';
-                        container.appendChild(pageContainer);
-                        
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-container';
+                    container.appendChild(pageContainer);
+
                         // Create canvas
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
                         canvas.height = scaledViewport.height;
                         canvas.width = scaledViewport.width;
-                        
+
                         // Add canvas to page container
                         pageContainer.appendChild(canvas);
-                        
+
                         // Render the page
                         await page.render({
-                            canvasContext: context,
+                        canvasContext: context,
                             viewport: scaledViewport
                         }).promise;
                     }
@@ -545,6 +549,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // New Note Functionality
+    initializeNewNoteHandlers();
 });
 
 // Settings functionality
@@ -692,6 +699,7 @@ function setupSettingsHandlers() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
     setupSettingsHandlers();
+    initializeNewNoteHandlers();
     
     // Rest of your existing DOMContentLoaded code...
 });
@@ -699,6 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // PDF management
 let pdfs = [];
 let currentPdfIndex = -1;
+let currentScale = 1.0;
 
 // Load saved PDFs function
 function loadSavedPDFs() {
@@ -724,47 +733,44 @@ function loadSavedPDFs() {
 
 // Update PDF management functions
 function addPdfTab(name, data) {
-    const pdfFiles = document.getElementById('pdfFiles');
-    if (!pdfFiles) return null;
-    
-    const tab = document.createElement('div');
-    tab.className = 'pdf-file-tab';
-    tab.dataset.index = pdfs.length;
-    
-    const content = document.createElement('span');
-    content.className = 'tab-content';
-    content.textContent = name;
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'tab-close';
-    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    
-    tab.appendChild(content);
-    tab.appendChild(closeBtn);
-    pdfFiles.appendChild(tab);
-    
-    // Store PDF data
-    pdfs.push({ name, data });
-    
-    // Event listeners
-    tab.addEventListener('click', (e) => {
-        if (e.target.closest('.tab-close')) return;
-        const index = parseInt(tab.dataset.index);
-        switchToPdf(index);
+    return new Promise((resolve) => {
+        const pdfFiles = document.getElementById('pdfFiles');
+        if (!pdfFiles) return resolve(null);
+        
+        const tab = document.createElement('div');
+        tab.className = 'pdf-file-tab';
+        tab.dataset.index = pdfs.length;
+        
+        const content = document.createElement('span');
+        content.className = 'tab-content';
+        content.textContent = name;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'tab-close';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        
+        tab.appendChild(content);
+        tab.appendChild(closeBtn);
+        pdfFiles.appendChild(tab);
+        
+        // Store PDF data
+        pdfs.push({ name, data });
+        
+        // Event listeners
+        tab.addEventListener('click', (e) => {
+            if (e.target.closest('.tab-close')) return;
+            const index = parseInt(tab.dataset.index);
+            switchToPdf(index);
+        });
+        
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(tab.dataset.index);
+            closePdf(index);
+        });
+        
+        resolve(tab);
     });
-    
-    closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const index = parseInt(tab.dataset.index);
-        closePdf(index);
-    });
-    
-    // Switch to the new PDF if it's the first one
-    if (pdfs.length === 1) {
-        switchToPdf(0);
-    }
-    
-    return tab;
 }
 
 function closePdf(index) {
@@ -813,8 +819,10 @@ function switchToPdf(index) {
     const pdf = pdfs[index];
     
     // Load the PDF
-    if (pdf) {
-        loadPdf(pdf.data);
+    if (pdf && pdf.data) {
+        loadPdf(pdf.data).catch(error => {
+            console.error('Error switching PDF:', error);
+        });
     }
 }
 
@@ -823,55 +831,73 @@ async function loadPdf(data) {
     if (!viewer) return;
     
     try {
-        // Convert base64 to Uint8Array if necessary
         let pdfData = data;
+        let url;
+
         if (typeof data === 'string' && data.startsWith('data:')) {
-            const byteCharacters = atob(data.split(',')[1]);
-            const byteArray = new Uint8Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteArray[i] = byteCharacters.charCodeAt(i);
-            }
-            pdfData = byteArray;
+            // Data is already a data URL, use it directly
+            url = data;
+        } else {
+            // Convert to blob if it's binary data
+            const blob = new Blob([pdfData], { type: 'application/pdf' });
+            url = URL.createObjectURL(blob);
         }
-        
-        const pdf = await pdfjsLib.getDocument(pdfData).promise;
+
+        // Load the PDF document
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        currentPDF = pdf;
+
+        // Clear the viewer and create container
         viewer.innerHTML = '';
         const container = document.createElement('div');
         container.className = 'pdfViewerCanvas';
         viewer.appendChild(container);
-        
-        // Load and render all pages
+
+        // Get total pages
         const numPages = pdf.numPages;
+
+        // Render each page
         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.0 });
-            const scale = 680 / viewport.width;
+            const scale = 680 / viewport.width; // Base width / original width
             const scaledViewport = page.getViewport({ scale });
-            
+
+            // Create page container
             const pageContainer = document.createElement('div');
             pageContainer.className = 'pdf-page-container';
             container.appendChild(pageContainer);
-            
+
+            // Create canvas
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.height = scaledViewport.height;
             canvas.width = scaledViewport.width;
-            
+
+            // Add canvas to page container
             pageContainer.appendChild(canvas);
-            
+
+            // Render the page
             await page.render({
                 canvasContext: context,
                 viewport: scaledViewport
             }).promise;
         }
-        
+
         // Apply current zoom if needed
-        if (currentScale !== 1.0) {
+        if (currentScale && currentScale !== 1.0) {
             updateZoom(currentScale);
         }
-        
+
+        // Clean up blob URL if we created one
+        if (url !== data) {
+            URL.revokeObjectURL(url);
+        }
+
     } catch (error) {
         console.error('Error loading PDF:', error);
+        viewer.innerHTML = '<div class="error-message">Error loading PDF: ' + error.message + '</div>';
     }
 }
 
@@ -893,4 +919,458 @@ document.addEventListener('keydown', (e) => {
             }
         }
     }
+});
+
+// New Note Functionality
+function initializeNewNoteHandlers() {
+    const newNoteBtn = document.querySelector('.new-note-btn');
+    const dropZone = document.querySelector('.drop-zone');
+    const fileInput = document.getElementById('noteFiles');
+    const filesList = document.getElementById('selectedNoteFiles');
+    const noteForm = document.getElementById('newNoteForm');
+
+    // Open new note modal when clicking the new note button
+    if (newNoteBtn) {
+        newNoteBtn.addEventListener('click', () => {
+            openModal('newNoteModal');
+            // Clear form when opening
+            noteForm.reset();
+            // Clear file list
+            const fileList = document.getElementById('fileList');
+            if (fileList) {
+                fileList.innerHTML = '';
+            }
+        });
+    }
+
+    // Handle drop zone click
+    if (dropZone) {
+        // Prevent the click on the input from bubbling to the drop zone
+        fileInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // Handle drop zone click
+        dropZone.addEventListener('click', function(e) {
+            fileInput.click();
+        });
+
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drop-zone-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drop-zone-active');
+            });
+        });
+
+        dropZone.addEventListener('drop', handleDrop);
+    }
+
+    // Handle file selection through input
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+        });
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = Array.from(dt.files);
+        handleFiles(files);
+    }
+
+    function handleFiles(files) {
+        if (!filesList) return;
+
+        files.forEach(file => {
+            // Check if file is already in the list
+            const existingFiles = Array.from(filesList.children);
+            const isDuplicate = existingFiles.some(item => {
+                const fileName = item.querySelector('span').textContent;
+                return fileName === file.name;
+            });
+
+            if (!isDuplicate) {
+                // If it's a PDF, store it in localStorage immediately
+                if (file.type === 'application/pdf') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const pdfData = {
+                            name: file.name,
+                            data: e.target.result
+                        };
+                        
+                        // Add to saved PDFs if not already present
+                        const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+                        if (!savedPDFs.some(pdf => pdf.name === file.name)) {
+                            savedPDFs.push(pdfData);
+                            localStorage.setItem('savedPDFs', JSON.stringify(savedPDFs));
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+                
+                const item = createFileListItem(file);
+                filesList.appendChild(item);
+            }
+        });
+    }
+
+    function createFileListItem(file) {
+        const item = document.createElement('li');
+        item.className = 'file-item';
+        
+        // Add appropriate class based on file type
+        if (file.type.includes('pdf')) {
+            item.classList.add('pdf');
+        } else if (file.type.includes('image')) {
+            item.classList.add('image');
+        } else {
+            item.classList.add('document');
+        }
+        
+        // Add file icon based on type
+        const icon = document.createElement('i');
+        icon.className = 'file-icon fas ' + getFileIcon(file.type);
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = file.name;
+        nameSpan.title = file.name; // Add tooltip
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-file';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.title = 'Remove file';
+        
+        // Add click handler to open file
+        nameSpan.addEventListener('click', () => {
+            openFile(file);
+        });
+        
+        // Remove file handler
+        removeBtn.addEventListener('click', () => {
+            item.remove();
+        });
+        
+        item.appendChild(icon);
+        item.appendChild(nameSpan);
+        item.appendChild(removeBtn);
+        
+        return item;
+    }
+
+    function getFileIcon(fileType) {
+        if (fileType.includes('pdf')) {
+            return 'fa-file-pdf';
+        } else if (fileType.includes('image')) {
+            return 'fa-file-image';
+        } else if (fileType.includes('word') || fileType.includes('document')) {
+            return 'fa-file-word';
+        } else if (fileType.includes('text')) {
+            return 'fa-file-alt';
+        }
+        return 'fa-file';
+    }
+
+    function openFile(file) {
+        if (file.type === 'application/pdf') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const pdfData = {
+                    name: file.name,
+                    data: e.target.result
+                };
+                
+                // Add to saved PDFs
+                const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+                savedPDFs.push(pdfData);
+                localStorage.setItem('savedPDFs', JSON.stringify(savedPDFs));
+                
+                // Add tab and load PDF
+                addPdfTab(file.name, e.target.result);
+                
+                // Switch to the new PDF
+                switchToPdf(pdfs.length - 1);
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('image/')) {
+            // Handle image preview in a modal or viewer
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // You can implement image viewing functionality here
+                console.log('Image loaded:', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+}
+
+// Create new note function
+function createNewNote() {
+    const noteName = document.getElementById('noteName').value.trim();
+    const noteDescription = document.getElementById('noteDescription').value.trim();
+    const filesList = document.getElementById('selectedNoteFiles');
+    
+    if (!noteName) {
+        alert('Please enter a note name');
+        return;
+    }
+    
+    // Get existing notes or initialize empty array
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    
+    // Create new note object
+    const newNote = {
+        id: Date.now(),
+        name: noteName,
+        description: noteDescription,
+        date: new Date().toISOString(),
+        files: Array.from(filesList.children).map(item => {
+            const fileName = item.querySelector('span').textContent;
+            const fileType = item.classList.contains('pdf') ? 'pdf' :
+                           item.classList.contains('image') ? 'image' : 'document';
+            return {
+                name: fileName,
+                type: fileType
+            };
+        })
+    };
+    
+    // Add new note to array
+    notes.unshift(newNote);
+    
+    // Save to localStorage
+    localStorage.setItem('notes', JSON.stringify(notes));
+    
+    // Add note to the UI
+    addNoteToList(newNote);
+    
+    // Close modal and reset form
+    closeModal('newNoteModal');
+    document.getElementById('newNoteForm').reset();
+    filesList.innerHTML = '';
+
+    // Open the newly created note
+    openNote(newNote);
+}
+
+function addNoteToList(note) {
+    const notesList = document.querySelector('.notes-list');
+    if (!notesList) return;
+    
+    const noteElement = document.createElement('div');
+    noteElement.className = 'note-item';
+    noteElement.dataset.noteId = note.id;
+    
+    noteElement.innerHTML = `
+        <div class="note-content">
+            <div class="note-title">${note.name}</div>
+            <div class="note-preview">${note.description || 'No description'}</div>
+            <div class="note-date">
+                ${new Date(note.date).toLocaleDateString()}
+            </div>
+        </div>
+        <div class="note-settings">
+            <button class="note-settings-btn">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="note-settings-menu">
+                <button class="note-settings-item rename-note">
+                    <i class="fas fa-edit"></i>
+                    Rename
+                </button>
+                <button class="note-settings-item delete-note">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add click handler for the note content
+    const noteContent = noteElement.querySelector('.note-content');
+    noteContent.addEventListener('click', () => {
+        openNote(note);
+    });
+
+    // Add click handler for settings button
+    const settingsBtn = noteElement.querySelector('.note-settings-btn');
+    const settingsMenu = noteElement.querySelector('.note-settings-menu');
+    
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close all other open menus
+        document.querySelectorAll('.note-settings-menu.active').forEach(menu => {
+            if (menu !== settingsMenu) {
+                menu.classList.remove('active');
+            }
+        });
+        settingsMenu.classList.toggle('active');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', () => {
+        settingsMenu.classList.remove('active');
+    });
+
+    // Rename note handler
+    const renameBtn = noteElement.querySelector('.rename-note');
+    renameBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newName = prompt('Enter new name for the note:', note.name);
+        if (newName && newName.trim()) {
+            // Update note in localStorage
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const noteIndex = notes.findIndex(n => n.id === note.id);
+            if (noteIndex !== -1) {
+                notes[noteIndex].name = newName.trim();
+                localStorage.setItem('notes', JSON.stringify(notes));
+                
+                // Update UI
+                noteElement.querySelector('.note-title').textContent = newName.trim();
+                note.name = newName.trim(); // Update the note object
+            }
+        }
+        settingsMenu.classList.remove('active');
+    });
+
+    // Delete note handler
+    const deleteBtn = noteElement.querySelector('.delete-note');
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+            // Remove note from localStorage
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const noteToDelete = notes.find(n => n.id === note.id);
+            const updatedNotes = notes.filter(n => n.id !== note.id);
+            localStorage.setItem('notes', JSON.stringify(updatedNotes));
+            
+            // Remove associated PDFs if they're not used by other notes
+            if (noteToDelete && noteToDelete.files) {
+                const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+                const remainingNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+                
+                const updatedPDFs = savedPDFs.filter(pdf => {
+                    // Keep PDF if it's used by any remaining note
+                    return remainingNotes.some(n => 
+                        n.files.some(f => f.name === pdf.name)
+                    );
+                });
+                
+                localStorage.setItem('savedPDFs', JSON.stringify(updatedPDFs));
+            }
+            
+            // Clear PDF viewer if this note was open
+            if (noteElement.classList.contains('active')) {
+                const pdfViewer = document.getElementById('pdfViewer');
+                if (pdfViewer) {
+                    pdfViewer.innerHTML = '';
+                }
+                const pdfFiles = document.getElementById('pdfFiles');
+                if (pdfFiles) {
+                    pdfFiles.innerHTML = '';
+                }
+                pdfs = [];
+                currentPdfIndex = -1;
+            }
+            
+            // Add deleting class for animation
+            noteElement.classList.add('deleting');
+            
+            // Remove element after animation
+            setTimeout(() => {
+                noteElement.remove();
+            }, 300);
+            
+            // Close the settings menu
+            settingsMenu.classList.remove('active');
+        }
+    });
+    
+    // Add to the beginning of the list
+    if (notesList.firstChild) {
+        notesList.insertBefore(noteElement, notesList.firstChild);
+    } else {
+        notesList.appendChild(noteElement);
+    }
+}
+
+// Function to open a note
+function openNote(note) {
+    // Highlight the selected note in the sidebar
+    document.querySelectorAll('.note-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.noteId === note.id.toString()) {
+            item.classList.add('active');
+        }
+    });
+
+    // Get saved PDFs from localStorage
+    const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
+
+    // Clear existing PDF tabs and viewer
+    const pdfFiles = document.getElementById('pdfFiles');
+    if (pdfFiles) {
+        pdfFiles.innerHTML = '';
+    }
+    const pdfViewer = document.getElementById('pdfViewer');
+    if (pdfViewer) {
+        pdfViewer.innerHTML = '';
+    }
+    
+    pdfs = []; // Reset pdfs array
+    currentPdfIndex = -1;
+
+    // Open associated files
+    const pdfPromises = note.files.map(file => {
+        if (file.type === 'pdf') {
+            // Find the PDF data in localStorage
+            const pdfData = savedPDFs.find(pdf => pdf.name === file.name);
+            if (pdfData) {
+                return addPdfTab(file.name, pdfData.data);
+            }
+        }
+        return null;
+    }).filter(Boolean);
+
+    // Wait for all PDFs to be added
+    Promise.all(pdfPromises).then(() => {
+        // Switch to the first PDF if available
+        if (pdfs.length > 0) {
+            switchToPdf(0);
+        }
+    });
+}
+
+// Update loadExistingNotes to include note IDs
+function loadExistingNotes() {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    const notesList = document.querySelector('.notes-list');
+    if (!notesList) return;
+    
+    // Clear existing notes
+    notesList.innerHTML = '';
+    
+    // Add each note to the list
+    notes.forEach(note => addNoteToList(note));
+}
+
+// Add this to your DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    loadExistingNotes();
 }); 

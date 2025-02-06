@@ -257,6 +257,48 @@
         </div>
     </div>
 
+    <!-- New Note Modal -->
+    <div id="newNoteModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Note</h3>
+                <button class="modal-close" onclick="closeModal('newNoteModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newNoteForm" onsubmit="event.preventDefault(); createNewNote();">
+                    <div class="form-group">
+                        <label for="noteName" class="form-label">Note Name</label>
+                        <input type="text" id="noteName" class="form-input" placeholder="Enter note name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="noteDescription" class="form-label">Description</label>
+                        <textarea id="noteDescription" class="form-input" rows="3" placeholder="Enter note description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Attachments</label>
+                        <div class="drop-zone">
+                            <input type="file" id="noteFiles" multiple accept=".pdf,.doc,.docx,.txt,image/*" style="display: none;">
+                            <div class="drop-zone-text">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Drop files here or click to upload</span>
+                                <span class="small">Supports PDF, images, and documents</span>
+                            </div>
+                        </div>
+                        <div class="file-list">
+                            <ul id="selectedNoteFiles"></ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('newNoteModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="createNewNote()">Create Note</button>
+            </div>
+        </div>
+    </div>
+
     <script src="theme.js"></script>
     <script src="workspace.js"></script>
 </body>

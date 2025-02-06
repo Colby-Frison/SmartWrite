@@ -150,23 +150,122 @@
 }
 
 .note-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     padding: 1rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.3s ease;
     background: var(--bg-tertiary);
+    opacity: 1;
+    transform: translateX(0);
+    position: relative;
 }
 
 .note-item:hover {
     background: var(--hover-bg);
 }
 
+.note-item.deleting {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.3s ease;
+}
+
+.note-content {
+    flex: 1;
+    min-width: 0; /* Prevent content from overflowing */
+}
+
+.note-settings {
+    position: relative;
+    margin-left: 1rem;
+    z-index: 2;
+}
+
+.note-settings-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    z-index: 1;
+    position: relative;
+}
+
+.note-settings-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.note-settings-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    display: none;
+    z-index: 1000;
+    transform: translateY(0) scale(0.95);
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.note-settings-menu.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(8px) scale(1);
+}
+
+.note-settings-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.note-settings-item:hover {
+    background: var(--hover-bg);
+}
+
+.note-settings-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.note-settings-item.delete-note {
+    color: var(--danger);
+}
+
+.note-settings-item.delete-note:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* Ensure note content doesn't overflow */
 .note-title {
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .note-preview {
@@ -182,6 +281,19 @@
 
 .note-date {
     font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.note-files {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.note-files i {
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
@@ -291,6 +403,7 @@
 
 /* Chat Section */
 .chat-section {
+    width: 400px; /* Default width */
     min-width: 200px;
     max-width: 600px;
     flex-shrink: 0;
@@ -609,7 +722,8 @@
     width: 90%;
     max-width: 500px;
     max-height: 85vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     position: relative;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
@@ -628,7 +742,7 @@
 }
 
 .modal-header {
-    padding: 1.5rem;
+    padding: 1rem 2rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
@@ -657,7 +771,28 @@
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
 }
 
 .modal-section {
@@ -709,9 +844,13 @@
 }
 
 .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+    flex: 1;
 }
 
 .form-label {
@@ -721,13 +860,15 @@
 }
 
 .form-input {
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     color: var(--text-primary);
     font-size: 0.95rem;
     transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -736,11 +877,12 @@
 }
 
 .modal-footer {
-    padding: 1.5rem;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
     border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
 }
 
 .modal-btn {
@@ -1125,4 +1267,217 @@
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
     background: #4f4f4f;
+}
+
+/* Settings modal specific size */
+#settingsModal .modal-window {
+    max-width: 600px;
+}
+
+#settingsModal .modal-body {
+    padding: 0; /* Reset padding for settings modal since it has its own layout */
+}
+
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 0.5rem 0;
+    transition: all 0.3s ease;
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+.drop-zone:hover, .drop-zone-active {
+    border-color: var(--accent-primary);
+    background: var(--hover-bg);
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.drop-zone-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    pointer-events: none;
+}
+
+.drop-zone-text i {
+    font-size: 2rem;
+    color: var(--accent-primary);
+}
+
+.drop-zone-text .small {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.file-list {
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+#selectedNoteFiles {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.file-item:hover {
+    background: var(--hover-bg);
+}
+
+.file-item span {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
+}
+
+.file-item .remove-file {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+.file-item .remove-file:hover {
+    background: var(--hover-bg);
+    color: var(--danger);
+}
+
+/* New Note Modal specific styles */
+#newNoteModal .modal-window {
+    max-width: 500px;
+    height: auto;
+    max-height: 85vh;
+}
+
+#newNoteModal .modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+#newNoteForm {
+    height: auto;
+    min-height: min-content;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    flex-shrink: 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Ensure the file list is scrollable independently */
+.file-list {
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+/* Remove any overflow hidden that might be preventing scrolling */
+.modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Ensure the footer stays at the bottom */
+.modal-footer {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
+    border-top: 1px solid var(--border-color);
+}
+
+/* File preview styles */
+.file-item .file-icon {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+}
+
+.file-item.pdf .file-icon {
+    color: #ff4444;
+}
+
+.file-item.image .file-icon {
+    color: #4CAF50;
+}
+
+.file-item.document .file-icon {
+    color: #2196F3;
+}
+
+/* Add scrollbar styling for modal body */
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+/* Ensure form takes full height of modal body */
+#newNoteForm {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 } 
