@@ -31,19 +31,38 @@
                 <i class="fas fa-cog"></i>
             </button>
         </div>
-        <div class="notes-list">
-            <!-- Notes will be dynamically added here -->
-            <div class="note-item">
-                <div class="note-title">Note 1</div>
-                <div class="note-preview">This is a preview of the note content...</div>
-                <div class="note-date">2024-03-14</div>
+        <div class="file-tree">
+            <div class="file-tree-header">
+                <div class="file-tree-actions">
+                    <button class="action-btn" title="New note">
+                        <i class="fas fa-file"></i>
+                    </button>
+                    <button class="action-btn" title="New folder">
+                        <i class="fas fa-folder-plus"></i>
+                    </button>
+                    <button class="action-btn" title="Sort files">
+                        <i class="fas fa-sort"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="sidebar-footer">
-            <button class="new-note-btn">
-                <i class="fas fa-plus"></i>
-                New Note
-            </button>
+            <div class="file-tree-content" id="fileTree">
+                <!-- File tree will be dynamically populated here -->
+            </div>
+            <!-- Sort menu dropdown -->
+            <div class="sort-menu" id="sortMenu">
+                <div class="sort-menu-item" onclick="sortFiles('name')">
+                    <i class="fas fa-sort-alpha-down"></i>
+                    <span>Sort by name</span>
+                </div>
+                <div class="sort-menu-item" onclick="sortFiles('modified')">
+                    <i class="fas fa-clock"></i>
+                    <span>Sort by modified</span>
+                </div>
+                <div class="sort-menu-item" onclick="sortFiles('created')">
+                    <i class="fas fa-calendar"></i>
+                    <span>Sort by created</span>
+                </div>
+            </div>
         </div>
         <div class="sidebar-hover-tab">
             <button class="sidebar-toggle" id="sidebarToggle">
@@ -185,6 +204,16 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Disable Popups</div>
+                                    <div class="settings-item-description">Disable confirmation dialogs when deleting or renaming items</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="disablePopups">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                         </div>
 
                         <!-- PDF Viewer Panel -->
@@ -295,6 +324,34 @@
             <div class="modal-footer">
                 <button class="modal-btn modal-btn-secondary" onclick="closeModal('newNoteModal')">Cancel</button>
                 <button class="modal-btn modal-btn-primary" onclick="createNewNote()">Create Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Folder Modal -->
+    <div id="newFolderModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Folder</h3>
+                <button class="modal-close" onclick="closeModal('newFolderModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newFolderForm" onsubmit="event.preventDefault(); createNewFolder();">
+                    <div class="form-group">
+                        <label for="folderName" class="form-label">Folder Name</label>
+                        <input type="text" id="folderName" class="form-input" placeholder="Enter folder name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="folderDescription" class="form-label">Description</label>
+                        <textarea id="folderDescription" class="form-input" rows="3" placeholder="Enter folder description"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal('newFolderModal')">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="createNewFolder()">Create Folder</button>
             </div>
         </div>
     </div>
