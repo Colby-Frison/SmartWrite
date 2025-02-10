@@ -6,6 +6,7 @@
     padding: 0;
     overflow: hidden;
     background: var(--bg-primary);
+    padding-top: 32px;
 }
 
 /* Sidebar Styles */
@@ -301,11 +302,9 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
-    position: relative;
-    overflow: hidden;
-    z-index: 2;
-    min-width: 0;
+    height: 100%;
+    background: var(--bg-primary);
+    overflow: auto;
 }
 
 .pdf-viewer {
@@ -1049,45 +1048,64 @@ textarea.form-input {
     -webkit-app-region: no-drag;
 }
 
-/* Title bar styles - Only visible in Electron */
+/* Title Bar Styles - Update */
 #titlebar {
-    display: none;
     height: 32px;
     background: #1e1e1e;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
-    color: #fff;
+    z-index: 1000;
+    -webkit-app-region: drag;
     border-bottom: 1px solid #333;
 }
 
-.electron-only #titlebar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .titlebar-drag-region {
-    flex-grow: 1;
-    -webkit-app-region: drag;
-    height: 32px;
+    flex: 1;
     display: flex;
     align-items: center;
+    padding-left: 12px;
 }
 
 .window-title {
-    margin-left: 12px;
+    color: #ffffff80;
     font-size: 12px;
     font-weight: 500;
-    color: #ffffff80;
 }
 
 .window-controls-container {
     display: flex;
-    height: 32px;
     -webkit-app-region: no-drag;
+}
+
+.window-control {
+    width: 46px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: #ffffff80;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    -webkit-app-region: no-drag;
+}
+
+.window-control:hover {
+    background: #ffffff20;
+    color: #fff;
+}
+
+.window-control.close:hover {
+    background: #e81123;
+    color: white;
 }
 
 /* Electron-specific adjustments */
@@ -1339,46 +1357,88 @@ textarea.form-input {
 /* File Tree Styles */
 .file-tree {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    padding: 0.5rem;
 }
 
-.file-tree-header {
-    padding: 0.5rem;
+.tree-item {
+    margin: 2px 0;
+}
+
+.tree-item-content {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.file-tree-actions {
-    display: flex;
-    gap: 0.25rem;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    padding: 0.5rem;
-    cursor: pointer;
+    padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.tree-item-content:hover {
+    background: var(--hover-bg);
+}
+
+.tree-item-toggle {
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    margin-right: 4px;
 }
 
-.action-btn:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
+.tree-item-icon {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
 }
 
-.action-btn i {
-    font-size: 0.9rem;
+.tree-item-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tree-item.folder > .tree-item-content > .tree-item-toggle > i {
+    transition: transform 0.2s ease;
+}
+
+.tree-item.folder.expanded > .tree-item-content > .tree-item-toggle > i {
+    transform: rotate(90deg);
+}
+
+.tree-item-children {
+    margin-left: 24px;
+    display: none;
+}
+
+.tree-item.expanded > .tree-item-children {
+    display: block;
+}
+
+/* File icons colors */
+.tree-item-icon .fa-folder {
+    color: #dcb67a;
+}
+
+.tree-item-icon .fa-folder-open {
+    color: #dcb67a;
+}
+
+.tree-item-icon .fa-file-pdf {
+    color: #ff6b6b;
+}
+
+.tree-item-icon .fa-file-alt {
+    color: #4ecdc4;
+}
+
+.tree-item-icon .fa-file-image {
+    color: #45b7d1;
+}
+
+.tree-item-icon .fa-file {
+    color: #8c8c8c;
 }
 
 /* Sort menu styles */
@@ -1666,4 +1726,72 @@ textarea.form-input {
 
 .dark-theme .chat-section {
     border-top-color: #404040;
+}
+
+/* File Tree Management Styles - Restore */
+.file-tree-header {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.file-tree-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.action-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.action-btn i {
+    font-size: 0.9rem;
+}
+
+/* Markdown Editor Styles */
+.markdown-editor-container {
+    flex: 1;
+    display: flex;
+    padding: 1rem;
+    height: 100%;
+}
+
+.markdown-editor {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    border-radius: 4px;
+}
+
+.markdown-editor:focus {
+    outline: none;
+    border: none;
+    box-shadow: 0 0 0 2px var(--accent-primary-alpha);
 } 

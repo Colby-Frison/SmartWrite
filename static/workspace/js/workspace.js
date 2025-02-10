@@ -49,6 +49,51 @@ window.saveProfile = function() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded in workspace.js');
+    console.log('electronAPI available:', !!window.electronAPI);
+    
+    const minimizeBtn = document.querySelector('#minimizeBtn');
+    const maximizeBtn = document.querySelector('#maximizeBtn');
+    const closeBtn = document.querySelector('#closeBtn');
+    
+    console.log('Buttons found:', { 
+        minimize: !!minimizeBtn, 
+        maximize: !!maximizeBtn, 
+        close: !!closeBtn 
+    }); // Debug log
+
+    if (!window.electronAPI) {
+        console.error('electronAPI not found. Make sure preload script is working.');
+        return;
+    }
+
+    if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', function(e) {
+            console.log('Minimize button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            window.electronAPI.minimizeWindow();
+        });
+    }
+
+    if (maximizeBtn) {
+        maximizeBtn.addEventListener('click', function(e) {
+            console.log('Maximize button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            window.electronAPI.maximizeWindow();
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+            console.log('Close button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            window.electronAPI.closeWindow();
+        });
+    }
+
     // Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
     const toggle = document.querySelector('.sidebar-toggle');
@@ -552,6 +597,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // New Note Functionality
     initializeNewNoteHandlers();
+
+    // Directory selection - Single implementation
+    const selectDirectoryBtn = document.getElementById('selectDirectoryBtn');
+    const currentDirectorySpan = document.getElementById('currentDirectory');
+    
+    if (selectDirectoryBtn) {
+        // Remove any existing listeners
+        selectDirectoryBtn.replaceWith(selectDirectoryBtn.cloneNode(true));
+        
+        // Get the fresh reference
+        const newSelectDirectoryBtn = document.getElementById('selectDirectoryBtn');
+        
+        // Add single event listener
+        newSelectDirectoryBtn.addEventListener('click', async () => {
+            console.log('Select directory clicked'); // Debug log
+            try {
+                const dirPath = await window.electronAPI.selectDirectory();
+                if (dirPath) {
+                    console.log('Directory selected:', dirPath); // Debug log
+                    localStorage.setItem('selectedDirectory', dirPath);
+                    currentDirectorySpan.textContent = dirPath;
+                    await loadFilesFromDirectory(dirPath);
+                }
+            } catch (error) {
+                console.error('Error selecting directory:', error);
+            }
+        });
+    }
+    
+    // Load previously selected directory
+    const savedDirectory = localStorage.getItem('selectedDirectory');
+    if (savedDirectory) {
+        currentDirectorySpan.textContent = savedDirectory;
+        loadFilesFromDirectory(savedDirectory);
+    }
 });
 
 // Settings functionality
@@ -1066,7 +1146,7 @@ function initializeNewNoteHandlers() {
         
         // Add file icon based on type
         const icon = document.createElement('i');
-        icon.className = 'file-icon fas ' + getFileIcon(file.type);
+        icon.className = 'file-icon fas ' + getFileIcon(file);
         
         const nameSpan = document.createElement('span');
         nameSpan.textContent = file.name;
@@ -1094,14 +1174,14 @@ function initializeNewNoteHandlers() {
         return item;
     }
 
-    function getFileIcon(fileType) {
-        if (fileType.includes('pdf')) {
+    function getFileIcon(file) {
+        if (file.type.includes('pdf')) {
             return 'fa-file-pdf';
-        } else if (fileType.includes('image')) {
+        } else if (file.type.includes('image')) {
             return 'fa-file-image';
-        } else if (fileType.includes('word') || fileType.includes('document')) {
+        } else if (file.type.includes('word') || file.type.includes('document')) {
             return 'fa-file-word';
-        } else if (fileType.includes('text')) {
+        } else if (file.type.includes('text')) {
             return 'fa-file-alt';
         }
         return 'fa-file';
@@ -1334,707 +1414,275 @@ function sortFileSystemRecursive(folder) {
     });
 }
 
-function createTreeItem(item) {
-    const treeItem = document.createElement('div');
-    treeItem.className = 'tree-item';
-    if (item.type === 'folder') {
-        treeItem.classList.add('folder');
+function createTreeItem(file) {
+    const item = document.createElement('div');
+    item.className = 'tree-item';
+    if (file.isDirectory) {
+        item.classList.add('folder');
     }
 
     const content = document.createElement('div');
     content.className = 'tree-item-content';
     
-    // Make notes and folders draggable
-    if (item.isNote || item.type === 'folder') {
-        content.draggable = true;
-        content.dataset.itemId = item.id || `folder-${item.name}`; // Use name for folders if no id
-        content.dataset.itemType = item.type;
-        
-        // Add drag event listeners
-        content.addEventListener('dragstart', handleDragStart);
-        content.addEventListener('dragend', handleDragEnd);
-    }
-    
-    // Add drop event listeners for folders
-    if (item.type === 'folder') {
-        content.addEventListener('dragover', handleDragOver);
-        content.addEventListener('dragleave', handleDragLeave);
-        content.addEventListener('drop', handleDrop);
-    }
-
-    if (item.type === 'folder') {
+    if (file.isDirectory) {
         const toggle = document.createElement('span');
         toggle.className = 'tree-item-toggle';
         toggle.innerHTML = '<i class="fas fa-chevron-right"></i>';
         content.appendChild(toggle);
+    } else {
+        // Add spacing for files to align with folders
+        const spacer = document.createElement('span');
+        spacer.className = 'tree-item-toggle';
+        spacer.style.visibility = 'hidden';
+        content.appendChild(spacer);
     }
 
     const icon = document.createElement('span');
     icon.className = 'tree-item-icon';
-    icon.innerHTML = item.type === 'folder' 
-        ? '<i class="fas fa-folder"></i>' 
-        : '<i class="fas fa-file-alt"></i>';
+    icon.innerHTML = getFileIcon(file);
     
     const text = document.createElement('span');
     text.className = 'tree-item-text';
-    text.textContent = item.name;
+    text.textContent = file.name;
 
     content.appendChild(icon);
     content.appendChild(text);
-    treeItem.appendChild(content);
+    item.appendChild(content);
+    
+    // Add click handler
+    content.addEventListener('click', async (e) => {
+        if (file.isDirectory) {
+            const wasExpanded = item.classList.contains('expanded');
+            item.classList.toggle('expanded');
+            
+            // Update folder icon
+                const folderIcon = icon.querySelector('i');
+            folderIcon.className = item.classList.contains('expanded') ? 
+                'fas fa-folder-open' : 
+                'fas fa-folder';
+            
+            // Load subdirectory contents if not already loaded
+            if (!wasExpanded && !item.querySelector('.tree-item-children')) {
+                await loadSubdirectory(item, file.path);
+        }
+    } else {
+            handleFileClick(file);
+        }
+    });
+    
+                return item;
+}
 
-    if (item.type === 'folder') {
+function getFileIcon(file) {
+    if (file.isDirectory) {
+        return '<i class="fas fa-folder"></i>';
+    }
+    
+    const extension = file.name.split('.').pop().toLowerCase();
+    switch (extension) {
+        case 'pdf':
+            return '<i class="fas fa-file-pdf"></i>';
+        case 'md':
+            return '<i class="fas fa-file-alt"></i>';
+        case 'txt':
+            return '<i class="fas fa-file-text"></i>';
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+            return '<i class="fas fa-file-image"></i>';
+        default:
+            return '<i class="fas fa-file"></i>';
+    }
+}
+
+async function loadSubdirectory(parentElement, dirPath) {
+    try {
+        const files = await window.electronAPI.readDirectory(dirPath);
+        
         const children = document.createElement('div');
         children.className = 'tree-item-children';
-        if (item.children) {
-            item.children.forEach(child => {
-                children.appendChild(createTreeItem(child));
-            });
-        }
-        treeItem.appendChild(children);
+        
+        files.sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+        });
+        
+        files.forEach(file => {
+            const item = createTreeItem(file);
+            children.appendChild(item);
+        });
+        
+        parentElement.appendChild(children);
+    } catch (error) {
+        console.error('Error loading subdirectory:', error);
+    }
+}
 
-        // Handle folder click for the entire content area
-        content.addEventListener('click', (e) => {
-            // Don't toggle if clicking on context menu, if we're dragging, or if we're dropping
-            if (!e.target.closest('.context-menu') && 
-                !content.classList.contains('dragging') && 
-                !content.classList.contains('drag-over')) {
-                treeItem.classList.toggle('expanded');
-                const folderIcon = icon.querySelector('i');
-                if (treeItem.classList.contains('expanded')) {
-                    folderIcon.className = 'fas fa-folder-open';
-                } else {
-                    folderIcon.className = 'fas fa-folder';
+async function handleFileClick(file) {
+    console.log('Opening file:', file.path);
+    try {
+        const extension = file.name.split('.').pop().toLowerCase();
+        
+        // Get or create the main viewer section
+        let viewerSection = document.querySelector('.pdf-section');
+        if (!viewerSection) {
+            viewerSection = document.createElement('div');
+            viewerSection.className = 'pdf-section';
+            document.querySelector('.main-content').appendChild(viewerSection);
+        }
+        
+        // Clear the viewer section
+        viewerSection.innerHTML = '';
+        
+        switch (extension) {
+            case 'pdf':
+                await loadPDFFile(file, viewerSection);
+                break;
+                
+            case 'md':
+                await loadMarkdownFile(file, viewerSection);
+                break;
+                
+            default:
+                const success = await window.electronAPI.openFile(file.path);
+                if (!success) {
+                    console.error('Failed to open file:', file.path);
                 }
+        }
+    } catch (error) {
+        console.error('Error handling file click:', error);
+    }
+}
+
+async function loadPDFFile(file, container) {
+    try {
+        // Create PDF viewer container
+        const pdfViewer = document.createElement('div');
+        pdfViewer.id = 'pdfViewer';
+        pdfViewer.className = 'pdf-viewer';
+        container.appendChild(pdfViewer);
+
+        // Load the PDF using pdf.js
+        const loadingTask = pdfjsLib.getDocument(file.path);
+        loadingTask.promise.then(function(pdf) {
+            console.log('PDF loaded');
+            
+            // Store the current PDF
+            currentPDF = pdf;
+            
+            // Load all pages
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                pdf.getPage(pageNum).then(function(page) {
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+
+                    // Prepare canvas for this page
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-container';
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    pageContainer.appendChild(canvas);
+                    pdfViewer.appendChild(pageContainer);
+
+                    // Render PDF page into canvas context
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    page.render(renderContext);
+                });
             }
+        }).catch(function(error) {
+            console.error('Error loading PDF:', error);
         });
-    } else {
-        // Handle file click
-        content.addEventListener('click', () => {
-            document.querySelectorAll('.tree-item-content.active').forEach(el => {
-                el.classList.remove('active');
-            });
-            content.classList.add('active');
-            openFile(item);
-        });
+    } catch (error) {
+        console.error('Error loading PDF file:', error);
     }
-
-    // Context menu
-    content.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showContextMenu(e, item, treeItem);
-    });
-
-    return treeItem;
 }
 
-function handleDragStart(e) {
-        e.stopPropagation();
-    const itemType = e.target.dataset.itemType;
-    
-    // Don't allow dragging if we're interacting with the toggle or context menu
-    if (e.target.closest('.tree-item-toggle') || e.target.closest('.context-menu')) {
-        e.preventDefault();
-        return;
+async function loadMarkdownFile(file, container) {
+    try {
+        // Create editor container
+        const editorContainer = document.createElement('div');
+        editorContainer.id = 'markdownEditor';
+        editorContainer.className = 'markdown-editor-container';
+        container.appendChild(editorContainer);
+
+        // Create textarea for editing
+        const editor = document.createElement('textarea');
+        editor.className = 'markdown-editor';
+        editorContainer.appendChild(editor);
+
+        // Read and set file content
+        const content = await window.electronAPI.readFile(file.path);
+        editor.value = content;
+
+        // Set up auto-save
+        editor.addEventListener('input', debounce(async () => {
+            try {
+                await window.electronAPI.writeFile(file.path, editor.value);
+                console.log('File saved');
+            } catch (error) {
+                console.error('Error saving file:', error);
+            }
+        }, 1000));
+
+    } catch (error) {
+        console.error('Error loading markdown file:', error);
     }
-    
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', e.target.dataset.itemId);
-    e.dataTransfer.setData('application/json', JSON.stringify({
-        id: e.target.dataset.itemId,
-        type: itemType
-    }));
-    e.dataTransfer.effectAllowed = 'move';
 }
 
-function handleDragEnd(e) {
-    e.stopPropagation();
-    e.target.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => {
-        el.classList.remove('drag-over');
-    });
+// Utility function for debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
-function handleDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!e.target.closest('.tree-item-content').classList.contains('drag-over')) {
-        e.target.closest('.tree-item-content').classList.add('drag-over');
-    }
-    e.dataTransfer.dropEffect = 'move';
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.target.closest('.tree-item-content').classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
+// Add directory selection event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const selectDirectoryBtn = document.getElementById('selectDirectoryBtn');
+    const currentDirectorySpan = document.getElementById('currentDirectory');
     
-    const targetFolder = e.target.closest('.tree-item-content');
-    targetFolder.classList.remove('drag-over');
-    
-    const data = JSON.parse(e.dataTransfer.getData('application/json'));
-    const draggedId = data.id;
-    const draggedType = data.type;
-    
-    // Don't allow dropping onto itself
-    if (targetFolder.dataset.itemId === draggedId) {
-        return;
-    }
-    
-    let draggedItem;
-    if (draggedType === 'folder') {
-        draggedItem = findFolderByName(draggedId.replace('folder-', ''));
+    if (selectDirectoryBtn) {
+        // Remove any existing listeners
+        selectDirectoryBtn.replaceWith(selectDirectoryBtn.cloneNode(true));
         
-        // Check if target is a descendant of the dragged folder
-        if (isDescendant(draggedItem, targetFolder.dataset.itemId)) {
-            return;
-        }
-    } else {
-        draggedItem = findItemById(draggedId);
-    }
-    
-    const targetFolderItem = findItemByElement(targetFolder.closest('.tree-item'));
-    
-    if (draggedItem && targetFolderItem) {
-        // Create a deep copy of the dragged item
-        const draggedItemCopy = JSON.parse(JSON.stringify(draggedItem));
+        // Get the fresh reference
+        const newSelectDirectoryBtn = document.getElementById('selectDirectoryBtn');
         
-        // First remove the item from its current location
-        removeItemFromFileSystem(draggedItem);
-        
-        // Then add the copy to the target folder
-        if (!targetFolderItem.children) {
-            targetFolderItem.children = [];
-        }
-        targetFolderItem.children.push(draggedItemCopy);
-        
-        // Save changes
-        saveFileSystem();
-        
-        // Store the expanded state of all folders before refresh
-        const expandedFolders = new Set();
-        document.querySelectorAll('.tree-item.expanded').forEach(folder => {
-            const folderName = folder.querySelector('.tree-item-text').textContent;
-            expandedFolders.add(folderName);
-        });
-        
-        // Add the target folder to the expanded folders set to ensure it stays open
-        const targetFolderName = targetFolder.querySelector('.tree-item-text').textContent;
-        expandedFolders.add(targetFolderName);
-        
-        // Refresh the entire file tree
-        refreshFileTree();
-        
-        // Restore expanded state of all folders
-        expandedFolders.forEach(folderName => {
-            const folder = Array.from(document.querySelectorAll('.tree-item-text')).find(el => el.textContent === folderName)?.closest('.tree-item');
-            if (folder) {
-                folder.classList.add('expanded');
-                const folderIcon = folder.querySelector('.tree-item-icon i');
-                if (folderIcon) {
-                    folderIcon.className = 'fas fa-folder-open';
+        // Add single event listener
+        newSelectDirectoryBtn.addEventListener('click', async () => {
+            console.log('Select directory clicked'); // Debug log
+            try {
+                const dirPath = await window.electronAPI.selectDirectory();
+                if (dirPath) {
+                    console.log('Directory selected:', dirPath); // Debug log
+                    localStorage.setItem('selectedDirectory', dirPath);
+                    currentDirectorySpan.textContent = dirPath;
+                    await loadFilesFromDirectory(dirPath);
                 }
+            } catch (error) {
+                console.error('Error selecting directory:', error);
             }
         });
     }
     
-    // Prevent the click event from firing
-    e.stopImmediatePropagation();
-    return false;
-}
-
-function handleRootDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Remove drop indicator
-    e.target.classList.remove('drag-over');
-    
-    // Only process drop if we're directly on the file tree content
-    if (e.target.id !== 'fileTree') return;
-    
-    const data = JSON.parse(e.dataTransfer.getData('application/json'));
-    const draggedId = data.id;
-    const draggedType = data.type;
-    
-    let draggedItem;
-    if (draggedType === 'folder') {
-        draggedItem = findFolderByName(draggedId.replace('folder-', ''));
-    } else {
-        draggedItem = findItemById(draggedId);
-    }
-    
-    if (draggedItem) {
-        // Remove item from its current location
-        removeItemFromFileSystem(draggedItem);
-        
-        // Add item to root level
-        fileSystem.children.push(draggedItem);
-        
-        // Save changes and refresh tree
-        saveFileSystem();
-        refreshFileTree();
-    }
-}
-
-function findFolderByName(name) {
-    function search(items) {
-        for (const item of items) {
-            if (item.type === 'folder' && item.name === name) {
-                return item;
-            }
-            if (item.children) {
-                const found = search(item.children);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
-    return search(fileSystem.children);
-}
-
-function isDescendant(folder, targetId) {
-    if (!folder.children) return false;
-    
-    for (const child of folder.children) {
-        if (child.type === 'folder') {
-            const childId = `folder-${child.name}`;
-            if (childId === targetId || isDescendant(child, targetId)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function showContextMenu(e, item, treeItem) {
-    const existing = document.querySelector('.context-menu');
-    if (existing) {
-        existing.remove();
-    }
-
-    const menu = document.createElement('div');
-    menu.className = 'context-menu';
-    menu.style.top = `${e.pageY}px`;
-    menu.style.left = `${e.pageX}px`;
-
-    const menuItems = [];
-
-    if (item.type === 'folder') {
-        menuItems.push({
-            icon: 'fa-file',
-            text: 'New File',
-            action: () => createNewFile(item, treeItem)
-        });
-        menuItems.push({
-            icon: 'fa-folder-plus',
-            text: 'New Folder',
-            action: () => createNewFolder(item, treeItem)
-        });
-    }
-
-    menuItems.push({
-        icon: 'fa-edit',
-        text: 'Rename',
-        action: () => renameItem(item, treeItem)
-    });
-    menuItems.push({
-        icon: 'fa-trash',
-        text: 'Delete',
-        action: () => deleteItem(item, treeItem)
-    });
-
-    menuItems.forEach((menuItem, index) => {
-        if (index > 0) {
-            const separator = document.createElement('div');
-            separator.className = 'context-menu-separator';
-            menu.appendChild(separator);
-        }
-
-        const item = document.createElement('div');
-        item.className = 'context-menu-item';
-        item.innerHTML = `
-            <i class="fas ${menuItem.icon}"></i>
-            <span>${menuItem.text}</span>
-        `;
-        item.addEventListener('click', () => {
-            menuItem.action();
-            menu.remove();
-        });
-        menu.appendChild(item);
-    });
-
-    document.body.appendChild(menu);
-
-    // Close menu when clicking outside
-    const closeMenu = (e) => {
-        if (!menu.contains(e.target)) {
-            menu.remove();
-            document.removeEventListener('click', closeMenu);
-        }
-    };
-            setTimeout(() => {
-        document.addEventListener('click', closeMenu);
-    }, 0);
-}
-
-function createNewFile(parentItem, parentElement) {
-    const name = prompt('Enter note name:');
-    if (!name) return;
-
-    // Store expanded folders state
-    const expandedFolders = new Set();
-    document.querySelectorAll('.tree-item.expanded').forEach(folder => {
-        const folderName = folder.querySelector('.tree-item-text').textContent;
-        expandedFolders.add(folderName);
-    });
-
-    const newFile = {
-        type: 'file',
-        name: name + '.md', // Add .md extension for markdown files
-        content: '',
-        created: new Date().toISOString(),
-        modified: new Date().toISOString(),
-        id: Date.now(), // Add unique ID for the note
-        isNote: true
-    };
-
-    // Add to parent's children
-    if (!parentItem.children) {
-        parentItem.children = [];
-    }
-    parentItem.children.push(newFile);
-    
-    // Save to both file system and notes storage
-    saveFileSystem();
-    saveNote(newFile);
-
-    // Add parent folder to expanded folders if it exists
-    if (parentItem.name) {
-        expandedFolders.add(parentItem.name);
-    }
-
-    // Refresh the entire tree to ensure proper rendering
-    refreshFileTree();
-
-    // Restore expanded state
-    expandedFolders.forEach(folderName => {
-        const folder = Array.from(document.querySelectorAll('.tree-item-text')).find(el => el.textContent === folderName)?.closest('.tree-item');
-        if (folder) {
-            folder.classList.add('expanded');
-            const folderIcon = folder.querySelector('.tree-item-icon i');
-            if (folderIcon) {
-                folderIcon.className = 'fas fa-folder-open';
-            }
-        }
-    });
-}
-
-function saveNote(note) {
-    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-    notes.push({
-        id: note.id,
-        name: note.name,
-        content: note.content,
-        created: note.created,
-        modified: note.modified,
-        files: []
-    });
-    localStorage.setItem('notes', JSON.stringify(notes));
-}
-
-function openFile(item) {
-    if (item.isNote) {
-        // Handle note opening
-        const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const note = notes.find(n => n.id === item.id);
-        if (note) {
-            openNote(note);
-        }
-    } else {
-        // Handle other file types if needed
-        console.log('Opening file:', item.name);
-    }
-}
-
-// Initialize file tree with existing notes
-function initializeFileSystem() {
-    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-    fileSystem.children = []; // Clear existing children
-    
-    // Convert existing notes to file system format
-    notes.forEach(note => {
-        const noteFile = {
-            type: 'file',
-            name: note.name.endsWith('.md') ? note.name : note.name + '.md',
-            content: note.content,
-            created: note.created,
-            modified: note.modified,
-            id: note.id,
-            isNote: true
-        };
-        
-        fileSystem.children.push(noteFile);
-    });
-    
-    saveFileSystem();
-    refreshFileTree();
-}
-
-function refreshFileTree() {
-    const treeContent = document.getElementById('fileTree');
-    if (treeContent) {
-        treeContent.innerHTML = '';
-        fileSystem.children.forEach(item => {
-            treeContent.appendChild(createTreeItem(item));
-        });
-    }
-}
-
-function createNewFolder() {
-    const folderName = document.getElementById('folderName').value.trim();
-    const folderDescription = document.getElementById('folderDescription').value.trim();
-    
-    if (!folderName) {
-        alert('Please enter a folder name');
-        return;
-    }
-
-    // Store expanded folders state
-    const expandedFolders = new Set();
-    document.querySelectorAll('.tree-item.expanded').forEach(folder => {
-        const folderName = folder.querySelector('.tree-item-text').textContent;
-        expandedFolders.add(folderName);
-    });
-    
-    const newFolder = {
-        type: 'folder',
-        name: folderName,
-        description: folderDescription,
-        children: [],
-        created: new Date().toISOString(),
-        modified: new Date().toISOString()
-    };
-
-    // Add to root level of file system
-    if (!fileSystem.children) {
-        fileSystem.children = [];
-    }
-    fileSystem.children.push(newFolder);
-    
-    // Save file system
-    saveFileSystem();
-
-    // Refresh the file tree
-    refreshFileTree();
-
-    // Restore expanded state
-    expandedFolders.forEach(folderName => {
-        const folder = Array.from(document.querySelectorAll('.tree-item-text')).find(el => el.textContent === folderName)?.closest('.tree-item');
-        if (folder) {
-            folder.classList.add('expanded');
-            const folderIcon = folder.querySelector('.tree-item-icon i');
-            if (folderIcon) {
-                folderIcon.className = 'fas fa-folder-open';
-            }
-        }
-    });
-    
-    // Close modal and reset form
-    closeModal('newFolderModal');
-    document.getElementById('newFolderForm').reset();
-}
-
-function renameItem(item, element) {
-    let newName;
-    if (arePopupsDisabled()) {
-        // If popups are disabled, use inline editing
-        const textElement = element.querySelector('.tree-item-text');
-        textElement.contentEditable = true;
-        textElement.focus();
-        
-        // Select the text without the extension for notes
-        if (item.isNote) {
-            const nameWithoutExt = item.name.replace('.md', '');
-            textElement.textContent = nameWithoutExt;
-            // Create a range to select the text
-            const range = document.createRange();
-            range.selectNodeContents(textElement);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-
-        const finishRename = () => {
-            textElement.contentEditable = false;
-            newName = textElement.textContent;
-            if (newName && newName !== item.name) {
-                applyRename(item, element, newName);
-            } else {
-                textElement.textContent = item.name;
-            }
-        };
-
-        textElement.addEventListener('blur', finishRename, { once: true });
-        textElement.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                textElement.blur();
-            } else if (e.key === 'Escape') {
-                textElement.textContent = item.name;
-                textElement.blur();
-            }
-        });
-    } else {
-        // Use prompt when popups are enabled
-        newName = prompt('Enter new name:', item.name.replace('.md', ''));
-        if (newName && newName !== item.name) {
-            applyRename(item, element, newName);
-        }
-    }
-}
-
-function applyRename(item, element, newName) {
-    // Add .md extension for notes if not present
-    const finalName = item.isNote ? (newName.endsWith('.md') ? newName : newName + '.md') : newName;
-    
-    item.name = finalName;
-    item.modified = new Date().toISOString();
-    element.querySelector('.tree-item-text').textContent = finalName;
-    
-    // Update note name in notes storage if it's a note
-    if (item.isNote) {
-    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const note = notes.find(n => n.id === item.id);
-        if (note) {
-            note.name = finalName;
-            note.modified = item.modified;
-            localStorage.setItem('notes', JSON.stringify(notes));
-        }
-    }
-    
-    saveFileSystem();
-}
-
-function deleteItem(item, element) {
-    if (!arePopupsDisabled() && !confirm(`Are you sure you want to delete "${item.name}"?`)) {
-        return;
-    }
-
-    // Find and remove item from parent's children
-    const parent = element.parentElement.closest('.tree-item');
-    if (parent) {
-        const parentItem = findItemByElement(parent);
-        if (parentItem) {
-            parentItem.children = parentItem.children.filter(child => child !== item);
-        }
-    } else {
-        // Item is at root level
-        fileSystem.children = fileSystem.children.filter(child => child !== item);
-    }
-
-    // If it's a note, remove from notes storage
-    if (item.isNote) {
-        const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const updatedNotes = notes.filter(n => n.id !== item.id);
-        localStorage.setItem('notes', JSON.stringify(updatedNotes));
-    }
-
-    // Add fade-out animation
-    element.style.transition = 'opacity 0.3s ease';
-    element.style.opacity = '0';
-    setTimeout(() => {
-        element.remove();
-    }, 300);
-    
-    saveFileSystem();
-}
-
-function findItemByElement(element) {
-    // Traverse the DOM tree up to find the corresponding item in the fileSystem
-    const path = [];
-    let current = element;
-    while (current && !current.classList.contains('file-tree-content')) {
-        if (current.classList.contains('tree-item')) {
-            path.unshift(current.querySelector('.tree-item-text').textContent);
-        }
-        current = current.parentElement;
-    }
-
-    // Traverse the fileSystem using the path
-    let item = fileSystem;
-    for (const name of path) {
-        if (item.children) {
-            item = item.children.find(child => child.name === name);
-            if (!item) return null;
-        }
-    }
-    return item;
-}
-
-function saveFileSystem() {
-    localStorage.setItem('fileSystem', JSON.stringify(fileSystem));
-}
-
-function loadFileSystem() {
-    const saved = localStorage.getItem('fileSystem');
-    if (saved) {
-        fileSystem = JSON.parse(saved);
-    }
-
-    const treeContent = document.getElementById('fileTree');
-    if (treeContent) {
-        treeContent.innerHTML = '';
-        fileSystem.children.forEach(item => {
-            treeContent.appendChild(createTreeItem(item));
-        });
-    }
-}
-
-// Update the DOMContentLoaded event handler
-document.addEventListener('DOMContentLoaded', () => {
-    initializeFileSystem();
-    
-    // Sort files initially by name
-    sortFiles('name');
-
-    // Remove onclick attributes and add event listeners
-    const newNoteHeaderBtn = document.querySelector('.action-btn[title="New note"]');
-    if (newNoteHeaderBtn) {
-        newNoteHeaderBtn.removeAttribute('onclick');
-        newNoteHeaderBtn.addEventListener('click', () => {
-            openModal('newNoteModal');
-        });
-    }
-
-    const newFolderBtn = document.querySelector('.action-btn[title="New folder"]');
-    if (newFolderBtn) {
-        newFolderBtn.removeAttribute('onclick');
-        newFolderBtn.addEventListener('click', () => {
-            openModal('newFolderModal');
-        });
-    }
-
-    // Add click handler for sort button
-    const sortBtn = document.querySelector('.action-btn[title="Sort files"]');
-    if (sortBtn) {
-        sortBtn.removeAttribute('onclick');
-        sortBtn.addEventListener('click', (event) => {
-            toggleSortMenu(event);
-        });
-    }
-
-    // Add drop functionality to the file tree content area
-    const fileTreeContent = document.getElementById('fileTree');
-    if (fileTreeContent) {
-        fileTreeContent.addEventListener('dragover', handleRootDragOver);
-        fileTreeContent.addEventListener('dragleave', handleRootDragLeave);
-        fileTreeContent.addEventListener('drop', handleRootDrop);
+    // Load previously selected directory
+    const savedDirectory = localStorage.getItem('selectedDirectory');
+    if (savedDirectory) {
+        currentDirectorySpan.textContent = savedDirectory;
+        loadFilesFromDirectory(savedDirectory);
     }
 });
 
@@ -2215,3 +1863,36 @@ async function deleteNote(noteId) {
 document.getElementById('selectDirectoryBtn').addEventListener('click', selectDirectory);
 
 // ... existing code ... 
+
+async function loadFilesFromDirectory(dirPath) {
+    try {
+        const fileTree = document.getElementById('fileTree');
+        if (!fileTree) return;
+        
+        fileTree.innerHTML = '';
+        console.log('Loading directory:', dirPath);
+        
+        const files = await window.electronAPI.readDirectory(dirPath);
+        if (!files || !Array.isArray(files)) {
+            console.error('No files returned or invalid response');
+            return;
+        }
+        
+        console.log('Files loaded:', files);
+        
+        // Sort files (folders first, then alphabetically)
+        files.sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+        });
+        
+        // Create file tree items
+        files.forEach(file => {
+            const item = createTreeItem(file);
+            fileTree.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error loading files:', error);
+    }
+} 

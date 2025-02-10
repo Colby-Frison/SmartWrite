@@ -16,9 +16,9 @@
             <div class="window-title">SmartWrite</div>
         </div>
         <div class="window-controls-container">
-            <button class="window-control minimize" onclick="window.electronAPI.minimizeWindow()">&#8722;</button>
-            <button class="window-control maximize" onclick="window.electronAPI.maximizeWindow()">&#9633;</button>
-            <button class="window-control close" onclick="window.electronAPI.closeWindow()">&#10005;</button>
+            <button class="window-control minimize" id="minimizeBtn" type="button" onclick="console.log('HTML click minimize')">&#8722;</button>
+            <button class="window-control maximize" id="maximizeBtn" type="button" onclick="console.log('HTML click maximize')">&#9633;</button>
+            <button class="window-control close" id="closeBtn" type="button" onclick="console.log('HTML click close')">&#10005;</button>
         </div>
     </div>
     <button class="sidebar-toggle-button">
@@ -284,8 +284,8 @@
                         <div class="settings-section">
                             <h3>Notes Directory</h3>
                             <div class="directory-selector">
-                                <span id="currentDirectory">No folder selected</span>
-                                <button id="selectDirectoryBtn">Choose Folder</button>
+                                <span id="currentDirectory">No directory selected</span>
+                                <button id="selectDirectoryBtn" class="btn">Select Directory</button>
                             </div>
                         </div>
                     </div>
