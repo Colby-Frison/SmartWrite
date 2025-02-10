@@ -1,9 +1,28 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { spawn } = require('child_process');
+let mainWindow;
+let djangoProcess;
+
+function startDjangoServer() {
+    // Start Django server on port 8001 instead of 8000
+    djangoProcess = spawn('python', ['manage.py', 'runserver', '8001'], {
+        detached: false,
+        stdio: 'pipe'
+    });
+
+    djangoProcess.stdout.on('data', (data) => {
+        console.log(`Django: ${data}`);
+    });
+
+    djangoProcess.stderr.on('data', (data) => {
+        console.error(`Django Error: ${data}`);
+    });
+}
 
 function createWindow() {
     // Create the browser window
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         minWidth: 800,
@@ -18,7 +37,7 @@ function createWindow() {
         show: false // Prevent white flash on load
     });
 
-    // Load the index.html file
+    // Load workspace.html directly instead of going through Django
     mainWindow.loadFile('workspace.html');
 
     // Add electron-only class to body when app loads
@@ -39,34 +58,47 @@ function createWindow() {
     }
 
     // Handle window controls
-    ipcMain.on('minimize-window', () => {
-        mainWindow.minimize();
-    });
-
-    ipcMain.on('maximize-window', () => {
-        if (mainWindow.isMaximized()) {
-            mainWindow.unmaximize();
-        } else {
-            mainWindow.maximize();
-        }
-    });
-
-    ipcMain.on('close-window', () => {
-        mainWindow.close();
+    mainWindow.on('closed', function () {
+        mainWindow = null;
     });
 }
 
 // This method will be called when Electron has finished initialization
-app.whenReady().then(createWindow);
+app.on('ready', () => {
+    // Remove Django server start
+    // startDjangoServer();
+    createWindow();
+});
 
 // Quit when all windows are closed
-app.on('window-all-closed', () => {
+app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {
+        // Kill Django server
+        if (djangoProcess) {
+            djangoProcess.kill('SIGTERM');
+        }
         app.quit();
     }
 });
 
-app.on('activate', () => {
+// Window control handlers
+ipcMain.on('minimize-window', () => {
+    mainWindow.minimize();
+});
+
+ipcMain.on('maximize-window', () => {
+    if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+    } else {
+        mainWindow.maximize();
+    }
+});
+
+ipcMain.on('close-window', () => {
+    mainWindow.close();
+});
+
+app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }

@@ -1,54 +1,48 @@
 {
   "name": "smartwrite",
   "version": "1.0.0",
-  "description": "SmartWrite - Transform Your Notes, Enhance Your Learning",
+  "description": "SmartWrite Document Analysis Tool",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "postinstall": "electron-builder install-app-deps"
+    "build": "electron-builder"
   },
-  "author": "Your Team Name",
-  "license": "ISC",
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
-    "electron": "^28.1.0",
+    "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
     "pdf.js": "^0.1.0"
   },
   "build": {
-    "appId": "com.smartwrite.app",
-    "productName": "SmartWrite",
-    "directories": {
-      "output": "dist"
-    },
+    "appId": "com.yourcompany.smartwrite",
     "files": [
       "**/*",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-      "!**/node_modules/*.d.ts",
-      "!**/node_modules/.bin",
-      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
-      "!.editorconfig",
-      "!**/._*",
-      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
-      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
-      "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+      "static/**/*",
+      "workspace.html"
     ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": "nsis"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": "AppImage"
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    }
+    "extraResources": [
+      {
+        "from": ".",
+        "to": "app",
+        "filter": [
+          "**/*",
+          "!node_modules",
+          "!build",
+          "!dist"
+        ]
+      }
+    ]
   }
 } 
