@@ -2126,4 +2126,92 @@ function removeItemFromFileSystem(item) {
         return false;
     }
     removeFromParent(fileSystem.children);
-} 
+}
+
+let sourceDirectory = null;
+
+// Add near the beginning of the file
+async function initializeApp() {
+    // ... existing initialization code ...
+    
+    // Request folder access on startup if not already selected
+    if (!sourceDirectory) {
+        await selectDirectory();
+    }
+    
+    loadNotesFromDirectory();
+}
+
+async function selectDirectory() {
+    try {
+        const dirHandle = await window.showDirectoryPicker();
+        sourceDirectory = dirHandle;
+        localStorage.setItem('lastDirectoryHandle', JSON.stringify(await dirHandle.serialize()));
+        document.getElementById('currentDirectory').textContent = dirHandle.name;
+        await loadNotesFromDirectory();
+    } catch (err) {
+        console.error('Error selecting directory:', err);
+    }
+}
+
+async function loadNotesFromDirectory() {
+    if (!sourceDirectory) return;
+    
+    clearNotesList();
+    
+    try {
+        for await (const entry of sourceDirectory.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.md')) {
+                const file = await entry.getFile();
+                const content = await file.text();
+                const note = {
+                    id: entry.name.replace('.md', ''),
+                    title: entry.name.replace('.md', ''),
+                    content: content,
+                    lastModified: file.lastModified
+                };
+                addNoteToList(note);
+            }
+        }
+    } catch (err) {
+        console.error('Error loading notes:', err);
+    }
+}
+
+// Modify the existing saveNote function
+async function saveNote(note) {
+    if (!sourceDirectory) {
+        console.error('No directory selected');
+        return;
+    }
+
+    try {
+        const fileName = `${note.title}.md`;
+        const fileHandle = await sourceDirectory.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(note.content);
+        await writable.close();
+    } catch (err) {
+        console.error('Error saving note:', err);
+    }
+}
+
+// Modify the existing deleteNote function
+async function deleteNote(noteId) {
+    if (!sourceDirectory) {
+        console.error('No directory selected');
+        return;
+    }
+
+    try {
+        await sourceDirectory.removeEntry(`${noteId}.md`);
+        // ... existing delete note UI code ...
+    } catch (err) {
+        console.error('Error deleting note:', err);
+    }
+}
+
+// Add event listeners in your initialization code
+document.getElementById('selectDirectoryBtn').addEventListener('click', selectDirectory);
+
+// ... existing code ... 
