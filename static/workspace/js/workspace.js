@@ -1606,22 +1606,44 @@ async function loadPDFFile(file, container) {
 
 async function loadMarkdownFile(file, container) {
     try {
-        // Create editor container
+        // Create editor container with split view
         const editorContainer = document.createElement('div');
         editorContainer.id = 'markdownEditor';
         editorContainer.className = 'markdown-editor-container';
         container.appendChild(editorContainer);
 
+        // Create left panel for editing
+        const editorPanel = document.createElement('div');
+        editorPanel.className = 'editor-panel';
+        
         // Create textarea for editing
         const editor = document.createElement('textarea');
         editor.className = 'markdown-editor';
-        editorContainer.appendChild(editor);
+        editor.dataset.filePath = file.path;
+        editorPanel.appendChild(editor);
+        
+        // Create right panel for preview
+        const previewPanel = document.createElement('div');
+        previewPanel.className = 'preview-panel';
+        previewPanel.innerHTML = '<div class="markdown-preview"></div>';
+        
+        // Add panels to container
+        editorContainer.appendChild(editorPanel);
+        editorContainer.appendChild(previewPanel);
 
         // Read and set file content
         const content = await window.electronAPI.readFile(file.path);
         editor.value = content;
+        
+        // Initial preview render
+        updatePreview(editor.value, file.path);
 
-        // Set up auto-save
+        // Set up real-time preview
+        editor.addEventListener('input', (e) => {
+            updatePreview(e.target.value, file.path);
+        });
+
+        // Auto-save
         editor.addEventListener('input', debounce(async () => {
             try {
                 await window.electronAPI.writeFile(file.path, editor.value);
@@ -1636,17 +1658,41 @@ async function loadMarkdownFile(file, container) {
     }
 }
 
-// Utility function for debouncing
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+async function updatePreview(markdown, filePath) {
+    const previewElement = document.querySelector('.markdown-preview');
+    if (!previewElement) return;
+
+    try {
+        // Convert markdown using Python
+        const html = await window.electronAPI.convertMarkdown(markdown, filePath);
+        previewElement.innerHTML = html;
+
+        // Add error handling for images
+        previewElement.querySelectorAll('img').forEach(img => {
+            // Decode the URL for display purposes
+            const decodedSrc = decodeURIComponent(img.src);
+            
+            img.onerror = function() {
+                console.error('Failed to load image:', {
+                    original: this.src,
+                    decoded: decodedSrc,
+                    exists: window.electronAPI.fileExists(decodedSrc.replace('file:///', ''))
+                });
+                
+                this.style.border = '2px solid red';
+                this.style.padding = '10px';
+                this.style.backgroundColor = '#ffebee';
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = 'red';
+                errorMsg.style.fontSize = '12px';
+                errorMsg.textContent = `Error loading image: ${decodedSrc.split('/').pop()}`;
+                this.parentNode.insertBefore(errorMsg, this.nextSibling);
+            };
+        });
+    } catch (error) {
+        console.error('Error converting markdown:', error);
+        previewElement.innerHTML = `<div class="error">Error converting markdown: ${error.message}</div>`;
+    }
 }
 
 // Add directory selection event listener
@@ -1894,5 +1940,18 @@ async function loadFilesFromDirectory(dirPath) {
         });
     } catch (error) {
         console.error('Error loading files:', error);
+    }
+}
+
+// Add this function to help debug image paths
+async function testImagePath(imagePath) {
+    try {
+        // Try to read the file to verify it exists
+        await window.electronAPI.readFile(imagePath);
+        console.log('Image exists:', imagePath);
+        return true;
+    } catch (error) {
+        console.error('Image not found:', imagePath);
+        return false;
     }
 } 

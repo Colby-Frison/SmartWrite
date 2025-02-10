@@ -33,6 +33,21 @@ const electronAPI = {
     },
     writeFile: async (filePath, content) => {
         return await ipcRenderer.invoke('write-file', filePath, content);
+    },
+    path: {
+        dirname: path.dirname,
+        join: path.join
+    },
+    convertMarkdown: async (markdown, filePath) => {
+        return await ipcRenderer.invoke('convert-markdown', markdown, filePath);
+    },
+    fileExists: async (filePath) => {
+        try {
+            await fs.access(filePath);
+            return true;
+        } catch {
+            return false;
+        }
     }
 };
 

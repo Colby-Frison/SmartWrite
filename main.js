@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
@@ -33,7 +33,10 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             sandbox: false,
-            preload: path.join(__dirname, 'preload.js')
+            webSecurity: true,
+            preload: path.join(__dirname, 'preload.js'),
+            webviewTag: true,
+            allowRunningInsecureContent: false
         },
         show: false
     });
@@ -60,8 +63,19 @@ function createWindow() {
     });
 }
 
-// This method will be called when Electron has finished initialization
-app.on('ready', () => {
+// Register file protocol handler
+app.whenReady().then(() => {
+    protocol.registerFileProtocol('file', (request, callback) => {
+        try {
+            const filePath = decodeURIComponent(request.url.replace('file:///', ''));
+            const resolvedPath = path.resolve(filePath);
+            return callback(resolvedPath);
+        } catch (error) {
+            console.error('Protocol handler error:', error);
+            callback({ error: -2 });
+        }
+    });
+
     // Remove Django server start
     // startDjangoServer();
     createWindow();
@@ -192,6 +206,41 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
         return true;
     } catch (error) {
         console.error('Error writing file:', error);
+        throw error;
+    }
+});
+
+// Add to your existing ipcMain handlers
+ipcMain.handle('convert-markdown', async (event, markdown, filePath) => {
+    try {
+        const python = spawn('python', ['markdown_converter.py'], {
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        const input = {
+            markdown: markdown,
+            filePath: filePath
+        };
+
+        python.stdin.write(JSON.stringify(input));
+        python.stdin.end();
+
+        let result = '';
+        python.stdout.on('data', (data) => {
+            result += data.toString();
+        });
+
+        return new Promise((resolve, reject) => {
+            python.on('close', (code) => {
+                if (code !== 0) {
+                    reject(new Error(`Python process exited with code ${code}`));
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error in markdown conversion:', error);
         throw error;
     }
 }); 
