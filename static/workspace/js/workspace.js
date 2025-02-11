@@ -1,3 +1,16 @@
+// Add this debounce function at the top of the file
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Modal Functions
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
@@ -1643,7 +1656,7 @@ async function loadMarkdownFile(file, container) {
             updatePreview(e.target.value, file.path);
         });
 
-        // Auto-save
+        // Auto-save with debouncing
         editor.addEventListener('input', debounce(async () => {
             try {
                 await window.electronAPI.writeFile(file.path, editor.value);
@@ -1660,38 +1673,90 @@ async function loadMarkdownFile(file, container) {
 
 async function updatePreview(markdown, filePath) {
     const previewElement = document.querySelector('.markdown-preview');
-    if (!previewElement) return;
+    if (!previewElement) {
+        console.error('Preview element not found');
+        return;
+    }
+
+    console.log('Updating preview with:', {
+        markdown: markdown,
+        filePath: filePath
+    });
 
     try {
         // Convert markdown using Python
+        console.log('Calling convertMarkdown...');
         const html = await window.electronAPI.convertMarkdown(markdown, filePath);
+        console.log('Received HTML:', html);
+
+        if (!html) {
+            console.error('No HTML content received from converter');
+            previewElement.innerHTML = '<div class="error">No content received from markdown converter</div>';
+            return;
+        }
+
+        // Update the preview
         previewElement.innerHTML = html;
+        console.log('Preview updated');
 
         // Add error handling for images
         previewElement.querySelectorAll('img').forEach(img => {
-            // Decode the URL for display purposes
-            const decodedSrc = decodeURIComponent(img.src);
+            console.log('Processing image:', img.src);
             
-            img.onerror = function() {
-                console.error('Failed to load image:', {
-                    original: this.src,
-                    decoded: decodedSrc,
-                    exists: window.electronAPI.fileExists(decodedSrc.replace('file:///', ''))
-                });
+            // Create a wrapper div for the image and error message
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+
+            // Add loading indicator
+            img.style.opacity = '0.5';
+            const loading = document.createElement('div');
+            loading.className = 'image-loading';
+            loading.textContent = 'Loading image...';
+            wrapper.appendChild(loading);
+
+            // Handle successful load
+            img.onload = function() {
+                console.log('Image loaded successfully:', img.src);
+                img.style.opacity = '1';
+                loading.remove();
+            };
+
+            // Handle load error
+            img.onerror = async function() {
+                console.error('Image load error:', img.src);
+                loading.remove();
+                const decodedSrc = decodeURIComponent(img.src.replace('file:///', ''));
                 
-                this.style.border = '2px solid red';
-                this.style.padding = '10px';
-                this.style.backgroundColor = '#ffebee';
+                // Try to verify file existence
+                const exists = await window.electronAPI.fileExists(decodedSrc);
+                console.log('File exists check:', {
+                    path: decodedSrc,
+                    exists: exists
+                });
+
+                // Show error message
                 const errorMsg = document.createElement('div');
-                errorMsg.style.color = 'red';
-                errorMsg.style.fontSize = '12px';
-                errorMsg.textContent = `Error loading image: ${decodedSrc.split('/').pop()}`;
-                this.parentNode.insertBefore(errorMsg, this.nextSibling);
+                errorMsg.className = 'image-error';
+                errorMsg.innerHTML = `
+                    <div style="color: red; font-size: 12px; margin-top: 5px;">
+                        Failed to load image: ${decodedSrc.split('/').pop()}<br>
+                        Path: ${decodedSrc}<br>
+                        File exists: ${exists ? 'Yes' : 'No'}
+                    </div>
+                `;
+                wrapper.appendChild(errorMsg);
             };
         });
     } catch (error) {
-        console.error('Error converting markdown:', error);
-        previewElement.innerHTML = `<div class="error">Error converting markdown: ${error.message}</div>`;
+        console.error('Error in updatePreview:', error);
+        previewElement.innerHTML = `
+            <div class="error">
+                Error converting markdown: ${error.message}<br>
+                Stack: ${error.stack}
+            </div>
+        `;
     }
 }
 

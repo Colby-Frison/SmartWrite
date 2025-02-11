@@ -212,6 +212,11 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
 
 // Add to your existing ipcMain handlers
 ipcMain.handle('convert-markdown', async (event, markdown, filePath) => {
+    console.log('Main: convert-markdown called with:', {
+        markdown: markdown,
+        filePath: filePath
+    });
+    
     try {
         const python = spawn('python', ['markdown_converter.py'], {
             stdio: ['pipe', 'pipe', 'pipe']
@@ -222,25 +227,36 @@ ipcMain.handle('convert-markdown', async (event, markdown, filePath) => {
             filePath: filePath
         };
 
+        console.log('Main: Sending to Python:', JSON.stringify(input));
+
         python.stdin.write(JSON.stringify(input));
         python.stdin.end();
 
         let result = '';
+        let error = '';
+
         python.stdout.on('data', (data) => {
             result += data.toString();
+            console.log('Main: Python stdout:', data.toString());
+        });
+
+        python.stderr.on('data', (data) => {
+            error += data.toString();
+            console.error('Main: Python stderr:', data.toString());
         });
 
         return new Promise((resolve, reject) => {
             python.on('close', (code) => {
+                console.log('Main: Python process closed with code:', code);
                 if (code !== 0) {
-                    reject(new Error(`Python process exited with code ${code}`));
+                    reject(new Error(`Python process exited with code ${code}\nError: ${error}`));
                 } else {
                     resolve(result);
                 }
             });
         });
     } catch (error) {
-        console.error('Error in markdown conversion:', error);
+        console.error('Main: Error in markdown conversion:', error);
         throw error;
     }
 }); 

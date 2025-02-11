@@ -39,7 +39,18 @@ const electronAPI = {
         join: path.join
     },
     convertMarkdown: async (markdown, filePath) => {
-        return await ipcRenderer.invoke('convert-markdown', markdown, filePath);
+        console.log('Preload: convertMarkdown called with:', {
+            markdown: markdown,
+            filePath: filePath
+        });
+        try {
+            const result = await ipcRenderer.invoke('convert-markdown', markdown, filePath);
+            console.log('Preload: convertMarkdown result:', result);
+            return result;
+        } catch (error) {
+            console.error('Preload: convertMarkdown error:', error);
+            throw error;
+        }
     },
     fileExists: async (filePath) => {
         try {
