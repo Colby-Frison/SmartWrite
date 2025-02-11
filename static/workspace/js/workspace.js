@@ -1617,6 +1617,94 @@ async function loadPDFFile(file, container) {
     }
 }
 
+// Update the addLineNumbersToHtml function to better handle block elements
+function addLineNumbersToHtml(html) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    let lineNumber = 1;
+    const processNode = (node) => {
+        if (node.nodeType === 3) { // Text node
+            const lines = node.textContent.split('\n');
+            const fragments = lines.map((line, i) => {
+                if (!line.trim()) return line; // Keep empty lines as-is
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-line';
+                wrapper.dataset.line = lineNumber++;
+                wrapper.textContent = line;
+                return wrapper;
+            });
+            if (fragments.length) {
+                node.replaceWith(...fragments);
+            }
+        } else if (node.nodeType === 1) { // Element node
+            // Don't wrap these elements
+            const skipElements = ['PRE', 'CODE', 'TABLE'];
+            if (!skipElements.includes(node.tagName)) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-line';
+                wrapper.dataset.line = lineNumber++;
+                node.parentNode.insertBefore(wrapper, node);
+                wrapper.appendChild(node);
+            }
+            // Process children
+            Array.from(node.childNodes).forEach(processNode);
+        }
+    };
+
+    Array.from(tempDiv.childNodes).forEach(processNode);
+    return tempDiv.innerHTML;
+}
+
+// Update the highlightPreviewLines function
+function highlightPreviewLines(startLine, endLine) {
+    const previewContainer = document.querySelector('.preview-container');
+    const previewElement = document.querySelector('.markdown-preview');
+    
+    if (!previewElement) return;
+
+    // Show preview if hidden
+    if (previewContainer.classList.contains('hidden')) {
+        previewContainer.classList.remove('hidden');
+        const togglePreviewBtn = document.querySelector('.toggle-preview-btn');
+        if (togglePreviewBtn) {
+            togglePreviewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+        // Give the preview a moment to become visible
+        setTimeout(() => highlightAndScroll(), 300);
+    } else {
+        highlightAndScroll();
+    }
+
+    function highlightAndScroll() {
+        // Remove any existing highlights
+        previewElement.querySelectorAll('.highlighted-line').forEach(el => {
+            el.classList.remove('highlighted-line');
+        });
+
+        // Find and highlight the lines
+        const lines = previewElement.querySelectorAll('.preview-line');
+        let firstHighlighted = null;
+
+        lines.forEach(line => {
+            const lineNum = parseInt(line.dataset.line);
+            if (lineNum >= startLine && lineNum <= endLine) {
+                line.classList.add('highlighted-line');
+                if (!firstHighlighted) firstHighlighted = line;
+            }
+        });
+
+        // Scroll to the first highlighted line
+        if (firstHighlighted) {
+            firstHighlighted.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }
+}
+
+// Add context menu handling to loadMarkdownFile
 async function loadMarkdownFile(file, container) {
     try {
         // Create editor container with split view
@@ -1624,6 +1712,19 @@ async function loadMarkdownFile(file, container) {
         editorContainer.id = 'markdownEditor';
         editorContainer.className = 'markdown-editor-container';
         container.appendChild(editorContainer);
+
+        // Create toolbar
+        const toolbar = document.createElement('div');
+        toolbar.className = 'markdown-toolbar';
+        
+        // Add preview toggle button
+        const togglePreviewBtn = document.createElement('button');
+        togglePreviewBtn.className = 'toggle-preview-btn';
+        togglePreviewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        togglePreviewBtn.title = 'Toggle Preview';
+        toolbar.appendChild(togglePreviewBtn);
+        
+        editorContainer.appendChild(toolbar);
 
         // Create left panel for editing
         const editorPanel = document.createElement('div');
@@ -1635,14 +1736,23 @@ async function loadMarkdownFile(file, container) {
         editor.dataset.filePath = file.path;
         editorPanel.appendChild(editor);
         
-        // Create right panel for preview
+        // Create right panel for preview with resize handle
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'preview-container';
+        
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        
         const previewPanel = document.createElement('div');
         previewPanel.className = 'preview-panel';
         previewPanel.innerHTML = '<div class="markdown-preview"></div>';
         
+        previewContainer.appendChild(resizeHandle);
+        previewContainer.appendChild(previewPanel);
+        
         // Add panels to container
         editorContainer.appendChild(editorPanel);
-        editorContainer.appendChild(previewPanel);
+        editorContainer.appendChild(previewContainer);
 
         // Read and set file content
         const content = await window.electronAPI.readFile(file.path);
@@ -1666,11 +1776,129 @@ async function loadMarkdownFile(file, container) {
             }
         }, 1000));
 
+        // Add preview toggle functionality
+        togglePreviewBtn.addEventListener('click', () => {
+            previewContainer.classList.toggle('hidden');
+            togglePreviewBtn.innerHTML = previewContainer.classList.contains('hidden') 
+                ? '<i class="fas fa-eye-slash"></i>' 
+                : '<i class="fas fa-eye"></i>';
+            
+            // Save preference
+            localStorage.setItem('previewVisible', !previewContainer.classList.contains('hidden'));
+        });
+
+        // Initialize preview visibility from saved preference
+        const previewVisible = localStorage.getItem('previewVisible') !== 'false';
+        if (!previewVisible) {
+            previewContainer.classList.add('hidden');
+            togglePreviewBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        }
+
+        // Add resize functionality
+        let isResizing = false;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.classList.add('is-resizing');
+            
+            const startX = e.clientX;
+            const startWidth = previewContainer.getBoundingClientRect().width;
+            const editorStartWidth = editorPanel.getBoundingClientRect().width;
+            const containerWidth = editorContainer.getBoundingClientRect().width;
+
+            const onMouseMove = (e) => {
+                if (!isResizing) return;
+                
+                const deltaX = startX - e.clientX;
+                const newWidth = Math.min(
+                    Math.max(200, startWidth + deltaX),  // Min width 200px
+                    containerWidth - 200  // Leave at least 200px for editor
+                );
+                
+                previewContainer.style.width = `${newWidth}px`;
+                editorPanel.style.width = `${containerWidth - newWidth}px`;
+            };
+
+            const onMouseUp = () => {
+                isResizing = false;
+                document.body.classList.remove('is-resizing');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Save width preference
+                localStorage.setItem('previewWidth', previewContainer.style.width);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        // Restore saved width
+        const savedWidth = localStorage.getItem('previewWidth');
+        if (savedWidth) {
+            previewContainer.style.width = savedWidth;
+        }
+
+        // Add context menu for the editor
+        editor.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            
+            // Get selected text and line numbers
+            const selection = editor.value.substring(
+                editor.selectionStart, 
+                editor.selectionEnd
+            );
+            
+            if (!selection) return; // No selection, don't show menu
+
+            // Calculate line numbers
+            const beforeSelection = editor.value.substring(0, editor.selectionStart);
+            const startLine = beforeSelection.split('\n').length;
+            const selectedLines = selection.split('\n').length;
+            const endLine = startLine + selectedLines - 1;
+
+            // Create and show context menu
+            const menu = document.createElement('div');
+            menu.className = 'editor-context-menu';
+            menu.innerHTML = `
+                <div class="menu-item find-in-preview">
+                    Find in Preview (Lines ${startLine}-${endLine})
+                </div>
+            `;
+
+            // Position menu
+            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${e.pageX}px`;
+            document.body.appendChild(menu);
+
+            // Handle menu item click
+            menu.querySelector('.find-in-preview').addEventListener('click', () => {
+                // Show preview if hidden
+                if (previewContainer.classList.contains('hidden')) {
+                    previewContainer.classList.remove('hidden');
+                    togglePreviewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                }
+
+                // Find and highlight the lines
+                highlightPreviewLines(startLine, endLine);
+            });
+
+            // Remove menu when clicking outside
+            const removeMenu = () => {
+                menu.remove();
+                document.removeEventListener('click', removeMenu);
+            };
+            setTimeout(() => {
+                document.addEventListener('click', removeMenu);
+            }, 0);
+        });
+
     } catch (error) {
         console.error('Error loading markdown file:', error);
     }
 }
 
+// Update the updatePreview function
 async function updatePreview(markdown, filePath) {
     const previewElement = document.querySelector('.markdown-preview');
     if (!previewElement) {
@@ -1678,26 +1906,18 @@ async function updatePreview(markdown, filePath) {
         return;
     }
 
-    console.log('Updating preview with:', {
-        markdown: markdown,
-        filePath: filePath
-    });
-
     try {
         // Convert markdown using Python
-        console.log('Calling convertMarkdown...');
         const html = await window.electronAPI.convertMarkdown(markdown, filePath);
-        console.log('Received HTML:', html);
-
         if (!html) {
             console.error('No HTML content received from converter');
             previewElement.innerHTML = '<div class="error">No content received from markdown converter</div>';
             return;
         }
 
-        // Update the preview
-        previewElement.innerHTML = html;
-        console.log('Preview updated');
+        // Add line numbers to HTML
+        const htmlWithLines = addLineNumbersToHtml(html);
+        previewElement.innerHTML = htmlWithLines;
 
         // Add error handling for images
         previewElement.querySelectorAll('img').forEach(img => {
