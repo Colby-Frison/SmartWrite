@@ -1,7 +1,15 @@
+require('dotenv').config();
 const { app, BrowserWindow, ipcMain, dialog, shell, protocol } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
+
+console.log('Checking environment variables...');
+console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+if (!process.env.GEMINI_API_KEY) {
+    console.error('GEMINI_API_KEY is not set in environment variables');
+}
+
 let mainWindow;
 let djangoProcess;
 
@@ -41,7 +49,8 @@ function createWindow() {
         show: false
     });
 
-    mainWindow.webContents.openDevTools();
+    // Open DevTools in detached mode
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
 
     mainWindow.loadFile('workspace.html');
     
@@ -259,4 +268,70 @@ ipcMain.handle('convert-markdown', async (event, markdown, filePath) => {
         console.error('Main: Error in markdown conversion:', error);
         throw error;
     }
+});
+
+// Replace the chat handler
+ipcMain.handle('send-chat-message', (event, message) => {
+    console.log('Main process: Handling chat message:', message);
+    
+    return new Promise((resolve, reject) => {
+        // Get absolute path to Python script
+        const scriptPath = path.join(__dirname, 'chat_handler.py');
+        console.log('Main process: Python script path:', scriptPath);
+        
+        const python = spawn('python', [scriptPath], {
+            stdio: ['pipe', 'pipe', 'pipe']
+        });
+
+        let outputData = '';
+        let errorData = '';
+
+        python.stdout.on('data', (data) => {
+            const chunk = data.toString();
+            console.log('Main process: Python stdout:', chunk);
+            outputData += chunk;
+        });
+
+        python.stderr.on('data', (data) => {
+            const chunk = data.toString();
+            console.log('Main process: Python stderr:', chunk);
+            errorData += chunk;
+        });
+
+        python.on('error', (error) => {
+            console.error('Main process: Failed to start Python process:', error);
+            reject(new Error('Failed to start Python process'));
+        });
+
+        python.on('close', (code) => {
+            console.log('Main process: Python process closed with code:', code);
+            console.log('Main process: Final output:', outputData);
+            console.log('Main process: Error output:', errorData);
+
+            if (code !== 0) {
+                reject(new Error(`Python process failed (${code}): ${errorData}`));
+                return;
+            }
+
+            try {
+                const result = JSON.parse(outputData);
+                console.log('Main process: Parsed result:', result);
+                
+                if (result.success) {
+                    resolve(result.response);
+                } else {
+                    reject(new Error(result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Main process: Failed to parse Python output:', error);
+                reject(new Error('Failed to parse Python response'));
+            }
+        });
+
+        // Send message to Python
+        const input = JSON.stringify({ message });
+        console.log('Main process: Sending to Python:', input);
+        python.stdin.write(input);
+        python.stdin.end();
+    });
 }); 

@@ -4,17 +4,21 @@
   "description": "SmartWrite Document Analysis Tool",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "concurrently \"python -m uvicorn chat_server:app --port 5000\" \"electron .\"",
+    "electron": "electron .",
     "build": "electron-builder"
   },
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "pdf.js": "^0.1.0"
+    "pdf.js": "^0.1.0",
+    "@google/generative-ai": "^0.2.0",
+    "dotenv": "^16.4.5"
   },
   "build": {
     "appId": "com.yourcompany.smartwrite",

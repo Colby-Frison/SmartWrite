@@ -59,6 +59,17 @@ const electronAPI = {
         } catch {
             return false;
         }
+    },
+    sendChatMessage: async (message) => {
+        console.log('Preload: sending chat message:', message);
+        try {
+            const response = await ipcRenderer.invoke('send-chat-message', message);
+            console.log('Preload: received response:', response);
+            return response;
+        } catch (error) {
+            console.error('Preload: error sending message:', error);
+            throw error;
+        }
     }
 };
 

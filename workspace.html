@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="static/workspace/css/chat.css">
 </head>
 <body class="workspace">
     <div id="titlebar" class="electron-only">
@@ -103,20 +104,19 @@
 
         <!-- Chat Section -->
         <div class="chat-section">
+            <div class="chat-header">
+                <h3>AI Assistant</h3>
+            </div>
             <div class="chat-messages" id="chatMessages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        Hello! I'm here to help you analyze your documents. What would you like to know?
-                    </div>
-                </div>
+                <!-- Messages will be added here dynamically -->
             </div>
             <div class="chat-input-container">
                 <textarea 
                     id="chatInput" 
-                    placeholder="Type your message here..."
+                    placeholder="Ask me about your documents..."
                     rows="1"
                 ></textarea>
-                <button id="sendMessage">
+                <button id="sendMessage" title="Send message">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
@@ -365,7 +365,8 @@
         </div>
     </div>
 
-    <script src="static/workspace/js/theme.js"></script>
-    <script src="static/workspace/js/workspace.js"></script>
+    <script src="static/workspace/js/theme.js" defer></script>
+    <script src="static/workspace/js/workspace.js" defer></script>
+    <script src="static/workspace/js/chat.js" defer></script>
 </body>
 </html> 
