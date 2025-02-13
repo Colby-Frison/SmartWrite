@@ -1,59 +1,121 @@
 # SmartWrite
 
-## Overview
-SmartWrite is an innovative tool that transforms handwritten notes into digital text. Powered by AI technology, it not only converts your handwritten content but also helps improve and organize your notes. The integrated AI assistant can answer questions about your notes, making it a comprehensive solution for a more efficient learning experience.
+SmartWrite is an AI-powered writing assistant built with Django and Electron.
 
-## Features
-- Handwritten text to digital conversion
-- AI-powered note enhancement
-- Intelligent note organization
-- Built-in AI assistant for answering questions
-- User-friendly web interface
-- Secure local database storage
+## Project Structure
 
-## Getting Started
+```
+SmartWrite/
+├── backend/                    # Django backend
+│   ├── smartwrite/            # Main Django project
+│   │   ├── api/              # API views and endpoints
+│   │   ├── core/             # Core application logic
+│   │   └── templates/        # Django templates
+│   ├── tests/                # Backend tests
+│   │   ├── unit/
+│   │   └── integration/
+│   ├── manage.py
+│   └── requirements.txt
+│
+├── electron/                  # Electron desktop app
+│   ├── src/
+│   │   ├── main.js          # Main process
+│   │   └── preload.js       # Preload scripts
+│   └── package.json
+│
+└── frontend/                 # Frontend assets
+    ├── static/
+    │   ├── css/
+    │   ├── js/
+    │   └── images/
+    └── templates/           # HTML templates
+```
 
-### Access
-SmartWrite is currently available as a web application, with plans for a desktop version in development.
+## Setup Instructions
 
-### How to Use
-1. Visit the SmartWrite web application
-2. Drag and drop your handwritten notes into the designated upload zone
-3. Click "Submit Files" to begin the conversion process
-4. Access the editing interface where you can:
-   - View your converted notes
-   - Interact with the AI assistant
-   - Organize your note collection
-   - Access your note history
+### Backend Setup
 
-## Future Developments
-We are actively working on several exciting features:
-- Cross-device synchronization through cloud database integration
-- Customizable AI model selection for the assistant
-- Multi-language support
-- Desktop application
+1. Create a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
 
-## Technical Details
-- Platform: Web-based application
-- Storage: Local database (cloud sync coming soon)
-- Language Support: Currently English (expansion planned)
+2. Install backend dependencies:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-## Community and Support
-We value community feedback and engagement. Users can:
-- Report issues or bugs
-- Submit feature requests
-- Ask questions about the product
-- Join our community discussions
+3. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+4. Start the Django development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+### Frontend Setup
+
+1. Install Node.js dependencies:
+   ```bash
+   cd electron
+   npm install
+   ```
+
+2. Start the Electron app:
+   ```bash
+   npm start
+   ```
+
+## Development
+
+- Backend API endpoints are located in `backend/smartwrite/api/`
+- Frontend templates are in `frontend/templates/`
+- Static assets (CSS, JS) are in `frontend/static/`
+- Electron main process code is in `electron/src/`
+
+## Testing
+
+Run backend tests:
+```bash
+cd backend
+python manage.py test
+```
+
+Run frontend tests:
+```bash
+cd electron
+npm test
+```
+
+## Building for Production
+
+1. Build the Electron app:
+   ```bash
+   cd electron
+   npm run build
+   ```
+
+2. Collect static files for Django:
+   ```bash
+   cd backend
+   python manage.py collectstatic
+   ```
 
 ## Contributing
-While SmartWrite is primarily developed by our core team, we welcome community input through our feedback channels. Please visit our community section to:
-- Report bugs
-- Share suggestions
-- Ask questions
-- Provide feedback
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
-License information coming soon.
+
+This project is licensed under the ISC License.
 
 ---
 *SmartWrite - Transform Your Notes, Enhance Your Learning*
