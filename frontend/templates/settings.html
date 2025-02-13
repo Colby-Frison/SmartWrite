@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - SmartWrite</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="brand">SmartWrite</a>
+        <div class="nav-links">
+            <a href="about.html">About</a>
+            <a href="help.html">Help</a>
+            <a href="faq.html">FAQ</a>
+            <div class="nav-icons">
+                <div class="dropdown">
+                    <button class="dropdown-trigger">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle"></i>
+                            Profile
+                        </a>
+                        <a href="settings.html" class="dropdown-item active">
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="content-box profile-box">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <h1>Settings</h1>
+            </div>
+            <div class="profile-info">
+                <div class="info-group">
+                    <h2>Appearance</h2>
+                    <div class="info-item">
+                        <span class="label">Theme:</span>
+                        <select class="settings-select">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="system">System Default</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info-group">
+                    <h2>Privacy</h2>
+                    <div class="info-item">
+                        <span class="label">File Storage:</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Usage Analytics:</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="info-group">
+                    <h2>Notifications</h2>
+                    <div class="info-item">
+                        <span class="label">Email Notifications:</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <button class="edit-profile-btn">Save Changes</button>
+        </div>
+    </div>
+    <script src="theme.js"></script>
+</body>
+</html> 

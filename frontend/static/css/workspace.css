@@ -6,6 +6,7 @@
     padding: 0;
     overflow: hidden;
     background: var(--bg-primary);
+    padding-top: 32px;
 }
 
 /* Sidebar Styles */
@@ -96,11 +97,9 @@
 .main-content {
     flex: 1;
     display: flex;
-    flex-direction: column;
     overflow: hidden;
     background: var(--bg-primary);
     position: relative;
-    z-index: 1;
 }
 
 /* Remove old toggle buttons */
@@ -303,131 +302,49 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
-    position: relative;
-    overflow: hidden;
-    min-width: 0;
+    height: 100%;
+    background: var(--bg-primary);
+    overflow: auto;
 }
 
 .pdf-viewer {
     flex: 1;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow: auto;
     background: var(--bg-primary);
     position: relative;
+    display: block;
+    padding: 1rem;
+    scroll-behavior: smooth;
 }
 
-/* Empty state */
-.no-pdf-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: var(--text-secondary);
-}
-
-.no-pdf-message i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.no-pdf-message p {
-    font-size: 1.1rem;
-}
-
-/* PDF display container */
-.pdf-display-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-}
-
-/* PDF content area */
-.pdf-content {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    padding: 2rem;
+.pdfViewerCanvas {
+    padding: .5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
+    width: max-content;
+    margin: 0 auto;
+    transform-origin: center top;
+    transition: transform 0.2s ease;
 }
 
-/* PDF Controls */
-.pdf-controls {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-secondary);
-    padding: 0.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
-    z-index: 100;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-    pointer-events: auto;
-    display: flex;
-}
-
-.pdf-controls:hover {
-    opacity: 1;
-}
-
-.zoom-control {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.zoom-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.zoom-btn:hover {
-    background: var(--hover-bg);
-}
-
-.zoom-level {
-    min-width: 60px;
-    text-align: center;
-    font-weight: 500;
-    color: var(--text-primary);
-    user-select: none;
-    font-size: 0.9rem;
-    padding: 0.25rem 0.5rem;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-/* PDF page styling */
 .pdf-page-container {
     background: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    width: fit-content;
+    padding: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 0px;
+    width: max-content;
+    position: relative;
+    margin: 0 auto;
 }
 
 .pdf-page-container canvas {
-    display: block;
-    width: 100%;
+    width: 680px; /* Base width */
     height: auto;
+    display: block;
 }
 
 /* Custom scrollbar styling */
@@ -460,10 +377,27 @@
 
 /* Chat Section */
 .chat-section {
-    height: 300px;
-    border-top: 1px solid #ddd;
+    width: 400px; /* Fixed width for chat section */
+    min-width: 300px;
+    max-width: 600px;
+    border-left: 1px solid #ddd;
     display: flex;
     flex-direction: column;
+    background: var(--bg-secondary);
+    position: relative;
+}
+
+/* Make chat section resizable */
+.chat-section::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    cursor: ew-resize;
+    background: transparent;
+    z-index: 10;
 }
 
 .chat-header {
@@ -474,7 +408,6 @@
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -514,6 +447,7 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     gap: 0.5rem;
+    background: var(--bg-secondary);
 }
 
 #chatInput {
@@ -540,31 +474,24 @@
 
 /* PDF Controls */
 .pdf-controls {
-    position: fixed;
-    top: 4rem; /* Increased to account for titlebar */
+    position: absolute;
+    top: 1rem;
     right: 1rem;
     display: flex;
     gap: 0.5rem;
     background: var(--bg-secondary);
-    padding: 0.5rem;
-    border-radius: 8px;
+    padding: 0.25rem;
+    border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    z-index: 9999; /* Increased z-index to ensure it's above everything */
+    z-index: 100;
     border: 1px solid var(--border-color);
     backdrop-filter: blur(8px);
-    transition: opacity 0.2s ease;
-    opacity: 0.8;
-    pointer-events: auto;
-}
-
-.pdf-controls:hover {
-    opacity: 1;
 }
 
 .zoom-control {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     color: var(--text-primary);
 }
 
@@ -572,16 +499,15 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    font-size: 0.9rem;
-    z-index: 9999;
+    font-size: 0.8rem;
 }
 
 .zoom-btn:hover {
@@ -590,23 +516,20 @@
 }
 
 .zoom-level {
-    min-width: 60px;
+    min-width: 48px;
     text-align: center;
     font-weight: 500;
     color: var(--text-primary);
     user-select: none;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     cursor: ns-resize;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 2px 4px;
+    border-radius: 4px;
     transition: background-color 0.2s ease;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    z-index: 9999;
 }
 
 .zoom-level:hover {
-    background: var(--hover-bg);
+    background: var(--bg-tertiary);
 }
 
 .sidebar .dropdown-menu {
@@ -1125,45 +1048,64 @@ textarea.form-input {
     -webkit-app-region: no-drag;
 }
 
-/* Title bar styles - Only visible in Electron */
+/* Title Bar Styles - Update */
 #titlebar {
-    display: none;
     height: 32px;
     background: #1e1e1e;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
-    color: #fff;
+    z-index: 1000;
+    -webkit-app-region: drag;
     border-bottom: 1px solid #333;
 }
 
-.electron-only #titlebar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .titlebar-drag-region {
-    flex-grow: 1;
-    -webkit-app-region: drag;
-    height: 32px;
+    flex: 1;
     display: flex;
     align-items: center;
+    padding-left: 12px;
 }
 
 .window-title {
-    margin-left: 12px;
+    color: #ffffff80;
     font-size: 12px;
     font-weight: 500;
-    color: #ffffff80;
 }
 
 .window-controls-container {
     display: flex;
-    height: 32px;
     -webkit-app-region: no-drag;
+}
+
+.window-control {
+    width: 46px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: #ffffff80;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    -webkit-app-region: no-drag;
+}
+
+.window-control:hover {
+    background: #ffffff20;
+    color: #fff;
+}
+
+.window-control.close:hover {
+    background: #e81123;
+    color: white;
 }
 
 /* Electron-specific adjustments */
@@ -1415,46 +1357,88 @@ textarea.form-input {
 /* File Tree Styles */
 .file-tree {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    padding: 0.5rem;
 }
 
-.file-tree-header {
-    padding: 0.5rem;
+.tree-item {
+    margin: 2px 0;
+}
+
+.tree-item-content {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.file-tree-actions {
-    display: flex;
-    gap: 0.25rem;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    padding: 0.5rem;
-    cursor: pointer;
+    padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.tree-item-content:hover {
+    background: var(--hover-bg);
+}
+
+.tree-item-toggle {
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    margin-right: 4px;
 }
 
-.action-btn:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
+.tree-item-icon {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
 }
 
-.action-btn i {
-    font-size: 0.9rem;
+.tree-item-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tree-item.folder > .tree-item-content > .tree-item-toggle > i {
+    transition: transform 0.2s ease;
+}
+
+.tree-item.folder.expanded > .tree-item-content > .tree-item-toggle > i {
+    transform: rotate(90deg);
+}
+
+.tree-item-children {
+    margin-left: 24px;
+    display: none;
+}
+
+.tree-item.expanded > .tree-item-children {
+    display: block;
+}
+
+/* File icons colors */
+.tree-item-icon .fa-folder {
+    color: #dcb67a;
+}
+
+.tree-item-icon .fa-folder-open {
+    color: #dcb67a;
+}
+
+.tree-item-icon .fa-file-pdf {
+    color: #ff6b6b;
+}
+
+.tree-item-icon .fa-file-alt {
+    color: #4ecdc4;
+}
+
+.tree-item-icon .fa-file-image {
+    color: #45b7d1;
+}
+
+.tree-item-icon .fa-file {
+    color: #8c8c8c;
 }
 
 /* Sort menu styles */
@@ -1744,77 +1728,321 @@ textarea.form-input {
     border-top-color: #404040;
 }
 
-/* Code block styling */
-.code-block-wrapper {
+/* File Tree Management Styles - Restore */
+.file-tree-header {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.file-tree-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.action-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.action-btn i {
+    font-size: 0.9rem;
+}
+
+/* Markdown Editor Styles */
+.markdown-editor-container {
+    display: flex;
+    height: 100%;
     position: relative;
-    margin: 1rem 0;
+    overflow: hidden;  /* Add this to prevent content overflow */
+}
+
+.markdown-toolbar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+}
+
+.toggle-preview-btn {
     background: var(--bg-secondary);
-    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    opacity: 0.7;
+    color: var(--text-primary);
+}
+
+.toggle-preview-btn:hover {
+    opacity: 1;
+    background: var(--bg-hover);
+}
+
+.editor-panel {
+    flex: 1;
+    min-width: 200px;
+    height: 100%;
     overflow: hidden;
 }
 
-.code-block-wrapper pre {
-    margin: 0;
-    padding: 1rem 1rem 1rem 3.5rem;
-    overflow-x: auto;
+.preview-container {
+    width: 50%;
+    min-width: 200px;
+    max-width: calc(100% - 200px);
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+    border-left: 1px solid var(--border-color);
 }
 
-.code-block-wrapper code {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.9rem;
-    line-height: 1.5;
+.preview-container.hidden {
+    width: 0;
+    min-width: 0;
+    border-left: none;
 }
 
-.line-numbers {
+.resize-handle {
     position: absolute;
-    left: 0;
+    left: -3px;  /* Adjust to center the handle on the border */
     top: 0;
     bottom: 0;
-    width: 3rem;
-    padding: 1rem 0;
-    background: var(--bg-tertiary);
-    border-right: 1px solid var(--border-color);
+    width: 6px;  /* Make handle slightly wider for easier grabbing */
+    background: transparent;
+    cursor: ew-resize;
+    transition: background-color 0.2s;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+    background: var(--accent-color);
+}
+
+.preview-panel {
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.markdown-editor {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    line-height: 1.6;
+}
+
+/* Add styles for when resizing is active */
+.is-resizing {
+    cursor: ew-resize !important;
     user-select: none;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-family: 'Fira Code', monospace;
 }
 
-.line-numbers span {
+.is-resizing .preview-container {
+    transition: none;  /* Disable transition while resizing */
+}
+
+/* Headers */
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+/* Tables */
+.markdown-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    overflow-x: auto;
     display: block;
-    line-height: 1.5;
 }
 
-/* Image error styling */
-.image-wrapper {
-    position: relative;
-    margin: 1rem 0;
+.markdown-preview th,
+.markdown-preview td {
+    border: 1px solid var(--border-color);
+    padding: 0.5em 1em;
 }
 
-.image-loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0.5rem 1rem;
+.markdown-preview th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+.markdown-preview tr:nth-child(even) {
     background: var(--bg-secondary);
+}
+
+/* Images */
+.markdown-preview img {
+    max-width: 100%;
+    height: auto;
     border-radius: 4px;
+    margin: 1em 0;
+}
+
+/* Code blocks */
+.markdown-preview pre {
+    background: var(--bg-tertiary);
+    padding: 1em;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 1em 0;
+}
+
+.markdown-preview code {
+    font-family: 'Consolas', Monaco, monospace;
+    font-size: 0.9em;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+}
+
+/* Blockquotes */
+.markdown-preview blockquote {
+    margin: 1em 0;
+    padding-left: 1em;
+    border-left: 4px solid var(--accent-primary);
     color: var(--text-secondary);
 }
 
-.error-message {
-    padding: 0.5rem 1rem;
-    background: var(--error-bg);
-    color: var(--error-text);
-    border-radius: 4px;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+/* Horizontal rules */
+.markdown-preview hr {
+    height: 2px;
+    background: var(--border-color);
+    border: none;
+    margin: 2em 0;
 }
 
-.error-message i {
-    color: var(--error-icon);
+/* Lists */
+.markdown-preview ul,
+.markdown-preview ol {
+    padding-left: 2em;
+    margin: 0.5em 0;
+}
+
+.markdown-preview li {
+    margin: 0.25em 0;
+}
+
+/* Task lists */
+.markdown-preview input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+
+/* Context Menu Styles */
+.editor-context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+    background-color: var(--bg-hover);
+}
+
+/* Line Highlighting Styles */
+.preview-line {
+    position: relative;
+    transition: background-color 0.3s ease;
+    display: block;  /* Ensure block display */
+}
+
+.preview-line.highlighted-line {
+    background-color: var(--accent-color-transparent, rgba(255, 255, 0, 0.2));
+    border-radius: 3px;
+    margin: 2px 0;
+    padding: 2px 4px;
+}
+
+/* Handle block elements */
+.preview-line > * {
+    display: inline-block;  /* Make block elements inline for highlighting */
+    width: 100%;
+    margin: inherit;
+    padding: inherit;
+}
+
+/* Special handling for certain elements */
+.preview-line > pre,
+.preview-line > table,
+.preview-line > blockquote {
+    display: block;  /* Keep these as blocks */
+}
+
+/* Animation for highlighting */
+@keyframes highlight-fade {
+    0% { background-color: var(--accent-color, rgba(255, 255, 0, 0.4)); }
+    100% { background-color: var(--accent-color-transparent, rgba(255, 255, 0, 0.2)); }
+}
+
+.highlighted-line {
+    animation: highlight-fade 1s ease-out;
+}
+
+/* Ensure proper spacing */
+.preview-line + .preview-line {
+    margin-top: 0.2em;
+}
+
+/* Handle nested elements */
+.preview-line .preview-line {
+    margin: 0;
+    padding: 0;
+}
+
+.message.loading {
+    opacity: 0.7;
+}
+
+.message.loading::after {
+    content: '...';
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
 } 

@@ -1,0 +1,74 @@
+.markdown-editor-container {
+    display: flex;
+    height: 100%;
+    position: relative;
+}
+
+.markdown-toolbar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+}
+
+.toggle-preview-btn {
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.toggle-preview-btn:hover {
+    opacity: 1;
+}
+
+.editor-panel {
+    flex: 1;
+    min-width: 200px;
+}
+
+.preview-container {
+    width: 50%;
+    min-width: 100px;
+    position: relative;
+    transition: width 0.3s ease;
+}
+
+.preview-container.hidden {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #ccc;
+    cursor: ew-resize;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.resize-handle:hover {
+    opacity: 1;
+}
+
+.preview-panel {
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.markdown-editor {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    border: none;
+    resize: none;
+    outline: none;
+} 
