@@ -20,6 +20,11 @@ var/
 .installed.cfg
 *.egg
 .env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
 .venv
 venv/
 ENV/
@@ -37,15 +42,44 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.npm/
+.node_repl_history
+.yarn-integrity
+package-lock.json
 
 # Electron
 dist/
 build/
 release/
+*.app
+*.exe
+*.dmg
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.DS_Store 
+.DS_Store
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Coverage and test reports
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/ 
