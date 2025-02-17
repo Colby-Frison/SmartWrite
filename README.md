@@ -1,7 +1,7 @@
 # SmartWrite
 
 ## Overview
-SmartWrite is an innovative tool that transforms handwritten notes into digital text. Powered by AI technology, it not only converts your handwritten content but also helps improve and organize your notes. The integrated AI assistant can answer questions about your notes, making it a comprehensive solution for a more efficient learning experience.
+SmartWrite is an innovative tool that transforms handwritten notes into digital text. Powered by AI technology, it not only converts your handwritten content but also helps improve and organize your notes. The integrated AI assistant can answer questions about your notes, making it a comprehensive solution for a more efficient learning experience
 
 ## Features
 - Handwritten text to digital conversion
