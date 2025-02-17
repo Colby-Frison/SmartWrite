@@ -1,6 +1,6 @@
 # SmartWrite
 
-SmartWrite is an AI-powered writing assistant built with Django and Electron. It combines the power of modern AI with a sleek desktop interface to help users write, edit, and enhance their documents intelligently.
+SmartWrite is an AI-powered writing assistant built with Django and Electron. It combines the power of modern AI with a sleek desktop interface to help users write, edit, and enhance their documents intelligently
 
 ## Features
 
