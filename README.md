@@ -27,10 +27,10 @@ SmartWrite/
 │       └── ... (other HTML files)
 ├── backend/
 │   └── src/
-│       ├── js/              # Node.js/Electron backend
-│       │   ├── main.js      # Main Electron process
-│       │   └── preload.js   # Electron preload script
-│       └── python/          # Python backend services
+│       └── js/              # Node.js/Electron backend
+│           ├── main.js      # Main Electron process
+│           └── preload.js   # Electron preload script
+├── .env                     # Environment configuration
 ├── .gitignore
 └── package.json            # Project dependencies and scripts
 ```
@@ -41,7 +41,6 @@ SmartWrite/
 - Node.js (Latest LTS version recommended)
 - npm or yarn package manager
   - For detailed npm installation instructions, see the [official npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- Python 3.x (for backend services)
 
 ### Installation
 1. Clone the repository:
@@ -81,6 +80,13 @@ To create a production build:
 npm run build
 ```
 
+## Environment Configuration
+The application uses a .env file for configuration. Key configurations include:
+- Development mode settings
+- Server configuration (port, host)
+- API keys
+- File processing settings
+
 ## Getting Started
 
 ### Using the Web Interface
@@ -103,7 +109,7 @@ We are actively working on several exciting features:
 
 ## Technical Details
 - Frontend: HTML, CSS, JavaScript
-- Backend: Node.js with Electron, Python
+- Backend: Node.js with Electron
 - Storage: Local database (cloud sync coming soon)
 - Language Support: Currently English (expansion planned)
 
