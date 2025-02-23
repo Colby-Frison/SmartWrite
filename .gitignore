@@ -1,6 +1,29 @@
+# Dependencies
 node_modules/
-dist/
-.DS_Store
-*.log
+__pycache__/
+*.pyc
+
+# Environment variables
 .env
-build/ 
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Operating System
+.DS_Store
+Thumbs.db 

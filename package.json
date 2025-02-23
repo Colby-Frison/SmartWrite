@@ -2,9 +2,10 @@
   "name": "smartwrite",
   "version": "1.0.0",
   "description": "SmartWrite - Transform Your Notes, Enhance Your Learning",
-  "main": "main.js",
+  "main": "backend/src/js/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "http-server frontend/public -p 8080 -c-1",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "postinstall": "electron-builder install-app-deps"
@@ -13,7 +14,8 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^28.1.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "http-server": "^14.1.1"
   },
   "dependencies": {
     "pdf.js": "^0.1.0"
@@ -51,4 +53,4 @@
       "icon": "assets/icon.icns"
     }
   }
-} 
+}

@@ -18,8 +18,8 @@ function createWindow() {
         show: false // Prevent white flash on load
     });
 
-    // Load the index.html file
-    mainWindow.loadFile('workspace.html');
+    // Load the index.html file from the frontend/public directory
+    mainWindow.loadFile(path.join(__dirname, '../../frontend/public/index.html'));
 
     // Add electron-only class to body when app loads
     mainWindow.webContents.on('did-finish-load', () => {
