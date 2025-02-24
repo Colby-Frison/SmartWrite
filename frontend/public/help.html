@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Help - SmartWrite</title>
+    <title>Help Center - SmartWrite</title>
     <link rel="stylesheet" href="/assets/styles/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">SmartWrite</a>
+        <a href="index.html" class="brand">
+            <i class="fas fa-feather-alt"></i>
+            SmartWrite
+        </a>
         <div class="nav-links">
-            <a href="about.html">About</a>
-            <a href="help.html" class="active">Help</a>
-            <a href="faq.html">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html">About</a>
+                <a href="help.html" class="active">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -38,16 +44,105 @@
             </div>
         </div>
     </nav>
-    <div class="container help-container">
-        <div class="content-box">
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header">
             <h1>Help Center</h1>
-            <div class="help-section">
-                <h2>Getting Started</h2>
-                <p>To use SmartWrite, simply drag and drop your PDF files into the upload area or click to browse your files.</p>
-                <p>We support multiple file uploads and provide real-time feedback on your selected files.</p>
+            <p>Find guides, tutorials, and answers to common questions about using SmartWrite.</p>
+        </section>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <!-- Quick Start Guide -->
+            <section class="content-section">
+                <h2>Quick Start Guide</h2>
+                <div class="help-grid">
+                    <div class="help-card">
+                        <i class="fas fa-upload"></i>
+                        <h3>Upload Documents</h3>
+                        <p>Learn how to upload and manage your PDF documents in SmartWrite.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-magic"></i>
+                        <h3>Analysis Features</h3>
+                        <p>Discover the powerful analysis tools available for your documents.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-file-export"></i>
+                        <h3>Export Results</h3>
+                        <p>Export your analysis results in various formats for easy sharing.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Video Tutorials -->
+            <section class="content-section">
+                <h2>Video Tutorials</h2>
+                <div class="help-grid">
+                    <div class="help-card">
+                        <i class="fas fa-play-circle"></i>
+                        <h3>Getting Started</h3>
+                        <p>A complete walkthrough of SmartWrite's basic features.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-graduation-cap"></i>
+                        <h3>Advanced Features</h3>
+                        <p>Learn about advanced analysis techniques and customization options.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-tools"></i>
+                        <h3>Tips & Tricks</h3>
+                        <p>Helpful tips to maximize your productivity with SmartWrite.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Options -->
+            <section class="content-section">
+                <h2>Need More Help?</h2>
+                <div class="help-grid">
+                    <div class="help-card">
+                        <i class="fas fa-comments"></i>
+                        <h3>Live Chat</h3>
+                        <p>Chat with our support team for immediate assistance.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-envelope"></i>
+                        <h3>Email Support</h3>
+                        <p>Send us an email for detailed technical support.</p>
+                    </div>
+                    <div class="help-card">
+                        <i class="fas fa-book"></i>
+                        <h3>Documentation</h3>
+                        <p>Browse our comprehensive documentation.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>SmartWrite</h4>
+                <p>AI-powered PDF analysis and insights</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <a href="mailto:support@smartwrite.com">support@smartwrite.com</a>
             </div>
         </div>
-    </div>
-    <script src="theme.js"></script>
+        <div class="footer-bottom">
+            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
+        </div>
+    </footer>
 </body>
 </html> 

@@ -8,12 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">SmartWrite</a>
+        <a href="index.html" class="brand">
+            <i class="fas fa-feather-alt"></i>
+            SmartWrite
+        </a>
         <div class="nav-links">
-            <a href="about.html">About</a>
-            <a href="help.html">Help</a>
-            <a href="faq.html" class="active">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html" class="active">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -38,19 +44,123 @@
             </div>
         </div>
     </nav>
-    <div class="container faq-container">
-        <div class="content-box">
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header">
             <h1>Frequently Asked Questions</h1>
-            <div class="faq-item">
-                <h2>What file types are supported?</h2>
-                <p>Currently, we support PDF files only, but we are working on adding more file types soon.</p>
+            <p>Find answers to common questions about SmartWrite's features and capabilities.</p>
+        </section>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <!-- General Questions -->
+            <section class="content-section">
+                <h2>General Questions</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            What file formats does SmartWrite support?
+                        </div>
+                        <div class="faq-answer">
+                            SmartWrite currently supports PDF files. We process both text-based and scanned PDFs using advanced OCR technology.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            Is there a file size limit?
+                        </div>
+                        <div class="faq-answer">
+                            Yes, the maximum file size is 50MB per document. For larger files, please contact our support team.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            How secure are my documents?
+                        </div>
+                        <div class="faq-answer">
+                            We use industry-standard encryption and security measures. Your documents are encrypted both in transit and at rest.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Account & Billing -->
+            <section class="content-section">
+                <h2>Account & Billing</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            What subscription plans are available?
+                        </div>
+                        <div class="faq-answer">
+                            We offer Free, Pro, and Enterprise plans. Each plan comes with different features and processing limits.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            Can I cancel my subscription anytime?
+                        </div>
+                        <div class="faq-answer">
+                            Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Support -->
+            <section class="content-section">
+                <h2>Technical Support</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            How can I get technical support?
+                        </div>
+                        <div class="faq-answer">
+                            You can reach our support team through live chat, email, or by submitting a ticket through your dashboard.
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <i class="fas fa-question-circle"></i>
+                            What are the system requirements?
+                        </div>
+                        <div class="faq-answer">
+                            SmartWrite works in any modern web browser. We recommend using the latest version of Chrome, Firefox, or Safari.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>SmartWrite</h4>
+                <p>AI-powered PDF analysis and insights</p>
             </div>
-            <div class="faq-item">
-                <h2>Is there a file size limit?</h2>
-                <p>Yes, individual files should not exceed XXMB for optimal processing.</p>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <a href="mailto:support@smartwrite.com">support@smartwrite.com</a>
             </div>
         </div>
-    </div>
-    <script src="theme.js"></script>
+        <div class="footer-bottom">
+            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
+        </div>
+    </footer>
 </body>
 </html> 
