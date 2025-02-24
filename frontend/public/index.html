@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome - PDF Upload</title>
+    <title>SmartWrite - AI-Powered PDF Analysis</title>
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="/assets/styles/style.css">
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <!-- Contains logo, main navigation links, and user menu -->
     <nav class="navbar">
         <a href="index.html" class="brand">SmartWrite</a>
         <div class="nav-links">
+            <!-- Main Navigation Menu -->
             <div class="nav-menu">
                 <a href="about.html">About</a>
                 <a href="help.html">Help</a>
                 <a href="faq.html">FAQ</a>
             </div>
+            <!-- User Account Menu -->
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -42,339 +46,113 @@
             </div>
         </div>
     </nav>
-    <div class="container center-upload">
-        <div class="upload-box">
-            <h2>Upload your PDFs</h2>
-            <form id="uploadForm">
-                <div class="drop-zone" id="dropZone">
-                    <input type="file" id="pdfFile" accept=".pdf" multiple style="opacity: 0; width: 100%; height: 100%; position: absolute; cursor: pointer;">
-                    <div class="drop-zone-text">
-                        <span>Drop PDFs here or click to browse</span>
-                        <span class="small">Supports multiple files</span>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section - Main landing area -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Transform Your PDF Experience</h1>
+                <p>Analyze, extract, and understand your PDF documents with the power of AI</p>
+                <a href="workspace.html" class="cta-button">Go to Workspace</a>
+            </div>
+        </section>
+
+        <!-- Features Section - Why Choose SmartWrite -->
+        <section class="features">
+            <h2>Why Choose SmartWrite?</h2>
+            <div class="feature-container">
+                <!-- Main Feature - Primary selling point -->
+                <div class="feature-main">
+                    <div class="feature-card primary">
+                        <i class="fas fa-brain"></i>
+                        <h3>AI-Powered Analysis</h3>
+                        <p>Advanced algorithms analyze your PDFs for deeper insights, providing comprehensive understanding of your documents through cutting-edge AI technology.</p>
                     </div>
                 </div>
-                <div class="file-list hidden" id="fileList">
-                    <h3>Selected Files : </h3>
-                    <ul id="selectedFiles"></ul>
+                <!-- Secondary Features - Additional benefits -->
+                <div class="feature-secondary">
+                    <div class="feature-card">
+                        <i class="fas fa-bolt"></i>
+                        <h3>Fast Processing</h3>
+                        <p>Get results quickly with our optimized processing engine</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-lock"></i>
+                        <h3>Secure & Private</h3>
+                        <p>Your documents are encrypted and processed securely</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Multiple File Support</h3>
+                        <p>Process multiple PDFs simultaneously</p>
+                    </div>
                 </div>
-                <button type="submit" class="hidden" id="submitButton">Submit All Files</button>
-            </form>
+            </div>
+        </section>
+
+        <!-- How It Works Section - Process explanation -->
+        <section class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <!-- Step 1 -->
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Upload</h3>
+                    <p>Upload your PDF documents to our secure platform</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Process</h3>
+                    <p>Our AI analyzes and extracts key information</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Results</h3>
+                    <p>Get comprehensive insights and analysis</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="cta-section">
+            <h2>Ready to Get Started?</h2>
+            <p>Transform your PDF documents into actionable insights today</p>
+            <a href="workspace.html" class="cta-button">Launch Workspace</a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <!-- Footer Content Grid -->
+        <div class="footer-content">
+            <!-- Company Info -->
+            <div class="footer-section">
+                <h4>SmartWrite</h4>
+                <p>AI-powered PDF analysis and insights</p>
+            </div>
+            <!-- Quick Links -->
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
+            <!-- Contact Information -->
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <a href="mailto:support@smartwrite.com">realemail@smartwrite.com</a>
+            </div>
         </div>
-        <div class="pdf-viewer-container hidden" id="pdfViewerContainer">
-            <div class="pdf-tabs" id="pdfTabs"></div>
-            <div class="pdf-viewer" id="pdfViewer"></div>
+        <!-- Copyright Notice -->
+        <div class="footer-bottom">
+            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
         </div>
-    </div>
+    </footer>
 
-    <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('pdfFile');
-        const fileList = document.getElementById('selectedFiles');
-        const selectedFiles = new Set();
-        
-        // Load saved PDFs on page load
-        window.addEventListener('load', loadSavedPDFs);
-
-        function loadSavedPDFs() {
-            const savedPDFs = JSON.parse(localStorage.getItem('savedPDFs') || '[]');
-            savedPDFs.forEach(pdfData => {
-                const file = base64ToFile(pdfData.data, pdfData.name, 'application/pdf');
-                selectedFiles.add(file);
-            });
-            if (selectedFiles.size > 0) {
-                updateFileList();
-                updatePdfViewer();
-            }
-        }
-
-        function savePDFsToStorage() {
-            const pdfsToSave = Array.from(selectedFiles).map(file => ({
-                name: file.name,
-                data: null // Will be filled with base64 data
-            }));
-
-            // Convert each file to base64
-            const promises = pdfsToSave.map((pdfData, index) => {
-                const file = Array.from(selectedFiles)[index];
-                return fileToBase64(file).then(base64Data => {
-                    pdfData.data = base64Data;
-                });
-            });
-
-            Promise.all(promises).then(() => {
-                localStorage.setItem('savedPDFs', JSON.stringify(pdfsToSave));
-            });
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        function base64ToFile(base64Data, filename, mimeType) {
-            const byteString = atob(base64Data.split(',')[1]);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            
-            return new File([ab], filename, { type: mimeType });
-        }
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        // Handle click on drop zone
-        dropZone.addEventListener('click', function(e) {
-            fileInput.click();
-        });
-
-        // Prevent the click on the input from bubbling to the drop zone
-        fileInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        // Highlight drop zone when dragging over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            dropZone.classList.add('drop-zone-active');
-        }
-
-        function unhighlight(e) {
-            dropZone.classList.remove('drop-zone-active');
-        }
-
-        // Handle dropped files
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
-
-        // Handle file input selection
-        fileInput.addEventListener('change', function(e) {
-            e.stopPropagation();
-            if (this.files && this.files.length > 0) {
-                handleFiles(this.files);
-            }
-        });
-
-        function handleFiles(files) {
-            if (!files || files.length === 0) return;
-            
-            [...files].forEach(file => {
-                if (file.type === 'application/pdf') {
-                    selectedFiles.add(file);
-                } else {
-                    console.warn('Skipping non-PDF file:', file.name);
-                }
-            });
-            
-            updateFileList();
-            if (selectedFiles.size > 0) {
-                showPdfViewer();
-                createPdfTabs();
-                displayPdf(Array.from(selectedFiles).pop());
-                savePDFsToStorage();
-            }
-        }
-
-        function updateFileList() {
-            const fileList = document.getElementById('fileList');
-            const submitButton = document.getElementById('submitButton');
-            const selectedFilesList = document.getElementById('selectedFiles');
-            
-            selectedFilesList.innerHTML = '';
-            
-            if (selectedFiles.size > 0) {
-                fileList.classList.remove('hidden');
-                submitButton.classList.remove('hidden');
-                
-                selectedFiles.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'file-item';
-                    
-                    const fileName = document.createElement('span');
-                    fileName.textContent = file.name;
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = '×';
-                    removeBtn.className = 'remove-file';
-                    removeBtn.onclick = (e) => {
-                        e.preventDefault();
-                        selectedFiles.delete(file);
-                        updateFileList();
-                        updatePdfViewer();
-                        savePDFsToStorage();
-                    };
-                    
-                    li.appendChild(fileName);
-                    li.appendChild(removeBtn);
-                    selectedFilesList.appendChild(li);
-                });
-            } else {
-                fileList.classList.add('hidden');
-                submitButton.classList.add('hidden');
-            }
-        }
-
-        function updatePdfViewer() {
-            const container = document.getElementById('pdfViewerContainer');
-            const mainContainer = document.querySelector('.container');
-            if (selectedFiles.size === 0) {
-                container.style.display = 'none';
-                mainContainer.classList.remove('with-pdf');
-            } else {
-                container.style.display = 'flex';
-                mainContainer.classList.add('with-pdf');
-                createPdfTabs();
-                // Display the last added PDF
-                const lastFile = Array.from(selectedFiles).pop();
-                displayPdf(lastFile);
-            }
-        }
-
-        function showPdfViewer() {
-            const container = document.getElementById('pdfViewerContainer');
-            const mainContainer = document.querySelector('.container');
-            container.style.display = 'flex';
-            mainContainer.classList.add('with-pdf');
-        }
-
-        function createPdfTabs() {
-            const tabsContainer = document.getElementById('pdfTabs');
-            tabsContainer.innerHTML = '';
-            
-            selectedFiles.forEach((file, index) => {
-                const tab = document.createElement('div');
-                tab.className = 'pdf-tab';
-                if (index === selectedFiles.size - 1) tab.classList.add('active');
-                
-                // Create tab content wrapper
-                const tabContent = document.createElement('span');
-                tabContent.className = 'tab-content';
-                tabContent.textContent = file.name;
-                
-                // Create close button
-                const closeBtn = document.createElement('button');
-                closeBtn.className = 'tab-close';
-                closeBtn.innerHTML = '×';
-                closeBtn.onclick = (e) => {
-                    e.stopPropagation(); // Prevent tab click when clicking close button
-                    selectedFiles.delete(file);
-                    updateFileList();
-                    updatePdfViewer();
-                    savePDFsToStorage();
-                };
-                
-                // Add click handler to the entire tab
-                tab.onclick = () => displayPdf(file);
-                
-                tab.appendChild(tabContent);
-                tab.appendChild(closeBtn);
-                tabsContainer.appendChild(tab);
-            });
-        }
-
-        function displayPdf(file) {
-            const viewer = document.getElementById('pdfViewer');
-            const fileUrl = URL.createObjectURL(file);
-            
-            // Create a unique ID for this PDF's container
-            const pdfContainerId = `pdf-container-${file.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
-            
-            // Check if this PDF is already rendered
-            if (!document.getElementById(pdfContainerId)) {
-                const pdfContainer = document.createElement('div');
-                pdfContainer.id = pdfContainerId;
-                pdfContainer.className = 'pdf-single-viewer hidden';
-                viewer.appendChild(pdfContainer);
-
-                // Initialize PDF.js
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-                // Load and render the PDF
-                pdfjsLib.getDocument(fileUrl).promise.then(function(pdf) {
-                    const numPages = pdf.numPages;
-                    const container = document.createElement('div');
-                    container.className = 'pdfViewerCanvas';
-                    pdfContainer.appendChild(container);
-                    
-                    // Create and render each page
-                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                        const pageContainer = document.createElement('div');
-                        pageContainer.className = 'pdf-page-container';
-                        container.appendChild(pageContainer);
-
-                        pdf.getPage(pageNum).then(function(page) {
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d');
-                            const viewport = page.getViewport({ scale: 1.5 });
-
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-
-                            const renderContext = {
-                                canvasContext: context,
-                                viewport: viewport
-                            };
-
-                            pageContainer.appendChild(canvas);
-                            page.render(renderContext);
-                        });
-                    }
-                });
-            }
-
-            // Hide all PDF containers and show the selected one
-            document.querySelectorAll('.pdf-single-viewer').forEach(container => {
-                container.classList.add('hidden');
-            });
-            document.getElementById(pdfContainerId).classList.remove('hidden');
-            
-            // Update active tab
-            document.querySelectorAll('.pdf-tab').forEach(tab => {
-                tab.classList.remove('active');
-                if (tab.querySelector('.tab-content').textContent === file.name) {
-                    tab.classList.add('active');
-                }
-            });
-        }
-
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (selectedFiles.size === 0) {
-                alert('Please select at least one PDF file.');
-                return;
-            }
-            // Save PDFs before redirecting
-            await savePDFsToStorage();
-            window.location.href = 'workspace.html';
-        });
-    </script>
+    <!-- Scripts -->
     <script src="/assets/js/theme.js"></script>
 </body>
 </html>
