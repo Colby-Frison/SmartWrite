@@ -488,6 +488,8 @@ main {
     transition: opacity 0.3s ease;
 }
 
+/* Removing hover effects for feature cards */
+/* 
 .feature-secondary .feature-card:hover {
     transform: translateX(5px);
     border-color: rgba(134, 117, 233, 0.2);
@@ -496,6 +498,7 @@ main {
 .feature-secondary .feature-card:hover::before {
     opacity: 1;
 }
+*/
 
 .feature-secondary .feature-card i {
     font-size: 2rem;
@@ -957,10 +960,13 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Removing hover effects for FAQ items */
+/*
 .faq-item:hover {
     transform: translateX(5px);
     border-color: rgba(134, 117, 233, 0.2);
 }
+*/
 
 .faq-question {
     font-size: 1.2rem;
@@ -997,10 +1003,13 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Removing hover effects for help cards */
+/*
 .help-card:hover {
     transform: translateY(-5px);
     border-color: rgba(134, 117, 233, 0.2);
 }
+*/
 
 .help-card i {
     font-size: 2rem;
@@ -1036,10 +1045,13 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Removing hover effects for team members */
+/*
 .team-member:hover {
     transform: translateY(-5px);
     border-color: rgba(134, 117, 233, 0.2);
 }
+*/
 
 .team-member img {
     width: 120px;

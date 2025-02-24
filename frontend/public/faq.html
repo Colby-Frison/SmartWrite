@@ -10,7 +10,7 @@
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">
+        <a href="home.html" class="brand">
             <i class="fas fa-feather-alt"></i>
             SmartWrite
         </a>
@@ -155,12 +155,124 @@
             </div>
             <div class="footer-section">
                 <h4>Contact</h4>
-                <a href="mailto:support@smartwrite.com">support@smartwrite.com</a>
+                <a href="#" id="emailLink">support@smartwrite.com</a>
             </div>
         </div>
         <div class="footer-bottom">
             <p>&copy; 2025 SmartWrite. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Error Popup -->
+    <div id="errorPopup" class="error-popup">
+        <div class="error-popup-content">
+            <span class="error-popup-close">&times;</span>
+            <div class="error-popup-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="error-popup-message">
+                No email yet, come back later.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Email error popup functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailLink = document.getElementById('emailLink');
+            const errorPopup = document.getElementById('errorPopup');
+            const closeBtn = document.querySelector('.error-popup-close');
+            
+            // Show popup when email is clicked
+            emailLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                errorPopup.classList.add('show');
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    errorPopup.classList.remove('show');
+                }, 3000);
+            });
+            
+            // Close popup when X is clicked
+            closeBtn.addEventListener('click', function() {
+                errorPopup.classList.remove('show');
+            });
+            
+            // Close popup when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === errorPopup) {
+                    errorPopup.classList.remove('show');
+                }
+            });
+        });
+    </script>
+
+    <style>
+        /* Error Popup Styles */
+        .error-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .error-popup.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .error-popup-content {
+            background: #1a1820;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            border: 1px solid rgba(134, 117, 233, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(20px);
+            animation: popup-slide-in 0.3s forwards;
+        }
+        
+        @keyframes popup-slide-in {
+            to { transform: translateY(0); }
+        }
+        
+        .error-popup-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #b8b8b8;
+            transition: color 0.3s ease;
+        }
+        
+        .error-popup-close:hover {
+            color: #ff6b6b;
+        }
+        
+        .error-popup-icon {
+            font-size: 48px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .error-popup-message {
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+    </style>
 </body>
 </html> 
