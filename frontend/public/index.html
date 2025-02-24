@@ -3,159 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartWrite - AI-Powered PDF Analysis</title>
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="/assets/styles/style.css">
-    <!-- Font Awesome for icons -->
+    <title>SmartWrite</title>
+    <style>
+        body {
+            background: #1a1820;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars during transitions */
+        }
+        .loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .loader i {
+            font-size: 24px;
+            color: #8675e9;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* New styles for content-area */
+        .content-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 40px;
+            width: 20%;
+            max-width: 1200px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+        
+        .content-area.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .content-area.fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        
+        .content-area ul {
+            list-style-type: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .content-area li {
+            padding: 8px 0;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .content-area.visible li {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .content-area.visible li:nth-child(1) { transition-delay: 0.1s; }
+        .content-area.visible li:nth-child(2) { transition-delay: 0.2s; }
+        .content-area.visible li:nth-child(3) { transition-delay: 0.3s; }
+        .content-area.visible li:nth-child(4) { transition-delay: 0.4s; }
+        
+        .content-area li a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 24px;
+            transition: color 0.3s ease, border-left 0.3s ease;
+            display: block;
+            padding-left: 10px;
+            border-left: 3px solid transparent;
+            width: 40%;
+            cursor: pointer;
+        }
+        
+        .content-area li a:hover {
+            color: #8675e9;
+            border-left: 3px solid #8675e9;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 15px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            transition-delay: 0.5s;
+        }
+        
+        .content-area.visible .logo {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .logo i {
+            font-size: 32px;
+            color: #8675e9;
+        }
+        
+        .logo p {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* Loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1820;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease, visibility 0s 1s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 1s ease, visibility 0s;
+        }
+
+        .loading-logo {
+            font-size: 45px;
+            color: #8675e9;
+            animation: float-pulse 2s infinite ease-in-out;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        @keyframes float-pulse {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-15px) rotate(5deg); opacity: 1; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+        }
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <!-- Contains logo, main navigation links, and user menu -->
-    <nav class="navbar">
-        <a href="index.html" class="brand">
-            <i class="fas fa-feather-alt"></i>
-            SmartWrite
-        </a>
-        <div class="nav-links">
-            <!-- Main Navigation Menu -->
-            <div class="nav-menu">
-                <a href="about.html">About</a>
-                <a href="help.html">Help</a>
-                <a href="faq.html">FAQ</a>
-            </div>
-            <!-- User Account Menu -->
-            <div class="nav-icons">
-                <div class="dropdown">
-                    <button class="dropdown-trigger">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                        <a href="profile.html" class="dropdown-item">
-                            <i class="fas fa-user-circle"></i>
-                            Profile
-                        </a>
-                        <a href="settings.html" class="dropdown-item">
-                            <i class="fas fa-cog"></i>
-                            Settings
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="#logout" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </a>
-                    </div>
-                </div>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <i class="fas fa-feather-alt loading-logo"></i>
+        <div class="loading-text">SmartWrite</div>
+    </div>
+
+    <div class="content-area" id="contentArea">
+        <div>   
+            <ul>    
+                <li><a href="home.html" class="nav-link">Home</a></li>
+                <li><a href="about.html" class="nav-link">About</a></li>
+                <li><a href="contact.html" class="nav-link">Contact</a></li>
+                <li><a href="login.html" class="nav-link">Login</a></li>
+            </ul>
+        </div>
+        <div class="logo">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <i class="fas fa-feather-alt" style="animation: none; font-size: 120px; padding-bottom: 3%;"></i>
+                <p>SmartWrite</p>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <main>
-        <!-- Hero Section - Main landing area -->
-        <section class="hero">
-            <div class="hero-content">
-                <h1>Transform Your PDF Experience</h1>
-                <p>Analyze, extract, and understand your PDF documents with the power of AI</p>
-                <a href="workspace.html" class="cta-button">Go to Workspace</a>
-            </div>
-        </section>
+    <script>
+        // Check if this page was loaded via our transition system
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const contentArea = document.getElementById('contentArea');
+            
+            // If we have a loading state in session storage, we're coming from another page
+            if (sessionStorage.getItem('isLoading') === 'true') {
+                // Show the loading overlay immediately
+                loadingOverlay.classList.add('active');
+                
+                // After a short delay, fade out the loading overlay and fade in the content
+                setTimeout(() => {
+                    // First fade out the loading overlay
+                    loadingOverlay.classList.remove('active');
+                    
+                    // After the loading overlay has faded out, show the content
+                    setTimeout(() => {
+                        contentArea.classList.add('visible');
+                        // Clear the loading state
+                        sessionStorage.removeItem('isLoading');
+                    }, 1000); // This should match the transition time of the loading overlay
+                }, 1200);
+            } else {
+                // If we're not coming from another page, just show the content
+                // Small delay for better effect
+                setTimeout(() => {
+                    contentArea.classList.add('visible');
+                }, 100);
+            }
+        });
 
-        <!-- Features Section - Why Choose SmartWrite -->
-        <section class="features">
-            <h2>Why Choose SmartWrite?</h2>
-            <div class="feature-container">
-                <!-- Main Feature - Primary selling point -->
-                <div class="feature-main">
-                    <div class="feature-card primary">
-                        <i class="fas fa-brain"></i>
-                        <h3>AI-Powered Analysis</h3>
-                        <p>Advanced algorithms analyze your PDFs for deeper insights, providing comprehensive understanding of your documents through cutting-edge AI technology.</p>
-                    </div>
-                </div>
-                <!-- Secondary Features - Additional benefits -->
-                <div class="feature-secondary">
-                    <div class="feature-card">
-                        <i class="fas fa-bolt"></i>
-                        <h3>Fast Processing</h3>
-                        <p>Get results quickly with our optimized processing engine</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-lock"></i>
-                        <h3>Secure & Private</h3>
-                        <p>Your documents are encrypted and processed securely</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-file-alt"></i>
-                        <h3>Multiple File Support</h3>
-                        <p>Process multiple PDFs simultaneously</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- How It Works Section - Process explanation -->
-        <section class="how-it-works">
-            <h2>How It Works</h2>
-            <div class="steps">
-                <!-- Step 1 -->
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Upload</h3>
-                    <p>Upload your PDF documents to our secure platform</p>
-                </div>
-                <!-- Step 2 -->
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Process</h3>
-                    <p>Our AI analyzes and extracts key information</p>
-                </div>
-                <!-- Step 3 -->
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Results</h3>
-                    <p>Get comprehensive insights and analysis</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Call to Action Section -->
-        <section class="cta-section">
-            <h2>Ready to Get Started?</h2>
-            <p>Transform your PDF documents into actionable insights today</p>
-            <a href="workspace.html" class="cta-button">Launch Workspace</a>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <!-- Footer Content Grid -->
-        <div class="footer-content">
-            <!-- Company Info -->
-            <div class="footer-section">
-                <h4>SmartWrite</h4>
-                <p>AI-powered PDF analysis and insights</p>
-            </div>
-            <!-- Quick Links -->
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <a href="about.html">About</a>
-                <a href="help.html">Help</a>
-                <a href="faq.html">FAQ</a>
-            </div>
-            <!-- Contact Information -->
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <a href="mailto:support@smartwrite.com">realemail@smartwrite.com</a>
-            </div>
-        </div>
-        <!-- Copyright Notice -->
-        <div class="footer-bottom">
-            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="/assets/js/theme.js"></script>
+        // Add event listeners to all navigation links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default navigation
+                
+                const targetUrl = this.getAttribute('href');
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                const contentArea = document.getElementById('contentArea');
+                
+                // Fade out content area with transform
+                contentArea.classList.add('fade-out');
+                contentArea.classList.remove('visible');
+                
+                // After content fades out, show loading overlay
+                setTimeout(() => {
+                    loadingOverlay.classList.add('active');
+                    
+                    // Set loading state in session storage so the target page knows we're transitioning
+                    sessionStorage.setItem('isLoading', 'true');
+                    
+                    // After showing loading overlay for a while, navigate to the target URL
+                    setTimeout(() => {
+                        window.location.href = targetUrl;
+                    }, 1200);
+                }, 800);
+            });
+        });
+    </script>
 </body>
 </html>
