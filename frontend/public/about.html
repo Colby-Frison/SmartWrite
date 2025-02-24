@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About - SmartWrite</title>
+    <title>About Us - SmartWrite</title>
     <link rel="stylesheet" href="/assets/styles/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">SmartWrite</a>
+        <a href="index.html" class="brand">
+            <i class="fas fa-feather-alt"></i>
+            SmartWrite
+        </a>
         <div class="nav-links">
-            <a href="about.html" class="active">About</a>
-            <a href="help.html">Help</a>
-            <a href="faq.html">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html" class="active">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -38,14 +44,80 @@
             </div>
         </div>
     </nav>
-    <div class="container about-container">
-        <div class="content-box">
+
+    <main>
+        <!-- Page Header -->
+        <section class="page-header">
             <h1>About SmartWrite</h1>
-            <p>SmartWrite is an intelligent document processing platform that helps you analyze and understand PDF documents efficiently.</p>
-            <p>Our platform uses advanced technology to process your documents while maintaining the highest standards of security and privacy.</p>
+            <p>Discover the story behind our AI-powered PDF analysis platform and meet the team making it possible.</p>
+        </section>
+
+        <!-- Main Content -->
+        <div class="page-content">
+            <!-- Mission Section -->
+            <section class="content-section">
+                <h2>Our Mission</h2>
+                <p>At SmartWrite, we're dedicated to transforming how people interact with PDF documents. Our mission is to make document analysis more efficient, intelligent, and accessible through cutting-edge AI technology.</p>
+                <p>We believe that everyone should have access to powerful document analysis tools that save time and provide valuable insights.</p>
+            </section>
+
+            <!-- Team Section -->
+            <section class="content-section">
+                <h2>Meet Our Team</h2>
+                <div class="team-grid">
+                    <div class="team-member">
+                        <img src="assets/images/team/alex.jpg" alt="Alex Chen">
+                        <h3>Alex Chen</h3>
+                        <p>Founder & CEO</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <img src="assets/images/team/sarah.jpg" alt="Sarah Johnson">
+                        <h3>Sarah Johnson</h3>
+                        <p>Lead Developer</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                            <a href="#"><i class="fab fa-github"></i></a>
+                        </div>
+                    </div>
+                    <div class="team-member">
+                        <img src="assets/images/team/michael.jpg" alt="Michael Brown">
+                        <h3>Michael Brown</h3>
+                        <p>AI Research Lead</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-    </div>
-    
-    <script src="theme.js"></script>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>SmartWrite</h4>
+                <p>AI-powered PDF analysis and insights</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <a href="mailto:support@smartwrite.com">support@smartwrite.com</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
+        </div>
+    </footer>
 </body>
 </html> 

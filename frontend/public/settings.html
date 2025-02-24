@@ -8,12 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">SmartWrite</a>
+        <a href="index.html" class="brand">
+            <i class="fas fa-feather-alt"></i>
+            SmartWrite
+        </a>
         <div class="nav-links">
-            <a href="about.html">About</a>
-            <a href="help.html">Help</a>
-            <a href="faq.html">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -38,57 +44,119 @@
             </div>
         </div>
     </nav>
+
+    <!-- Main Content -->
     <div class="container">
-        <div class="content-box profile-box">
+        <div class="content-box">
             <div class="profile-header">
                 <div class="profile-avatar">
                     <i class="fas fa-cog"></i>
                 </div>
                 <h1>Settings</h1>
+                <p class="text-secondary">Customize your SmartWrite experience</p>
             </div>
+
             <div class="profile-info">
+                <!-- Appearance Settings -->
                 <div class="info-group">
                     <h2>Appearance</h2>
                     <div class="info-item">
-                        <span class="label">Theme:</span>
-                        <select class="settings-select">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
+                        <span class="label">Theme</span>
+                        <select class="settings-select" id="themeSelect">
+                            <option value="dark">Dark Theme</option>
+                            <option value="light">Light Theme</option>
                             <option value="system">System Default</option>
                         </select>
                     </div>
+                    <div class="info-item">
+                        <span class="label">Font Size</span>
+                        <select class="settings-select" id="fontSelect">
+                            <option value="small">Small</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Privacy Settings -->
                 <div class="info-group">
                     <h2>Privacy</h2>
                     <div class="info-item">
-                        <span class="label">File Storage:</span>
+                        <span class="label">Cloud Storage</span>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" checked id="cloudStorageToggle">
                             <span class="toggle-slider"></span>
                         </label>
+                        <p class="setting-description">Store your documents securely in the cloud</p>
                     </div>
                     <div class="info-item">
-                        <span class="label">Usage Analytics:</span>
+                        <span class="label">Usage Analytics</span>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" checked id="analyticsToggle">
                             <span class="toggle-slider"></span>
                         </label>
+                        <p class="setting-description">Help us improve by sharing anonymous usage data</p>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Two-Factor Auth</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="twoFactorToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="setting-description">Add an extra layer of security to your account</p>
                     </div>
                 </div>
+
+                <!-- Notification Settings -->
                 <div class="info-group">
                     <h2>Notifications</h2>
                     <div class="info-item">
-                        <span class="label">Email Notifications:</span>
+                        <span class="label">Email Updates</span>
                         <label class="toggle-switch">
-                            <input type="checkbox">
+                            <input type="checkbox" checked id="emailNotifToggle">
                             <span class="toggle-slider"></span>
                         </label>
+                        <p class="setting-description">Receive important updates and newsletters</p>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Desktop Notifications</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked id="desktopNotifToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="setting-description">Get real-time notifications on your desktop</p>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="info-group">
+                    <h2>Advanced</h2>
+                    <div class="info-item">
+                        <span class="label">API Access</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="apiAccessToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="setting-description">Enable API access for third-party integrations</p>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Export Data</span>
+                        <button class="edit-profile-btn">Download My Data</button>
+                        <p class="setting-description">Download a copy of your SmartWrite data</p>
                     </div>
                 </div>
             </div>
-            <button class="edit-profile-btn">Save Changes</button>
+
+            <!-- Action Buttons -->
+            <div class="profile-actions">
+                <button class="cancel-profile-btn" id="resetSettingsBtn">Reset to Default</button>
+                <button class="save-profile-btn" id="saveSettingsBtn">Save Changes</button>
+            </div>
         </div>
     </div>
-    <script src="theme.js"></script>
+
+    <script src="/assets/js/theme.js"></script>
+    <script src="/assets/js/settings.js"></script>
 </body>
+</html> 
 </html> 

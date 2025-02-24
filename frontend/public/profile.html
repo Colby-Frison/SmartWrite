@@ -8,12 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="index.html" class="brand">SmartWrite</a>
+        <a href="index.html" class="brand">
+            <i class="fas fa-feather-alt"></i>
+            SmartWrite
+        </a>
         <div class="nav-links">
-            <a href="about.html">About</a>
-            <a href="help.html">Help</a>
-            <a href="faq.html">FAQ</a>
+            <div class="nav-menu">
+                <a href="about.html">About</a>
+                <a href="help.html">Help</a>
+                <a href="faq.html">FAQ</a>
+            </div>
             <div class="nav-icons">
                 <div class="dropdown">
                     <button class="dropdown-trigger">
@@ -38,59 +44,90 @@
             </div>
         </div>
     </nav>
+
+    <!-- Main Content -->
     <div class="container">
-        <div class="content-box profile-box">
+        <div class="content-box">
             <div class="profile-header">
                 <div class="profile-avatar" id="avatarContainer">
                     <input type="file" id="avatarUpload" accept="image/*" class="hidden">
                     <label for="avatarUpload" class="avatar-upload">
                         <i class="fas fa-user-circle" id="defaultAvatar"></i>
                         <img id="avatarImage" class="hidden" alt="Profile Picture">
-                        <div class="avatar-overlay hidden">
+                        <div class="avatar-overlay">
                             <i class="fas fa-camera"></i>
                         </div>
                     </label>
                 </div>
-                <h1>User Profile</h1>
+                <h1>Your Profile</h1>
+                <p class="text-secondary">Manage your account information and preferences</p>
             </div>
+
             <div class="profile-info">
+                <!-- Account Information -->
                 <div class="info-group">
                     <h2>Account Information</h2>
                     <div class="info-item">
-                        <span class="label">Username:</span>
+                        <span class="label">Username</span>
                         <span class="value" id="usernameDisplay">johndoe</span>
                         <input type="text" class="edit-input hidden" id="usernameInput" value="johndoe" pattern="[a-zA-Z0-9_]{3,20}">
                     </div>
                     <div class="info-item">
-                        <span class="label">Email:</span>
+                        <span class="label">Email</span>
                         <span class="value" id="emailDisplay">john.doe@example.com</span>
                         <input type="email" class="edit-input hidden" id="emailInput" value="john.doe@example.com">
                     </div>
                     <div class="info-item">
-                        <span class="label">Member Since:</span>
-                        <span class="value">January 2024</span>
+                        <span class="label">Member Since</span>
+                        <span class="value">January 2025</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Account Type</span>
+                        <span class="value">Premium</span>
                     </div>
                 </div>
+
+                <!-- Usage Statistics -->
                 <div class="info-group">
                     <h2>Usage Statistics</h2>
                     <div class="info-item">
-                        <span class="label">Files Processed:</span>
+                        <span class="label">Documents Created</span>
                         <span class="value">42</span>
                     </div>
                     <div class="info-item">
-                        <span class="label">Storage Used:</span>
-                        <span class="value">128 MB</span>
+                        <span class="label">Storage Used</span>
+                        <span class="value">128 MB of 1 GB</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Last Activity</span>
+                        <span class="value">Today at 2:30 PM</span>
+                    </div>
+                </div>
+
+                <!-- Preferences -->
+                <div class="info-group">
+                    <h2>Preferences</h2>
+                    <div class="info-item">
+                        <span class="label">Language</span>
+                        <span class="value">English (US)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Time Zone</span>
+                        <span class="value">Pacific Time (UTC-8)</span>
                     </div>
                 </div>
             </div>
+
+            <!-- Action Buttons -->
             <div class="profile-actions">
+                <button class="cancel-profile-btn hidden" id="cancelProfileBtn">Cancel</button>
                 <button class="edit-profile-btn" id="editProfileBtn">Edit Profile</button>
                 <button class="save-profile-btn hidden" id="saveProfileBtn">Save Changes</button>
-                <button class="cancel-profile-btn hidden" id="cancelProfileBtn">Cancel</button>
             </div>
         </div>
     </div>
-    <script src="theme.js"></script>
-    <script src="profile.js"></script>
+
+    <script src="/assets/js/theme.js"></script>
+    <script src="/assets/js/profile.js"></script>
 </body>
 </html> 
