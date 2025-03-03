@@ -127,6 +127,22 @@ While SmartWrite is primarily developed by our core team, we welcome community i
 - Ask questions
 - Provide feedback
 
+## Branching Strategy
+Our development follows a structured branching strategy:
+
+1. **Feature Branches**: Each new feature has a primary branch labeled with the feature name (e.g., `feature/note-organization`).
+
+2. **Frontend and Backend Branches**: Each feature branch has two sub-branches:
+   - `feature/[feature-name]/frontend` - For all frontend-related development
+   - `feature/[feature-name]/backend` - For all backend-related development
+
+3. **Workflow**:
+   - Development begins in the respective frontend and backend branches
+   - When a component is complete, it's merged back to the primary feature branch
+   - Once the entire feature is tested and ready, the feature branch is merged to main
+
+This approach allows for parallel development of frontend and backend components while maintaining clear separation of concerns.
+
 ## License
 License information coming soon.
 
