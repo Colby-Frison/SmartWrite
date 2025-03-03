@@ -11,20 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 </head>
 <body class="workspace">
-    <div id="titlebar" class="electron-only">
-        <div class="titlebar-drag-region">
-            <div class="window-title">SmartWrite</div>
-        </div>
-        <div class="window-controls-container">
-            <button class="window-control minimize" onclick="window.electronAPI.minimizeWindow()">&#8722;</button>
-            <button class="window-control maximize" onclick="window.electronAPI.maximizeWindow()">&#9633;</button>
-            <button class="window-control close" onclick="window.electronAPI.closeWindow()">&#10005;</button>
-        </div>
-    </div>
-    <button class="sidebar-toggle-button">
-        <i class="fas fa-chevron-right"></i>
-    </button>
-    <!-- Collapsible Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <button class="settings-button" onclick="openModal('settingsModal')">
@@ -64,20 +51,10 @@
                 </div>
             </div>
         </div>
-        <div class="sidebar-hover-tab">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-        </div>
     </div>
 
     <!-- Main Content Area -->
     <div class="main-content">
-        <!-- Sidebar Toggle Button (Visible when sidebar is collapsed) -->
-        <button class="sidebar-toggle-collapsed" id="reopenSidebar">
-            <i class="fas fa-bars"></i>
-        </button>
-
         <!-- PDF Viewer Section -->
         <div class="pdf-section">
             <!-- PDF Controls -->
@@ -99,26 +76,26 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Chat Section -->
-        <div class="chat-section">
-            <div class="chat-messages" id="chatMessages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        Hello! I'm here to help you analyze your documents. What would you like to know?
-                    </div>
+    <!-- Chat Section -->
+    <div class="chat-section">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-content">
+                    Hello! I'm here to help you analyze your documents. What would you like to know?
                 </div>
             </div>
-            <div class="chat-input-container">
-                <textarea 
-                    id="chatInput" 
-                    placeholder="Type your message here..."
-                    rows="1"
-                ></textarea>
-                <button id="sendMessage">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
+        </div>
+        <div class="chat-input-container">
+            <textarea 
+                id="chatInput" 
+                placeholder="Type your message here..."
+                rows="1"
+            ></textarea>
+            <button id="sendMessage">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
     </div>
 
