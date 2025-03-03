@@ -9,12 +9,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <style>
+        /* Ensure modal is visible when active */
+        .modal-overlay.active {
+            display: flex !important;
+        }
+    </style>
 </head>
 <body class="workspace">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <button class="settings-button" onclick="openModal('settingsModal')">
+            <button class="settings-button" id="sidebarSettingsBtn" onclick="directOpenModal('settingsModal')">
                 <i class="fas fa-cog"></i>
             </button>
         </div>
@@ -92,6 +98,8 @@
                 id="chatInput" 
                 placeholder="Type your message here..."
                 rows="1"
+                oninput="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
+                onkeyup="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
             ></textarea>
             <button id="sendMessage">
                 <i class="fas fa-paper-plane"></i>
@@ -104,7 +112,7 @@
         <div class="modal-window">
             <div class="modal-header">
                 <h2 class="modal-title">Settings</h2>
-                <button class="modal-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
+                <button class="modal-close" onclick="directCloseModal('settingsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="settings-wrapper">
@@ -121,10 +129,6 @@
                             <li data-setting="pdf-viewer">
                                 <i class="fas fa-file-pdf"></i>
                                 PDF Viewer
-                            </li>
-                            <li data-setting="hotkeys">
-                                <i class="fas fa-keyboard"></i>
-                                Hotkeys
                             </li>
                             <li data-setting="about">
                                 <i class="fas fa-info-circle"></i>
@@ -220,28 +224,6 @@
                             </div>
                         </div>
 
-                        <!-- Hotkeys Panel -->
-                        <div id="hotkeys-panel" class="settings-panel" style="display: none;">
-                            <div class="settings-item">
-                                <div>
-                                    <div class="settings-item-label">Toggle Sidebar</div>
-                                    <div class="settings-item-description">Ctrl/Cmd + B</div>
-                                </div>
-                            </div>
-                            <div class="settings-item">
-                                <div>
-                                    <div class="settings-item-label">Switch PDF</div>
-                                    <div class="settings-item-description">Ctrl/Cmd + Left/Right Arrow</div>
-                                </div>
-                            </div>
-                            <div class="settings-item">
-                                <div>
-                                    <div class="settings-item-label">Zoom In/Out</div>
-                                    <div class="settings-item-description">Ctrl/Cmd + +/- or scroll with Ctrl</div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- About Panel -->
                         <div id="about-panel" class="settings-panel" style="display: none;">
                             <div class="settings-item">
@@ -267,8 +249,8 @@
     <div id="newNoteModal" class="modal-overlay">
         <div class="modal-window">
             <div class="modal-header">
-                <h3 class="modal-title">Create New Note</h3>
-                <button class="modal-close" onclick="closeModal('newNoteModal')">
+                <h2 class="modal-title">New Note</h2>
+                <button class="modal-close" onclick="directCloseModal('newNoteModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -299,7 +281,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" onclick="closeModal('newNoteModal')">Cancel</button>
+                <button class="modal-btn modal-btn-secondary" onclick="directCloseModal('newNoteModal')">Cancel</button>
                 <button class="modal-btn modal-btn-primary" onclick="createNewNote()">Create Note</button>
             </div>
         </div>
@@ -309,8 +291,8 @@
     <div id="newFolderModal" class="modal-overlay">
         <div class="modal-window">
             <div class="modal-header">
-                <h3 class="modal-title">Create New Folder</h3>
-                <button class="modal-close" onclick="closeModal('newFolderModal')">
+                <h2 class="modal-title">New Folder</h2>
+                <button class="modal-close" onclick="directCloseModal('newFolderModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -327,13 +309,251 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" onclick="closeModal('newFolderModal')">Cancel</button>
+                <button class="modal-btn modal-btn-secondary" onclick="directCloseModal('newFolderModal')">Cancel</button>
                 <button class="modal-btn modal-btn-primary" onclick="createNewFolder()">Create Folder</button>
             </div>
         </div>
     </div>
 
-    <script src="theme.js"></script>
-    <script src="workspace.js"></script>
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    
+    <!-- Use type="module" to enable ES6 module imports -->
+    <script type="module" src="/frontend/src/js/main.js"></script>
+    
+    <!-- Fallback script for direct modal control -->
+    <script>
+        // Direct modal control functions
+        function directOpenModal(modalId) {
+            console.log('Direct open modal called for: ' + modalId);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                console.error('Modal not found: ' + modalId);
+            }
+        }
+        
+        function directCloseModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                // If closing the settings modal, save all settings
+                if (modalId === 'settingsModal') {
+                    saveAllSettings(false); // Pass false to not close the modal again (would cause infinite loop)
+                }
+                
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Initialize settings tabs
+        function initSettingsTabs() {
+            console.log('Initializing settings tabs');
+            const settingsTabs = document.querySelectorAll('.settings-sidebar li');
+            
+            if (settingsTabs.length > 0) {
+                console.log(`Found ${settingsTabs.length} settings tabs`);
+                
+                // Add click event to each tab
+                settingsTabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        console.log(`Tab clicked: ${this.getAttribute('data-setting')}`);
+                        
+                        // Remove active class from all tabs
+                        settingsTabs.forEach(t => t.classList.remove('active'));
+                        
+                        // Add active class to clicked tab
+                        this.classList.add('active');
+                        
+                        // Hide all panels
+                        document.querySelectorAll('.settings-panel').forEach(panel => {
+                            panel.style.display = 'none';
+                        });
+                        
+                        // Show the selected panel
+                        const panelId = this.getAttribute('data-setting') + '-panel';
+                        const panel = document.getElementById(panelId);
+                        if (panel) {
+                            console.log(`Showing panel: ${panelId}`);
+                            panel.style.display = 'block';
+                        } else {
+                            console.error(`Panel not found: ${panelId}`);
+                        }
+                    });
+                });
+                
+                // Initialize with the first tab active
+                const activeTab = document.querySelector('.settings-sidebar li.active') || settingsTabs[0];
+                if (activeTab) {
+                    console.log(`Setting initial active tab: ${activeTab.getAttribute('data-setting')}`);
+                    const panelId = activeTab.getAttribute('data-setting') + '-panel';
+                    const panel = document.getElementById(panelId);
+                    if (panel) {
+                        panel.style.display = 'block';
+                    }
+                }
+            } else {
+                console.error('No settings tabs found');
+            }
+        }
+        
+        // Load saved settings
+        function loadSettings() {
+            console.log('Loading saved settings');
+            
+            // Load theme setting
+            const savedTheme = localStorage.getItem('darkMode');
+            const themeToggle = document.getElementById('themeToggle');
+            if (savedTheme !== null && themeToggle) {
+                themeToggle.checked = savedTheme === 'true';
+                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+            }
+            
+            // Load zoom setting
+            const savedZoom = localStorage.getItem('defaultZoom');
+            const defaultZoom = document.getElementById('defaultZoom');
+            if (savedZoom !== null && defaultZoom) {
+                defaultZoom.value = savedZoom;
+            }
+            
+            // Load other settings
+            const savedAutoSave = localStorage.getItem('autoSave');
+            const autoSave = document.getElementById('autoSave');
+            if (savedAutoSave !== null && autoSave) {
+                autoSave.checked = savedAutoSave === 'true';
+            }
+            
+            const savedSpellCheck = localStorage.getItem('spellCheck');
+            const spellCheck = document.getElementById('spellCheck');
+            if (savedSpellCheck !== null && spellCheck) {
+                spellCheck.checked = savedSpellCheck === 'true';
+            }
+            
+            const savedDisablePopups = localStorage.getItem('disablePopups');
+            const disablePopups = document.getElementById('disablePopups');
+            if (savedDisablePopups !== null && disablePopups) {
+                disablePopups.checked = savedDisablePopups === 'true';
+            }
+            
+            const savedSmoothScroll = localStorage.getItem('smoothScroll');
+            const smoothScroll = document.getElementById('smoothScroll');
+            if (savedSmoothScroll !== null && smoothScroll) {
+                smoothScroll.checked = savedSmoothScroll === 'true';
+            }
+            
+            const savedFontSize = localStorage.getItem('fontSize');
+            const fontSize = document.getElementById('fontSize');
+            if (savedFontSize !== null && fontSize) {
+                fontSize.value = savedFontSize;
+            }
+        }
+        
+        // Save settings
+        function saveAllSettings(shouldCloseModal = true) {
+            console.log('Saving all settings');
+            
+            // Save theme setting
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                localStorage.setItem('darkMode', themeToggle.checked);
+                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+            }
+            
+            // Save zoom setting
+            const defaultZoom = document.getElementById('defaultZoom');
+            if (defaultZoom) {
+                localStorage.setItem('defaultZoom', defaultZoom.value);
+            }
+            
+            // Save other settings
+            const autoSave = document.getElementById('autoSave');
+            if (autoSave) {
+                localStorage.setItem('autoSave', autoSave.checked);
+            }
+            
+            const spellCheck = document.getElementById('spellCheck');
+            if (spellCheck) {
+                localStorage.setItem('spellCheck', spellCheck.checked);
+            }
+            
+            const disablePopups = document.getElementById('disablePopups');
+            if (disablePopups) {
+                localStorage.setItem('disablePopups', disablePopups.checked);
+            }
+            
+            const smoothScroll = document.getElementById('smoothScroll');
+            if (smoothScroll) {
+                localStorage.setItem('smoothScroll', smoothScroll.checked);
+            }
+            
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                localStorage.setItem('fontSize', fontSize.value);
+                document.documentElement.style.fontSize = fontSize.value + 'px';
+            }
+            
+            // Close the modal if requested
+            if (shouldCloseModal) {
+                directCloseModal('settingsModal');
+            }
+        }
+        
+        // Add event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Direct script loaded');
+            
+            // Add click handler to settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                console.log('Settings button found in direct script');
+                settingsBtn.onclick = function() {
+                    console.log('Settings button clicked in direct script');
+                    directOpenModal('settingsModal');
+                    // Initialize tabs when modal is opened
+                    initSettingsTabs();
+                    // Load saved settings
+                    loadSettings();
+                    return false;
+                };
+            }
+            
+            // Add click handlers to close buttons
+            const closeButtons = document.querySelectorAll('.modal-close');
+            closeButtons.forEach(function(btn) {
+                btn.onclick = function() {
+                    const modalId = this.closest('.modal-overlay').id;
+                    directCloseModal(modalId);
+                    return false;
+                };
+            });
+            
+            // Add event listeners for settings changes
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function() {
+                    document.documentElement.setAttribute('data-theme', this.checked ? 'dark' : 'light');
+                });
+            }
+            
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                fontSize.addEventListener('change', function() {
+                    document.documentElement.style.fontSize = this.value + 'px';
+                });
+            }
+            
+            // Add click handler to modal overlay for closing when clicking outside
+            const modalOverlays = document.querySelectorAll('.modal-overlay');
+            modalOverlays.forEach(function(overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        directCloseModal(this.id);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html> 
