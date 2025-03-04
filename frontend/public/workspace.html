@@ -13,29 +13,16 @@
     <script>
         // Set up PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        console.log('[HTML] Set PDF.js worker URL:', pdfjsLib.GlobalWorkerOptions.workerSrc);
         
-        // Test if PDF files are accessible
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('[HTML] Testing PDF file accessibility');
-            
-            const testPaths = [
-                '/frontend/public/assets/Files/final review.pdf',
-                '/assets/Files/final review.pdf',
-                './assets/Files/final review.pdf',
-                '../assets/Files/final review.pdf'
-            ];
-            
-            testPaths.forEach(path => {
-                fetch(path)
-                    .then(response => {
-                        console.log(`[HTML] Fetch test for ${path}: ${response.ok ? 'SUCCESS' : 'FAILED'} (${response.status})`);
-                    })
-                    .catch(error => {
-                        console.error(`[HTML] Fetch test for ${path} failed with error:`, error);
-                    });
-            });
+        // Add error handler for PDF.js
+        window.addEventListener('error', function(event) {
+            if (event.filename && event.filename.includes('pdf.js')) {
+                console.error('[PDF.js Error]', event.message, 'at', event.filename, 'line', event.lineno);
+            }
         });
+        
+        // Test PDF.js availability
+        console.log('[PDF.js] Library loaded, version:', pdfjsLib ? pdfjsLib.version : 'not available');
     </script>
     <style>
         /* Ensure modal is visible when active */
@@ -361,6 +348,166 @@
 
     <!-- Use type="module" to enable ES6 module imports -->
     <script type="module" src="/frontend/src/js/main.js"></script>
+    
+    <!-- Test function for direct PDF rendering -->
+    <script>
+        // Direct test function for PDF rendering
+        function testDirectPDFRendering() {
+            console.log('[Test] Direct PDF rendering test started');
+            
+            // Try different paths to find the correct one
+            const possiblePaths = [
+                '/assets/Files/final review.pdf',
+                './assets/Files/final review.pdf',
+                '../assets/Files/final review.pdf',
+                '/frontend/public/assets/Files/final review.pdf',
+                'frontend/public/assets/Files/final review.pdf',
+                '/home/banana/projects/SmartWrite/frontend/public/assets/Files/final review.pdf'
+            ];
+            
+            let pathIndex = 0;
+            
+            function tryNextPath() {
+                if (pathIndex >= possiblePaths.length) {
+                    console.error('[Test] All paths failed');
+                    const pdfContainer = document.getElementById('pdfPagesContainer');
+                    if (pdfContainer) {
+                        pdfContainer.innerHTML = '<div class="pdf-error">Failed to load PDF from any path</div>';
+                    }
+                    return;
+                }
+                
+                const pdfUrl = possiblePaths[pathIndex];
+                console.log(`[Test] Trying path ${pathIndex + 1}/${possiblePaths.length}: ${pdfUrl}`);
+                
+                const pdfContainer = document.getElementById('pdfPagesContainer');
+                if (!pdfContainer) {
+                    console.error('[Test] pdfPagesContainer not found');
+                    return;
+                }
+                
+                // Show loading indicator
+                pdfContainer.innerHTML = `<div class="pdf-loading">Loading PDF from path: ${pdfUrl}</div>`;
+                
+                // Load the PDF
+                const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                
+                loadingTask.promise.then(function(pdf) {
+                    console.log(`[Test] PDF loaded successfully from path: ${pdfUrl}`);
+                    console.log(`[Test] PDF has ${pdf.numPages} pages`);
+                    
+                    // Clear container
+                    pdfContainer.innerHTML = '';
+                    
+                    // Render first page as a test
+                    pdf.getPage(1).then(function(page) {
+                        console.log('[Test] Got page 1');
+                        
+                        // Create a div for this page
+                        const pageDiv = document.createElement('div');
+                        pageDiv.className = 'pdf-page';
+                        pageDiv.dataset.pageNumber = 1;
+                        
+                        // Create a canvas for this page
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Set viewport
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        console.log('[Test] Page viewport size:', viewport.width, 'x', viewport.height);
+                        
+                        // Render the page content on the canvas
+                        const renderContext = {
+                            canvasContext: ctx,
+                            viewport: viewport
+                        };
+                        
+                        page.render(renderContext).promise.then(function() {
+                            console.log('[Test] Page rendered successfully');
+                            
+                            // Add the canvas to the page div
+                            pageDiv.appendChild(canvas);
+                            
+                            // Add page number indicator
+                            const pageNumberDiv = document.createElement('div');
+                            pageNumberDiv.className = 'page-number';
+                            pageNumberDiv.textContent = 1;
+                            pageDiv.appendChild(pageNumberDiv);
+                            
+                            // Add the page div to the container
+                            pdfContainer.appendChild(pageDiv);
+                            
+                            // Add success message with path
+                            const successDiv = document.createElement('div');
+                            successDiv.style.padding = '10px';
+                            successDiv.style.margin = '10px 0';
+                            successDiv.style.backgroundColor = '#dff0d8';
+                            successDiv.style.color = '#3c763d';
+                            successDiv.style.borderRadius = '4px';
+                            successDiv.innerHTML = `<strong>Success!</strong> PDF loaded from path: ${pdfUrl}`;
+                            pdfContainer.insertBefore(successDiv, pdfContainer.firstChild);
+                            
+                            console.log('[Test] Direct PDF rendering test completed successfully');
+                            
+                            // Update all file paths in the file system
+                            updateFilePaths(pdfUrl);
+                        }).catch(function(error) {
+                            console.error('[Test] Error rendering page:', error);
+                            pathIndex++;
+                            tryNextPath();
+                        });
+                    }).catch(function(error) {
+                        console.error('[Test] Error getting page:', error);
+                        pathIndex++;
+                        tryNextPath();
+                    });
+                }).catch(function(error) {
+                    console.error(`[Test] Error loading PDF from path ${pdfUrl}:`, error);
+                    pathIndex++;
+                    tryNextPath();
+                });
+            }
+            
+            // Function to update all file paths in the file system
+            function updateFilePaths(successfulPath) {
+                // Extract the base path
+                const basePath = successfulPath.substring(0, successfulPath.lastIndexOf('/') + 1);
+                console.log(`[Test] Updating all file paths to use base path: ${basePath}`);
+                
+                // Update paths in the file system
+                function updatePaths(folder) {
+                    if (folder.children) {
+                        folder.children.forEach(item => {
+                            if (item.type === 'file' && item.fileType === 'pdf') {
+                                const fileName = item.path.substring(item.path.lastIndexOf('/') + 1);
+                                item.path = basePath + fileName;
+                                console.log(`[Test] Updated path for ${item.name} to ${item.path}`);
+                            } else if (item.type === 'folder') {
+                                updatePaths(item);
+                            }
+                        });
+                    }
+                }
+                
+                // Get the file system from the window object
+                if (window.fileSystem) {
+                    updatePaths(window.fileSystem);
+                    console.log('[Test] All file paths updated');
+                } else {
+                    console.warn('[Test] fileSystem not found in window object');
+                }
+            }
+            
+            // Start trying paths
+            tryNextPath();
+        }
+        
+        // Run the test after a delay to ensure everything is loaded
+        setTimeout(testDirectPDFRendering, 2000);
+    </script>
     
     <!-- Fallback script for direct modal control -->
     <script>

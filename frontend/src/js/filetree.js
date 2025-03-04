@@ -18,14 +18,14 @@ const fileSystem = {
                     name: 'final review.pdf',
                     type: 'file',
                     fileType: 'pdf',
-                    path: '/frontend/public/assets/Files/final review.pdf'
+                    path: '/assets/Files/final review.pdf'
                 },
                 {
                     id: 'file2',
                     name: 'HW 3-Ch1.pdf',
                     type: 'file',
                     fileType: 'pdf',
-                    path: '/frontend/public/assets/Files/HW 3-Ch1.pdf'
+                    path: '/assets/Files/HW 3-Ch1.pdf'
                 }
             ]
         },
@@ -39,7 +39,7 @@ const fileSystem = {
                     name: 'Appendix.pdf',
                     type: 'file',
                     fileType: 'pdf',
-                    path: '/frontend/public/assets/Files/Appendix.pdf'
+                    path: '/assets/Files/Appendix.pdf'
                 },
                 {
                     id: 'folder3',
@@ -51,14 +51,14 @@ const fileSystem = {
                             name: 'final review.pdf',
                             type: 'file',
                             fileType: 'pdf',
-                            path: '/frontend/public/assets/Files/final review.pdf'
+                            path: '/assets/Files/final review.pdf'
                         },
                         {
                             id: 'file5',
                             name: 'HW 3-Ch1.pdf',
                             type: 'file',
                             fileType: 'pdf',
-                            path: '/frontend/public/assets/Files/HW 3-Ch1.pdf'
+                            path: '/assets/Files/HW 3-Ch1.pdf'
                         }
                     ]
                 }
@@ -69,10 +69,13 @@ const fileSystem = {
             name: 'Appendix.pdf',
             type: 'file',
             fileType: 'pdf',
-            path: '/frontend/public/assets/Files/Appendix.pdf'
+            path: '/assets/Files/Appendix.pdf'
         }
     ]
 };
+
+// Export fileSystem to window object for debugging
+window.fileSystem = fileSystem;
 
 // Track expanded folders
 const expandedFolders = new Set(['root']);
@@ -234,49 +237,48 @@ function selectItem(itemId) {
     // Only select the item if it's a file
     if (item && item.type === 'file') {
         selectedItemId = itemId;
+        console.log(`[FileTree] Selected item ID set to: ${selectedItemId}`);
         
         // Remove selected class from all items
         document.querySelectorAll('.tree-item-content').forEach(item => {
             item.classList.remove('selected');
         });
+        console.log(`[FileTree] Removed 'selected' class from all items`);
         
         // Add selected class to selected item
         const selectedItem = document.querySelector(`.tree-item[data-id="${itemId}"] > .tree-item-content`);
         if (selectedItem) {
             selectedItem.classList.add('selected');
-            console.log(`[FileTree] Added 'selected' class to item with id ${itemId}`);
+            console.log(`[FileTree] Added 'selected' class to item with id: ${itemId}`);
         } else {
-            console.error(`[FileTree] Could not find DOM element for item with id ${itemId}`);
+            console.warn(`[FileTree] Could not find DOM element for item with id: ${itemId}`);
         }
         
         console.log(`[FileTree] Selected item: ${itemId}`);
         
         // Load the PDF file if it's a PDF
         if (item.fileType === 'pdf') {
-            console.log(`[FileTree] Attempting to load PDF: ${item.path}`);
+            console.log(`[FileTree] Item is a PDF, path: ${item.path}`);
             
-            // Verify the path exists
-            fetch(item.path)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    console.log(`[FileTree] PDF file exists at path: ${item.path}`);
-                    
-                    // Call the loadPDF function from the global scope
-                    if (typeof window.loadPDF === 'function') {
-                        console.log(`[FileTree] Calling window.loadPDF with path: ${item.path}`);
-                        window.loadPDF(item.path);
-                    } else {
-                        console.error('[FileTree] loadPDF function not available in global scope');
-                    }
-                })
-                .catch(error => {
-                    console.error(`[FileTree] Error checking PDF file: ${error.message}`);
-                });
+            // Check if path is valid
+            if (!item.path || item.path === '#') {
+                console.error(`[FileTree] Invalid PDF path: ${item.path}`);
+                return;
+            }
+            
+            // Call the loadPDF function from the global scope
+            if (typeof window.loadPDF === 'function') {
+                console.log(`[FileTree] Calling window.loadPDF with path: ${item.path}`);
+                window.loadPDF(item.path);
+            } else {
+                console.error('[FileTree] loadPDF function not available in window object');
+                console.log('[FileTree] Available window functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
+            }
+        } else {
+            console.log(`[FileTree] Item is not a PDF, fileType: ${item.fileType}`);
         }
     } else {
-        console.log(`[FileTree] Item is not a file or has no fileType property:`, item);
+        console.log(`[FileTree] Item is not a file, type: ${item.type}`);
     }
 }
 
@@ -313,7 +315,7 @@ function createNewNote(noteName) {
         name: noteName,
         type: 'file',
         fileType: 'pdf',
-        path: '/frontend/public/assets/Files/final review.pdf' // Default to the first PDF
+        path: '/assets/Files/final review.pdf' // Default to the first PDF
     };
     
     // Add to file system (at root level for simplicity)

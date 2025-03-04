@@ -13,9 +13,9 @@ import { initChat, sendChatMessage } from './chat.js';
 import { initPDF, loadPDF, setZoomLevel, prevPage, nextPage } from './pdf.js';
 import { initFileTree, createNewFolder, createNewNote, sortFileSystem } from './filetree.js';
 
-console.log('[Main] Imported modules successfully');
-
 // Make functions available globally
+console.log('[Main] Making functions available globally');
+
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.saveSettings = saveSettings;
@@ -30,8 +30,13 @@ window.createNewFolder = createNewFolder;
 window.createNewNote = createNewNote;
 window.sortFiles = sortFileSystem;
 
-console.log('[Main] Exported functions to global scope');
-console.log('[Main] window.loadPDF is:', typeof window.loadPDF);
+console.log('[Main] Functions exported to window object:', 
+    ['openModal', 'closeModal', 'saveSettings', 'saveProfile', 'toggleSidebar', 
+     'toggleTheme', 'sendChatMessage', 'loadPDF', 'prevPage', 'nextPage', 
+     'createNewFolder', 'createNewNote', 'sortFiles']
+    .filter(name => typeof window[name] === 'function')
+    .join(', ')
+);
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,13 +51,22 @@ document.addEventListener('DOMContentLoaded', function() {
     initChat();
     initFileTree();
     
-    console.log('[Main] Core modules initialized');
-    
     // Initialize PDF viewer if it exists
     const pdfContainer = document.getElementById('pdfPagesContainer');
     if (pdfContainer) {
-        console.log('[Main] Found pdfPagesContainer, initializing PDF viewer');
+        console.log('[Main] pdfPagesContainer found, initializing PDF viewer');
         initPDF();
+        
+        // Test: Load a PDF directly
+        console.log('[Main] Testing direct PDF loading');
+        setTimeout(() => {
+            console.log('[Main] Attempting to load test PDF');
+            if (typeof loadPDF === 'function') {
+                loadPDF('/assets/Files/final review.pdf');
+            } else {
+                console.error('[Main] loadPDF function not available for direct test');
+            }
+        }, 1000);
     } else {
         console.error('[Main] pdfPagesContainer not found, PDF viewer not initialized');
     }
@@ -68,22 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('[Main] Settings button not found');
     }
-    
-    // Test PDF loading function
-    console.log('[Main] Testing if PDF functions are available in global scope:');
-    console.log('[Main] window.loadPDF is:', typeof window.loadPDF);
-    console.log('[Main] window.prevPage is:', typeof window.prevPage);
-    console.log('[Main] window.nextPage is:', typeof window.nextPage);
-    
-    // Test loading a PDF directly
-    setTimeout(() => {
-        console.log('[Main] Attempting to load a test PDF directly');
-        if (typeof window.loadPDF === 'function') {
-            window.loadPDF('/frontend/public/assets/Files/final review.pdf');
-        } else {
-            console.error('[Main] window.loadPDF is not a function');
-        }
-    }, 2000);
     
     console.log('[Main] Application initialized successfully!');
 }); 

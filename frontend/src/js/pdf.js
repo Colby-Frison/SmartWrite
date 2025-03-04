@@ -30,35 +30,34 @@ function setZoomLevel(zoom) {
 
 // Render all pages of the PDF
 function renderAllPages() {
-    console.log('[PDF] renderAllPages() called');
+    console.log('[PDF] renderAllPages called');
     
     if (!pdfDoc) {
-        console.error('[PDF] pdfDoc is null, cannot render pages');
+        console.error('[PDF] No PDF document loaded');
         return;
     }
     
     const pagesContainer = document.getElementById('pdfPagesContainer');
     if (!pagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found, cannot render pages');
+        console.error('[PDF] pdfPagesContainer not found in the DOM');
         return;
     }
     
+    console.log('[PDF] Clearing existing content and rendered pages');
     // Clear existing content
-    console.log('[PDF] Clearing existing content in pagesContainer');
     pagesContainer.innerHTML = '';
     renderedPages.clear();
     
-    console.log(`[PDF] About to render ${pdfDoc.numPages} pages`);
-    
     // Create a fragment to append all pages at once
     const fragment = document.createDocumentFragment();
+    console.log(`[PDF] Creating document fragment for ${pdfDoc.numPages} pages`);
     
     // Function to render a specific page
     const renderPage = (pageNum) => {
         console.log(`[PDF] Starting to render page ${pageNum}`);
         
         pdfDoc.getPage(pageNum).then(function(page) {
-            console.log(`[PDF] Got page ${pageNum} from PDF.js`);
+            console.log(`[PDF] Got page ${pageNum} from PDF document`);
             
             // Create a div for this page
             const pageDiv = document.createElement('div');
@@ -74,7 +73,7 @@ function renderAllPages() {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             
-            console.log(`[PDF] Canvas size set to ${canvas.width}x${canvas.height} for page ${pageNum}`);
+            console.log(`[PDF] Page ${pageNum} viewport size: ${viewport.width}x${viewport.height}`);
             
             // Render the page content on the canvas
             const renderContext = {
@@ -82,16 +81,15 @@ function renderAllPages() {
                 viewport: viewport
             };
             
-            console.log(`[PDF] Calling page.render() for page ${pageNum}`);
-            
+            console.log(`[PDF] Rendering page ${pageNum} to canvas`);
             page.render(renderContext).promise.then(function() {
                 console.log(`[PDF] Page ${pageNum} rendered successfully`);
                 renderedPages.add(pageNum);
                 
                 // If this is the current page, scroll to it
                 if (pageNum === currentPage) {
+                    console.log(`[PDF] Scrolling to current page ${pageNum}`);
                     setTimeout(() => {
-                        console.log(`[PDF] Scrolling to page ${pageNum}`);
                         pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 100);
                 }
@@ -117,12 +115,13 @@ function renderAllPages() {
     };
     
     // Render all pages
+    console.log(`[PDF] Starting to render ${pdfDoc.numPages} pages`);
     for (let i = 1; i <= pdfDoc.numPages; i++) {
         renderPage(i);
     }
     
     // Append all pages to the container
-    console.log('[PDF] Appending all pages to the container');
+    console.log('[PDF] Appending all pages to container');
     pagesContainer.appendChild(fragment);
     
     // Update total pages
@@ -133,16 +132,18 @@ function renderAllPages() {
     const pageCountElement = document.getElementById('pageCount');
     if (pageCountElement) {
         pageCountElement.textContent = totalPages;
+        console.log(`[PDF] Updated page count display to ${totalPages}`);
     } else {
-        console.error('[PDF] pageCount element not found');
+        console.warn('[PDF] pageCount element not found');
     }
     
     // Update current page display
     const currentPageElement = document.getElementById('currentPage');
     if (currentPageElement) {
         currentPageElement.textContent = currentPage;
+        console.log(`[PDF] Updated current page display to ${currentPage}`);
     } else {
-        console.error('[PDF] currentPage element not found');
+        console.warn('[PDF] currentPage element not found');
     }
     
     // Enable/disable navigation buttons
@@ -151,14 +152,16 @@ function renderAllPages() {
     
     if (prevPageBtn) {
         prevPageBtn.disabled = currentPage <= 1;
+        console.log(`[PDF] prevPage button ${prevPageBtn.disabled ? 'disabled' : 'enabled'}`);
     } else {
-        console.error('[PDF] prevPage button not found');
+        console.warn('[PDF] prevPage button not found');
     }
     
     if (nextPageBtn) {
         nextPageBtn.disabled = currentPage >= totalPages;
+        console.log(`[PDF] nextPage button ${nextPageBtn.disabled ? 'disabled' : 'enabled'}`);
     } else {
-        console.error('[PDF] nextPage button not found');
+        console.warn('[PDF] nextPage button not found');
     }
     
     // Apply current zoom level
@@ -205,17 +208,26 @@ function nextPage() {
 function loadPDF(url) {
     console.log(`[PDF] Attempting to load PDF from URL: ${url}`);
     
-    // Show loading indicator
-    const pagesContainer = document.getElementById('pdfPagesContainer');
-    if (pagesContainer) {
-        console.log('[PDF] Found pdfPagesContainer, showing loading indicator');
-        pagesContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
-    } else {
-        console.error('[PDF] pdfPagesContainer not found in the DOM');
-    }
-    
     try {
-        console.log('[PDF] Creating PDF.js loading task');
+        // Show loading indicator
+        const pagesContainer = document.getElementById('pdfPagesContainer');
+        if (pagesContainer) {
+            console.log('[PDF] Found pdfPagesContainer, showing loading indicator');
+            pagesContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
+        } else {
+            console.error('[PDF] pdfPagesContainer not found in the DOM');
+        }
+        
+        // Check if URL is valid
+        if (!url || url === '#') {
+            console.error('[PDF] Invalid URL provided:', url);
+            if (pagesContainer) {
+                pagesContainer.innerHTML = `<div class="pdf-error">Error: Invalid PDF URL provided</div>`;
+            }
+            return;
+        }
+        
+        console.log('[PDF] Creating PDF.js loading task for URL:', url);
         const loadingTask = pdfjsLib.getDocument(url);
         
         loadingTask.promise.then(function(pdf) {
@@ -236,9 +248,12 @@ function loadPDF(url) {
             const pdfControls = document.querySelector('.pdf-controls');
             if (pdfControls) {
                 pdfControls.classList.remove('hidden');
+                console.log('[PDF] PDF controls displayed');
+            } else {
+                console.warn('[PDF] PDF controls element not found');
             }
         }).catch(function(error) {
-            console.error('[PDF] Error in PDF.js promise:', error);
+            console.error('[PDF] Error loading PDF:', error);
             
             // Show error message
             if (pagesContainer) {
@@ -246,21 +261,37 @@ function loadPDF(url) {
             }
         });
     } catch (error) {
-        console.error('[PDF] Exception during PDF loading:', error);
+        console.error('[PDF] Exception in loadPDF function:', error);
+        const pagesContainer = document.getElementById('pdfPagesContainer');
         if (pagesContainer) {
-            pagesContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
+            pagesContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
         }
     }
 }
 
 // Initialize PDF functionality
 function initPDF() {
-    console.log('[PDF] Initializing PDF functionality');
+    console.log('[PDF] initPDF function called');
+    
+    // Check if PDF.js is available
+    if (typeof pdfjsLib === 'undefined') {
+        console.error('[PDF] PDF.js library not loaded');
+        return;
+    } else {
+        console.log('[PDF] PDF.js library detected, version:', pdfjsLib.version);
+    }
+    
+    // Check if worker is set up correctly
+    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        console.warn('[PDF] PDF.js worker source not set');
+    } else {
+        console.log('[PDF] PDF.js worker source:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+    }
     
     // Set up navigation buttons
     const prevPageBtn = document.getElementById('prevPage');
     if (prevPageBtn) {
-        console.log('[PDF] Adding click handler to prevPage button');
+        console.log('[PDF] Adding click event to prevPage button');
         prevPageBtn.addEventListener('click', prevPage);
     } else {
         console.error('[PDF] prevPage button not found');
@@ -268,7 +299,7 @@ function initPDF() {
     
     const nextPageBtn = document.getElementById('nextPage');
     if (nextPageBtn) {
-        console.log('[PDF] Adding click handler to nextPage button');
+        console.log('[PDF] Adding click event to nextPage button');
         nextPageBtn.addEventListener('click', nextPage);
     } else {
         console.error('[PDF] nextPage button not found');
@@ -277,7 +308,7 @@ function initPDF() {
     // Set up zoom buttons
     const zoomInBtn = document.getElementById('zoomIn');
     if (zoomInBtn) {
-        console.log('[PDF] Adding click handler to zoomIn button');
+        console.log('[PDF] Adding click event to zoomIn button');
         zoomInBtn.addEventListener('click', function() {
             let currentZoom = getCurrentZoom();
             currentZoom += 0.25;
@@ -290,7 +321,7 @@ function initPDF() {
     
     const zoomOutBtn = document.getElementById('zoomOut');
     if (zoomOutBtn) {
-        console.log('[PDF] Adding click handler to zoomOut button');
+        console.log('[PDF] Adding click event to zoomOut button');
         zoomOutBtn.addEventListener('click', function() {
             let currentZoom = getCurrentZoom();
             currentZoom -= 0.25;
@@ -303,13 +334,15 @@ function initPDF() {
     
     const zoomResetBtn = document.getElementById('zoomReset');
     if (zoomResetBtn) {
-        console.log('[PDF] Adding click handler to zoomReset button');
+        console.log('[PDF] Adding click event to zoomReset button');
         zoomResetBtn.addEventListener('click', function() {
             setZoomLevel(1.0);
         });
     } else {
         console.error('[PDF] zoomReset button not found');
     }
+    
+    console.log('[PDF] PDF viewer initialization complete');
 }
 
 export { initPDF, loadPDF, setZoomLevel, prevPage, nextPage, goToPage }; 
