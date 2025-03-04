@@ -7,8 +7,36 @@
     <link rel="stylesheet" href="/assets/styles/style.css">
     <link rel="stylesheet" href="/assets/styles/workspace.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <script>
+        // Set up PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        console.log('[HTML] Set PDF.js worker URL:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+        
+        // Test if PDF files are accessible
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('[HTML] Testing PDF file accessibility');
+            
+            const testPaths = [
+                '/frontend/public/assets/Files/final review.pdf',
+                '/assets/Files/final review.pdf',
+                './assets/Files/final review.pdf',
+                '../assets/Files/final review.pdf'
+            ];
+            
+            testPaths.forEach(path => {
+                fetch(path)
+                    .then(response => {
+                        console.log(`[HTML] Fetch test for ${path}: ${response.ok ? 'SUCCESS' : 'FAILED'} (${response.status})`);
+                    })
+                    .catch(error => {
+                        console.error(`[HTML] Fetch test for ${path} failed with error:`, error);
+                    });
+            });
+        });
+    </script>
     <style>
         /* Ensure modal is visible when active */
         .modal-overlay.active {
@@ -74,8 +102,24 @@
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
+                <div class="page-control">
+                    <button class="page-btn" id="prevPage" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="page-info">
+                        Page <span id="currentPage">1</span> of <span id="pageCount">1</span>
+                    </span>
+                    <button class="page-btn" id="nextPage" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="page-btn" id="zoomReset" title="Reset zoom">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
-            <div class="pdf-viewer" id="pdfViewer"></div>
+            <div class="pdf-viewer" id="pdfViewer">
+                <div id="pdfPagesContainer"></div>
+            </div>
             <div class="pdf-file-bar">
                 <div class="pdf-files" id="pdfFiles">
                     <!-- PDF file tabs will be added here dynamically -->
@@ -315,9 +359,6 @@
         </div>
     </div>
 
-    <!-- PDF.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-    
     <!-- Use type="module" to enable ES6 module imports -->
     <script type="module" src="/frontend/src/js/main.js"></script>
     

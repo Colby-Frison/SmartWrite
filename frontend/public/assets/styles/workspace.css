@@ -299,6 +299,7 @@
     color: var(--text-secondary);
 }
 
+/* PDF viewer styles */
 .pdf-viewer {
     flex: 1;
     width: 100%;
@@ -312,32 +313,58 @@
     margin-bottom: 0;
 }
 
-.pdfViewerCanvas {
-    padding: .5rem;
+#pdfPagesContainer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    width: max-content;
-    margin: 0 auto;
-    transform-origin: center top;
+    gap: 20px;
+    padding: 20px;
     transition: transform 0.2s ease;
 }
 
-.pdf-page-container {
-    background: white;
-    padding: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-radius: 0px;
-    width: max-content;
+.pdf-page {
     position: relative;
-    margin: 0 auto;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 20px;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.pdf-page-container canvas {
-    width: 680px; /* Base width */
-    height: auto;
+.pdf-page canvas {
     display: block;
+}
+
+.page-number {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    user-select: none;
+}
+
+.pdf-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.pdf-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: var(--error-color);
+    text-align: center;
+    padding: 20px;
 }
 
 /* Custom scrollbar styling */
@@ -483,61 +510,118 @@
 
 /* PDF Controls */
 .pdf-controls {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
     display: flex;
-    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
     background: var(--bg-secondary);
-    padding: 0.5rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    z-index: 100;
-    border: 1px solid var(--border-color);
-    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 10;
 }
 
 .zoom-control {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--text-primary);
+    gap: 10px;
 }
 
 .zoom-btn {
-    background: var(--bg-tertiary);
+    background: none;
     border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    color: var(--text-primary);
 }
 
 .zoom-btn:hover {
-    background: var(--hover-bg);
-    transform: translateY(-1px);
+    background: var(--bg-hover);
 }
 
 .zoom-level {
-    min-width: 48px;
-    text-align: center;
-    font-weight: 500;
+    font-size: 14px;
     color: var(--text-primary);
+    min-width: 50px;
+    text-align: center;
     user-select: none;
-    font-size: 0.9rem;
-    cursor: ns-resize;
-    padding: 2px 4px;
+    padding: 5px 8px;
     border-radius: 4px;
-    transition: background-color 0.2s ease;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
 }
 
 .zoom-level:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
+}
+
+/* Page control styles */
+.page-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.page-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+    background: var(--bg-hover);
+}
+
+.page-info {
+    font-size: 14px;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+/* PDF canvas styles */
+#pdf-canvas {
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background-color: white;
+}
+
+/* Remove all Electron-related styles */
+
+/* Remove window controls */
+.window-controls,
+.window-control,
+.window-control:hover,
+.window-control.close:hover,
+#titlebar,
+.electron-only #titlebar,
+.titlebar-drag-region,
+.window-title,
+.window-controls-container,
+.electron-only.workspace,
+.electron-only .main-panel,
+.electron-only .navbar {
+    display: none !important;
+}
+
+
+.electron-only .navbar {
+    display: none !important;
 }
 
 .sidebar .dropdown-menu {
@@ -1547,27 +1631,4 @@ textarea.form-input {
 
 .tree-item-content[draggable="true"]:active {
     cursor: grabbing;
-}
-
-/* Remove all Electron-related styles */
-
-/* Remove window controls */
-.window-controls,
-.window-control,
-.window-control:hover,
-.window-control.close:hover,
-#titlebar,
-.electron-only #titlebar,
-.titlebar-drag-region,
-.window-title,
-.window-controls-container,
-.electron-only.workspace,
-.electron-only .main-panel,
-.electron-only .navbar {
-    display: none !important;
-}
-
-
-.electron-only .navbar {
-    display: none !important;
 } 
