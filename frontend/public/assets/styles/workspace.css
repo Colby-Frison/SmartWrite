@@ -1372,21 +1372,27 @@ textarea.form-input {
 .tree-item-content {
     display: flex;
     align-items: center;
-    padding: 0.35rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--text-secondary);
+    border-radius: 4px;
+    transition: none;
 }
 
 .tree-item-content:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
+    background-color: var(--hover-bg);
 }
 
 .tree-item-content.active {
-    background: var(--accent-primary);
-    color: white;
+    background-color: var(--hover-bg);
+    color: var(--accent-primary);
+}
+
+/* New style for selected items with outline instead of background */
+.tree-item-content.selected {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    color: var(--text-primary);
+    transition: none;
 }
 
 .tree-item-icon {

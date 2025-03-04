@@ -11,7 +11,7 @@ import { initSidebar, toggleSidebar } from './sidebar.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { initChat, sendChatMessage } from './chat.js';
 import { initPDF, loadPDF, setZoomLevel, prevPage, nextPage } from './pdf.js';
-import { initFiles, sortFiles, createNewNote, createNewFolder } from './files.js';
+import { initFileTree, createNewFolder, createNewNote, sortFileSystem } from './filetree.js';
 
 // Make functions available globally
 window.openModal = openModal;
@@ -24,9 +24,9 @@ window.sendChatMessage = sendChatMessage;
 window.loadPDF = loadPDF;
 window.prevPage = prevPage;
 window.nextPage = nextPage;
-window.sortFiles = sortFiles;
-window.createNewNote = createNewNote;
 window.createNewFolder = createNewFolder;
+window.createNewNote = createNewNote;
+window.sortFiles = sortFileSystem;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // initSettings(); // Commented out to avoid conflicts with direct script
     initSidebar();
     initChat();
-    initFiles();
+    initFileTree();
     
     // Initialize PDF viewer if it exists
     const pdfCanvas = document.getElementById('pdf-canvas');
