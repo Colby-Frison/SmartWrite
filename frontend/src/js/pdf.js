@@ -56,7 +56,7 @@ function renderAllPages() {
     const renderPage = (pageNum) => {
         console.log(`[PDF] Starting to render page ${pageNum}`);
         
-        pdfDoc.getPage(pageNum).then(function(page) {
+        return pdfDoc.getPage(pageNum).then(function(page) {
             console.log(`[PDF] Got page ${pageNum} from PDF document`);
             
             // Create a div for this page
@@ -82,91 +82,112 @@ function renderAllPages() {
             };
             
             console.log(`[PDF] Rendering page ${pageNum} to canvas`);
-            page.render(renderContext).promise.then(function() {
+            return page.render(renderContext).promise.then(function() {
                 console.log(`[PDF] Page ${pageNum} rendered successfully`);
                 renderedPages.add(pageNum);
                 
-                // If this is the current page, scroll to it
+                // Add the canvas to the page div
+                pageDiv.appendChild(canvas);
+                
+                // Add page number indicator
+                const pageNumberDiv = document.createElement('div');
+                pageNumberDiv.className = 'page-number';
+                pageNumberDiv.textContent = pageNum;
+                pageDiv.appendChild(pageNumberDiv);
+                
+                // If this is the current page, mark it for scrolling later
                 if (pageNum === currentPage) {
-                    console.log(`[PDF] Scrolling to current page ${pageNum}`);
-                    setTimeout(() => {
-                        pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
+                    console.log(`[PDF] Marking current page ${pageNum} for scrolling`);
+                    pageDiv.dataset.isCurrent = 'true';
                 }
+                
+                return pageDiv;
             }).catch(function(error) {
                 console.error(`[PDF] Error rendering page ${pageNum}:`, error);
+                throw error;
             });
-            
-            // Add the canvas to the page div
-            pageDiv.appendChild(canvas);
-            
-            // Add page number indicator
-            const pageNumberDiv = document.createElement('div');
-            pageNumberDiv.className = 'page-number';
-            pageNumberDiv.textContent = pageNum;
-            pageDiv.appendChild(pageNumberDiv);
-            
-            // Add the page div to the fragment
-            fragment.appendChild(pageDiv);
-            console.log(`[PDF] Added page ${pageNum} div to document fragment`);
         }).catch(function(error) {
             console.error(`[PDF] Error getting page ${pageNum}:`, error);
+            throw error;
         });
     };
     
-    // Render all pages
-    console.log(`[PDF] Starting to render ${pdfDoc.numPages} pages`);
+    // Create an array of promises for all pages
+    console.log(`[PDF] Creating render promises for ${pdfDoc.numPages} pages`);
+    const renderPromises = [];
     for (let i = 1; i <= pdfDoc.numPages; i++) {
-        renderPage(i);
+        renderPromises.push(renderPage(i));
     }
     
-    // Append all pages to the container
-    console.log('[PDF] Appending all pages to container');
-    pagesContainer.appendChild(fragment);
-    
-    // Update total pages
-    totalPages = pdfDoc.numPages;
-    console.log(`[PDF] Total pages set to ${totalPages}`);
-    
-    // Update page count display
-    const pageCountElement = document.getElementById('pageCount');
-    if (pageCountElement) {
-        pageCountElement.textContent = totalPages;
-        console.log(`[PDF] Updated page count display to ${totalPages}`);
-    } else {
-        console.warn('[PDF] pageCount element not found');
-    }
-    
-    // Update current page display
-    const currentPageElement = document.getElementById('currentPage');
-    if (currentPageElement) {
-        currentPageElement.textContent = currentPage;
-        console.log(`[PDF] Updated current page display to ${currentPage}`);
-    } else {
-        console.warn('[PDF] currentPage element not found');
-    }
-    
-    // Enable/disable navigation buttons
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
-    
-    if (prevPageBtn) {
-        prevPageBtn.disabled = currentPage <= 1;
-        console.log(`[PDF] prevPage button ${prevPageBtn.disabled ? 'disabled' : 'enabled'}`);
-    } else {
-        console.warn('[PDF] prevPage button not found');
-    }
-    
-    if (nextPageBtn) {
-        nextPageBtn.disabled = currentPage >= totalPages;
-        console.log(`[PDF] nextPage button ${nextPageBtn.disabled ? 'disabled' : 'enabled'}`);
-    } else {
-        console.warn('[PDF] nextPage button not found');
-    }
-    
-    // Apply current zoom level
-    console.log('[PDF] Applying current zoom level');
-    setZoomLevel(getCurrentZoom());
+    // Wait for all pages to be rendered
+    Promise.all(renderPromises).then(pageDivs => {
+        console.log(`[PDF] All ${pageDivs.length} pages rendered successfully`);
+        
+        // Add all page divs to the fragment
+        pageDivs.forEach(pageDiv => {
+            fragment.appendChild(pageDiv);
+        });
+        
+        // Append all pages to the container
+        console.log('[PDF] Appending all pages to container');
+        pagesContainer.appendChild(fragment);
+        
+        // Scroll to current page if needed
+        setTimeout(() => {
+            const currentPageDiv = pagesContainer.querySelector('.pdf-page[data-is-current="true"]');
+            if (currentPageDiv) {
+                console.log(`[PDF] Scrolling to current page ${currentPage}`);
+                currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+        
+        // Update total pages
+        totalPages = pdfDoc.numPages;
+        console.log(`[PDF] Total pages set to ${totalPages}`);
+        
+        // Update page count display
+        const pageCountElement = document.getElementById('pageCount');
+        if (pageCountElement) {
+            pageCountElement.textContent = totalPages;
+            console.log(`[PDF] Updated page count display to ${totalPages}`);
+        } else {
+            console.warn('[PDF] pageCount element not found');
+        }
+        
+        // Update current page display
+        const currentPageElement = document.getElementById('currentPage');
+        if (currentPageElement) {
+            currentPageElement.textContent = currentPage;
+            console.log(`[PDF] Updated current page display to ${currentPage}`);
+        } else {
+            console.warn('[PDF] currentPage element not found');
+        }
+        
+        // Enable/disable navigation buttons
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        
+        if (prevPageBtn) {
+            prevPageBtn.disabled = currentPage <= 1;
+            console.log(`[PDF] prevPage button ${prevPageBtn.disabled ? 'disabled' : 'enabled'}`);
+        } else {
+            console.warn('[PDF] prevPage button not found');
+        }
+        
+        if (nextPageBtn) {
+            nextPageBtn.disabled = currentPage >= totalPages;
+            console.log(`[PDF] nextPage button ${nextPageBtn.disabled ? 'disabled' : 'enabled'}`);
+        } else {
+            console.warn('[PDF] nextPage button not found');
+        }
+        
+        // Apply current zoom level
+        console.log('[PDF] Applying current zoom level');
+        setZoomLevel(getCurrentZoom());
+    }).catch(function(error) {
+        console.error('[PDF] Error in renderAllPages:', error);
+        pagesContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
+    });
 }
 
 // Go to a specific page
@@ -346,3 +367,9 @@ function initPDF() {
 }
 
 export { initPDF, loadPDF, setZoomLevel, prevPage, nextPage, goToPage }; 
+
+// Export functions to window object for direct access
+window.loadPDF = loadPDF;
+window.prevPage = prevPage;
+window.nextPage = nextPage;
+window.goToPage = goToPage; 

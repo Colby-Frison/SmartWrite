@@ -29,6 +29,65 @@
         .modal-overlay.active {
             display: flex !important;
         }
+        
+        /* PDF Viewer Styles */
+        .pdf-page {
+            position: relative;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            background-color: var(--pdf-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--bg-secondary);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pdf-loading, .pdf-error {
+            padding: 20px;
+            text-align: center;
+            background-color: var(--bg-secondary);
+            border-radius: 5px;
+            margin: 20px;
+            color: var(--text-primary);
+        }
+        
+        .pdf-error {
+            background-color: rgba(211, 47, 47, 0.1);
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+        
+        #pdfPagesContainer {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .pdf-viewer {
+            overflow-y: auto;
+            height: 100%;
+            width: 100%;
+            background-color: var(--bg-primary);
+        }
     </style>
 </head>
 <body class="workspace">
@@ -399,68 +458,74 @@
                     // Clear container
                     pdfContainer.innerHTML = '';
                     
-                    // Render first page as a test
-                    pdf.getPage(1).then(function(page) {
-                        console.log('[Test] Got page 1');
-                        
-                        // Create a div for this page
-                        const pageDiv = document.createElement('div');
-                        pageDiv.className = 'pdf-page';
-                        pageDiv.dataset.pageNumber = 1;
-                        
-                        // Create a canvas for this page
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Set viewport
-                        const viewport = page.getViewport({ scale: 1.0 });
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        
-                        console.log('[Test] Page viewport size:', viewport.width, 'x', viewport.height);
-                        
-                        // Render the page content on the canvas
-                        const renderContext = {
-                            canvasContext: ctx,
-                            viewport: viewport
-                        };
-                        
-                        page.render(renderContext).promise.then(function() {
-                            console.log('[Test] Page rendered successfully');
+                    // Create a document fragment to hold all pages
+                    const fragment = document.createDocumentFragment();
+                    
+                    // Function to render a specific page
+                    function renderPage(pageNum) {
+                        return pdf.getPage(pageNum).then(function(page) {
+                            console.log(`[Test] Rendering page ${pageNum}`);
                             
-                            // Add the canvas to the page div
-                            pageDiv.appendChild(canvas);
+                            // Create a div for this page
+                            const pageDiv = document.createElement('div');
+                            pageDiv.className = 'pdf-page';
+                            pageDiv.dataset.pageNumber = pageNum;
                             
-                            // Add page number indicator
-                            const pageNumberDiv = document.createElement('div');
-                            pageNumberDiv.className = 'page-number';
-                            pageNumberDiv.textContent = 1;
-                            pageDiv.appendChild(pageNumberDiv);
+                            // Create a canvas for this page
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
                             
-                            // Add the page div to the container
-                            pdfContainer.appendChild(pageDiv);
+                            // Set viewport
+                            const viewport = page.getViewport({ scale: 1.0 });
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
                             
-                            // Add success message with path
-                            const successDiv = document.createElement('div');
-                            successDiv.style.padding = '10px';
-                            successDiv.style.margin = '10px 0';
-                            successDiv.style.backgroundColor = '#dff0d8';
-                            successDiv.style.color = '#3c763d';
-                            successDiv.style.borderRadius = '4px';
-                            successDiv.innerHTML = `<strong>Success!</strong> PDF loaded from path: ${pdfUrl}`;
-                            pdfContainer.insertBefore(successDiv, pdfContainer.firstChild);
+                            // Render the page content on the canvas
+                            const renderContext = {
+                                canvasContext: ctx,
+                                viewport: viewport
+                            };
                             
-                            console.log('[Test] Direct PDF rendering test completed successfully');
-                            
-                            // Update all file paths in the file system
-                            updateFilePaths(pdfUrl);
-                        }).catch(function(error) {
-                            console.error('[Test] Error rendering page:', error);
-                            pathIndex++;
-                            tryNextPath();
+                            return page.render(renderContext).promise.then(function() {
+                                console.log(`[Test] Page ${pageNum} rendered successfully`);
+                                
+                                // Add the canvas to the page div
+                                pageDiv.appendChild(canvas);
+                                
+                                // Add page number indicator
+                                const pageNumberDiv = document.createElement('div');
+                                pageNumberDiv.className = 'page-number';
+                                pageNumberDiv.textContent = pageNum;
+                                pageDiv.appendChild(pageNumberDiv);
+                                
+                                return pageDiv;
+                            });
                         });
+                    }
+                    
+                    // Create an array of promises for all pages
+                    const renderPromises = [];
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        renderPromises.push(renderPage(i));
+                    }
+                    
+                    // Wait for all pages to be rendered
+                    Promise.all(renderPromises).then(pageDivs => {
+                        console.log(`[Test] All ${pageDivs.length} pages rendered successfully`);
+                        
+                        // Add all page divs to the fragment
+                        pageDivs.forEach(pageDiv => {
+                            fragment.appendChild(pageDiv);
+                        });
+                        
+                        // Append all pages to the container
+                        pdfContainer.appendChild(fragment);
+                        console.log('[Test] All pages added to container');
+                        
+                        // Update all file paths in the file system
+                        updateFilePaths(pdfUrl);
                     }).catch(function(error) {
-                        console.error('[Test] Error getting page:', error);
+                        console.error('[Test] Error rendering pages:', error);
                         pathIndex++;
                         tryNextPath();
                     });
@@ -550,17 +615,17 @@
                     children: [
                         {
                             id: 'file1',
-                            name: 'Physics Notes',
+                            name: 'final review.pdf',
                             type: 'file',
                             fileType: 'pdf',
-                            path: '#'
+                            path: '/assets/Files/final review.pdf'
                         },
                         {
                             id: 'file2',
-                            name: 'Chemistry Formulas',
+                            name: 'HW 3-Ch1.pdf',
                             type: 'file',
                             fileType: 'pdf',
-                            path: '#'
+                            path: '/assets/Files/HW 3-Ch1.pdf'
                         }
                     ]
                 },
@@ -571,43 +636,18 @@
                     children: [
                         {
                             id: 'file3',
-                            name: 'Research Paper',
+                            name: 'Appendix.pdf',
                             type: 'file',
                             fileType: 'pdf',
-                            path: '#'
-                        },
-                        {
-                            id: 'folder3',
-                            name: 'References',
-                            type: 'folder',
-                            children: [
-                                {
-                                    id: 'file4',
-                                    name: 'Reference 1',
-                                    type: 'file',
-                                    fileType: 'pdf',
-                                    path: '#'
-                                },
-                                {
-                                    id: 'file5',
-                                    name: 'Reference 2',
-                                    type: 'file',
-                                    fileType: 'pdf',
-                                    path: '#'
-                                }
-                            ]
+                            path: '/assets/Files/Appendix.pdf'
                         }
                     ]
-                },
-                {
-                    id: 'file6',
-                    name: 'Meeting Notes',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '#'
                 }
             ]
         };
+        
+        // Export fileSystem to window object for debugging
+        window.fileSystem = fileSystem;
         
         // Track expanded folders
         const expandedFolders = new Set(['root']);

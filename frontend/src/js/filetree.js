@@ -266,13 +266,124 @@ function selectItem(itemId) {
                 return;
             }
             
-            // Call the loadPDF function from the global scope
-            if (typeof window.loadPDF === 'function') {
-                console.log(`[FileTree] Calling window.loadPDF with path: ${item.path}`);
-                window.loadPDF(item.path);
-            } else {
-                console.error('[FileTree] loadPDF function not available in window object');
-                console.log('[FileTree] Available window functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
+            try {
+                // First try to use the imported loadPDF function
+                if (typeof loadPDF === 'function') {
+                    console.log(`[FileTree] Calling imported loadPDF with path: ${item.path}`);
+                    loadPDF(item.path);
+                }
+                // Then try to use the window.loadPDF function
+                else if (typeof window.loadPDF === 'function') {
+                    console.log(`[FileTree] Calling window.loadPDF with path: ${item.path}`);
+                    window.loadPDF(item.path);
+                } 
+                // If neither is available, try to use the PDF.js library directly
+                else if (typeof pdfjsLib !== 'undefined') {
+                    console.log(`[FileTree] loadPDF function not available, using PDF.js directly`);
+                    
+                    const pdfContainer = document.getElementById('pdfPagesContainer');
+                    if (pdfContainer) {
+                        pdfContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
+                        
+                        const loadingTask = pdfjsLib.getDocument(item.path);
+                        loadingTask.promise.then(function(pdf) {
+                            console.log(`[FileTree] PDF loaded successfully with ${pdf.numPages} pages`);
+                            
+                            // Clear container
+                            pdfContainer.innerHTML = '';
+                            
+                            // Create a document fragment to hold all pages
+                            const fragment = document.createDocumentFragment();
+                            
+                            // Function to render a specific page
+                            function renderPage(pageNum) {
+                                return pdf.getPage(pageNum).then(function(page) {
+                                    console.log(`[FileTree] Rendering page ${pageNum}`);
+                                    
+                                    // Create a div for this page
+                                    const pageDiv = document.createElement('div');
+                                    pageDiv.className = 'pdf-page';
+                                    pageDiv.dataset.pageNumber = pageNum;
+                                    pageDiv.style.marginBottom = '20px';
+                                    
+                                    // Create a canvas for this page
+                                    const canvas = document.createElement('canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    // Set viewport
+                                    const viewport = page.getViewport({ scale: 1.0 });
+                                    canvas.height = viewport.height;
+                                    canvas.width = viewport.width;
+                                    
+                                    // Render the page content on the canvas
+                                    const renderContext = {
+                                        canvasContext: ctx,
+                                        viewport: viewport
+                                    };
+                                    
+                                    return page.render(renderContext).promise.then(function() {
+                                        console.log(`[FileTree] Page ${pageNum} rendered successfully`);
+                                        
+                                        // Add the canvas to the page div
+                                        pageDiv.appendChild(canvas);
+                                        
+                                        // Add page number indicator
+                                        const pageNumberDiv = document.createElement('div');
+                                        pageNumberDiv.className = 'page-number';
+                                        pageNumberDiv.textContent = pageNum;
+                                        pageDiv.appendChild(pageNumberDiv);
+                                        
+                                        return pageDiv;
+                                    });
+                                });
+                            }
+                            
+                            // Create an array of promises for all pages
+                            const renderPromises = [];
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                renderPromises.push(renderPage(i));
+                            }
+                            
+                            // Wait for all pages to be rendered
+                            Promise.all(renderPromises).then(pageDivs => {
+                                console.log(`[FileTree] All ${pageDivs.length} pages rendered successfully`);
+                                
+                                // Add all page divs to the fragment
+                                pageDivs.forEach(pageDiv => {
+                                    fragment.appendChild(pageDiv);
+                                });
+                                
+                                // Append all pages to the container
+                                pdfContainer.appendChild(fragment);
+                                console.log('[FileTree] All pages added to container');
+                                
+                                // Update page count display
+                                const pageCountElement = document.getElementById('pageCount');
+                                if (pageCountElement) {
+                                    pageCountElement.textContent = pdf.numPages;
+                                }
+                                
+                                // Update current page display
+                                const currentPageElement = document.getElementById('currentPage');
+                                if (currentPageElement) {
+                                    currentPageElement.textContent = 1;
+                                }
+                            }).catch(function(error) {
+                                console.error('[FileTree] Error rendering pages:', error);
+                                pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
+                            });
+                        }).catch(function(error) {
+                            console.error('[FileTree] Error loading PDF:', error);
+                            pdfContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
+                        });
+                    } else {
+                        console.error('[FileTree] pdfPagesContainer not found in the DOM');
+                    }
+                } else {
+                    console.error('[FileTree] PDF.js library not available');
+                }
+            } catch (error) {
+                console.error('[FileTree] Error loading PDF:', error);
             }
         } else {
             console.log(`[FileTree] Item is not a PDF, fileType: ${item.fileType}`);
