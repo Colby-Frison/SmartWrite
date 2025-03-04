@@ -15,12 +15,23 @@ SmartWrite is an innovative tool that transforms handwritten notes into digital 
 ```
 SmartWrite/
 ├── frontend/
+│   ├── src/
+│   │   ├── js/                # Modular JavaScript files
+│   │   │   ├── main.js        # Main entry point
+│   │   │   ├── state.js       # Shared state management
+│   │   │   ├── modal.js       # Modal functionality
+│   │   │   ├── settings.js    # Settings functionality
+│   │   │   ├── sidebar.js     # Sidebar functionality
+│   │   │   ├── theme.js       # Theme functionality
+│   │   │   ├── chat.js        # Chat functionality
+│   │   │   ├── pdf.js         # PDF viewer functionality
+│   │   │   └── files.js       # File management functionality
 │   └── public/
 │       ├── assets/
 │       │   ├── styles/        # CSS stylesheets
 │       │   │   ├── style.css
 │       │   │   └── workspace.css
-│       │   └── js/           # Frontend JavaScript
+│       │   └── js/           # Legacy JavaScript
 │       │       └── theme.js
 │       ├── index.html        # Main entry point
 │       ├── workspace.html
@@ -34,6 +45,13 @@ SmartWrite/
 ├── .gitignore
 └── package.json            # Project dependencies and scripts
 ```
+
+## Development Notes
+- JavaScript code is organized into modular files in `frontend/src/js/`
+- Each module handles a specific aspect of the application's functionality
+- The main entry point is `frontend/src/js/main.js`
+- HTML files in the public directory reference JavaScript files using ES6 modules
+- The development server serves the `frontend/public` directory
 
 ## Development Setup
 

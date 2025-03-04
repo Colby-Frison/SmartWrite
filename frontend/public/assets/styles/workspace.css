@@ -299,6 +299,7 @@
     color: var(--text-secondary);
 }
 
+/* PDF viewer styles */
 .pdf-viewer {
     flex: 1;
     width: 100%;
@@ -312,32 +313,58 @@
     margin-bottom: 0;
 }
 
-.pdfViewerCanvas {
-    padding: .5rem;
+#pdfPagesContainer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    width: max-content;
-    margin: 0 auto;
-    transform-origin: center top;
+    gap: 10px;
+    padding: 10px;
     transition: transform 0.2s ease;
 }
 
-.pdf-page-container {
-    background: white;
-    padding: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-radius: 0px;
-    width: max-content;
+.pdf-page {
     position: relative;
-    margin: 0 auto;
+    background: var(--pdf-bg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 15px;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.pdf-page-container canvas {
-    width: 680px; /* Base width */
-    height: auto;
+.pdf-page canvas {
     display: block;
+}
+
+.page-number {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    user-select: none;
+}
+
+.pdf-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.pdf-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: var(--error-color);
+    text-align: center;
+    padding: 20px;
 }
 
 /* Custom scrollbar styling */
@@ -429,6 +456,7 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     gap: 0.5rem;
+    align-items: flex-end;
 }
 
 #chatInput {
@@ -439,13 +467,15 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
     resize: none;
-    max-height: 120px;
+    min-height: 42px;
+    max-height: 150px;
+    height: auto;
     overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-#chatInput:not(:empty) {
-    overflow-y: auto;
+    transition: none;
+    line-height: 1.4;
+    display: block;
+    word-wrap: break-word;
+    box-sizing: border-box;
 }
 
 #chatInput:focus {
@@ -453,63 +483,145 @@
     border-color: var(--accent-primary);
 }
 
-/* PDF Controls */
-.pdf-controls {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    background: var(--bg-secondary);
-    padding: 0.5rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    z-index: 100;
-    border: 1px solid var(--border-color);
-    backdrop-filter: blur(8px);
-}
-
-.zoom-control {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-primary);
-}
-
-.zoom-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    width: 28px;
-    height: 28px;
+/* Send button styling */
+#sendMessage {
+    width: 42px;
+    height: 42px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+#sendMessage:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-2px);
+}
+
+#sendMessage i {
+    font-size: 1rem;
+}
+
+/* PDF Controls */
+.pdf-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 10;
+}
+
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoom-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
 }
 
 .zoom-btn:hover {
-    background: var(--hover-bg);
-    transform: translateY(-1px);
+    background: var(--bg-hover);
 }
 
 .zoom-level {
-    min-width: 48px;
-    text-align: center;
-    font-weight: 500;
+    font-size: 14px;
     color: var(--text-primary);
+    min-width: 50px;
+    text-align: center;
     user-select: none;
-    font-size: 0.9rem;
-    cursor: ns-resize;
-    padding: 2px 4px;
+    padding: 5px 8px;
     border-radius: 4px;
-    transition: background-color 0.2s ease;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
 }
 
 .zoom-level:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-hover);
+}
+
+/* Page control styles */
+.page-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.page-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+    background: var(--bg-hover);
+}
+
+.page-info {
+    font-size: 14px;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+/* PDF canvas styles */
+#pdf-canvas {
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background-color: white;
+}
+
+/* Remove all Electron-related styles */
+
+/* Remove window controls */
+.window-controls,
+.window-control,
+.window-control:hover,
+.window-control.close:hover,
+#titlebar,
+.electron-only #titlebar,
+.titlebar-drag-region,
+.window-title,
+.window-controls-container,
+.electron-only.workspace,
+.electron-only .main-panel,
+.electron-only .navbar {
+    display: none !important;
+}
+
+
+.electron-only .navbar {
+    display: none !important;
 }
 
 .sidebar .dropdown-menu {
@@ -544,12 +656,12 @@
 }
 
 .pdf-file-bar {
-    height: 40px;
+    height: 50px;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    padding: 0 0.5rem;
+    padding: 0 0.25rem;
     overflow: hidden;
     flex-shrink: 0;
     border-radius: 12px;
@@ -562,7 +674,7 @@
     gap: 0.25rem;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0.25rem 0;
+    padding: 0.15rem 0;
     width: 100%;
     height: 100%;
     align-items: center;
@@ -570,7 +682,7 @@
 }
 
 .pdf-file-tab {
-    height: 28px;
+    height: 36px;
     padding: 0 0.75rem;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -670,7 +782,7 @@
 }
 
 .modal-overlay.active {
-    display: flex;
+    display: flex !important; /* Use !important to override any inline styles */
 }
 
 .modal-window {
@@ -686,6 +798,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     animation: modalSlideIn 0.3s ease;
+    overflow: hidden; /* Ensure content doesn't overflow the rounded corners */
 }
 
 @keyframes modalSlideIn {
@@ -740,7 +853,9 @@
     padding: 1.5rem;
     flex: 1;
     overflow-y: auto;
-    min-height: 100px;
+    min-height: 0; /* Allows flex items to shrink below content size */
+    display: flex; /* Ensures the settings wrapper takes full space */
+    flex-direction: column; /* Stack children vertically */
 }
 
 .modal-footer {
@@ -826,21 +941,22 @@ textarea.form-input {
 /* Modal specific adjustments */
 #newNoteModal .modal-window,
 #newFolderModal .modal-window {
-    max-width: 500px;
+    max-width: 900px;
 }
 
 #settingsModal .modal-window {
-    max-width: 900px;
-    width: 90vw;
-    height: 80vh;
-    max-height: 700px;
+    width: 1200px;
+    height: 600px; /* 2:3 ratio with width of 900px */
+    max-width: 110vw;
+    max-height: 80vh;
 }
 
 /* Settings Modal Styles */
 .settings-wrapper {
     display: flex;
     height: 100%;
-    min-height: 400px;
+    min-height: 0; /* Ensures the wrapper doesn't overflow the modal */
+    overflow: hidden; /* Prevents overflow */
 }
 
 .settings-sidebar {
@@ -848,6 +964,7 @@ textarea.form-input {
     border-right: 1px solid var(--border-color);
     padding: 1rem 0;
     background: var(--bg-tertiary);
+    overflow-y: auto; /* Allow scrolling if needed */
 }
 
 .settings-sidebar ul {
@@ -896,6 +1013,7 @@ textarea.form-input {
     flex: 1;
     padding: 2rem;
     overflow-y: auto;
+    height: 100%; /* Ensure it takes full height */
 }
 
 .settings-panel {
@@ -908,6 +1026,7 @@ textarea.form-input {
 .settings-panel[style*="display: block"] {
     opacity: 1;
     transform: translateX(0);
+    display: block !important;
 }
 
 .settings-item {
@@ -1059,7 +1178,7 @@ textarea.form-input {
 }
 
 #settingsModal .modal-body {
-    padding: 0; /* Reset padding for settings modal since it has its own layout */
+    padding: 0; /* Remove padding for settings modal to maximize space */
 }
 
 .drop-zone {
@@ -1227,7 +1346,7 @@ textarea.form-input {
 .file-tree-header {
     padding: 0.5rem;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
 }
@@ -1337,21 +1456,27 @@ textarea.form-input {
 .tree-item-content {
     display: flex;
     align-items: center;
-    padding: 0.35rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--text-secondary);
+    border-radius: 4px;
+    transition: none;
 }
 
 .tree-item-content:hover {
-    background: var(--hover-bg);
-    color: var(--text-primary);
+    background-color: var(--hover-bg);
 }
 
 .tree-item-content.active {
-    background: var(--accent-primary);
-    color: white;
+    background-color: var(--hover-bg);
+    color: var(--accent-primary);
+}
+
+/* New style for selected items with outline instead of background */
+.tree-item-content.selected {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    color: var(--text-primary);
+    transition: none;
 }
 
 .tree-item-icon {
@@ -1506,22 +1631,4 @@ textarea.form-input {
 
 .tree-item-content[draggable="true"]:active {
     cursor: grabbing;
-}
-
-/* Remove all Electron-related styles */
-
-/* Remove window controls */
-.window-controls,
-.window-control,
-.window-control:hover,
-.window-control.close:hover,
-#titlebar,
-.electron-only #titlebar,
-.titlebar-drag-region,
-.window-title,
-.window-controls-container,
-.electron-only.workspace,
-.electron-only .main-panel,
-.electron-only .navbar {
-    display: none !important;
 } 
