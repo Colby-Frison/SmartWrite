@@ -47,27 +47,34 @@
         
         .page-number {
             position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 10px;
+            right: 10px;
             background-color: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
             color: var(--text-primary);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
         }
         
-        .pdf-loading, .pdf-error {
-            padding: 20px;
-            text-align: center;
-            background-color: var(--bg-secondary);
-            border-radius: 5px;
-            margin: 20px;
-            color: var(--text-primary);
+        .page-number:hover {
+            transform: scale(1.05);
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        
+        .page-number:active {
+            transform: scale(0.95);
         }
         
         .pdf-error {
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
             background-color: rgba(211, 47, 47, 0.1);
             color: #d32f2f;
             border-left: 4px solid #d32f2f;
@@ -149,18 +156,35 @@
                     </button>
                 </div>
                 <div class="page-control">
-                    <button class="page-btn" id="prevPage" disabled>
+                    <button class="page-btn" id="prevPage" disabled onclick="console.log('prevPage button clicked directly'); updatePageCounter(Math.max(1, parseInt(document.getElementById('currentPage').textContent) - 1));">
                         <i class="fas fa-chevron-left"></i>
                     </button>
                     <span class="page-info">
                         Page <span id="currentPage">1</span> of <span id="pageCount">1</span>
+                        <button onclick="updatePageCounter(2)" style="margin-left: 10px; padding: 2px 5px; font-size: 12px;">Test Page 2</button>
+                        <button onclick="updatePageCounter(3)" style="margin-left: 5px; padding: 2px 5px; font-size: 12px;">Test Page 3</button>
                     </span>
-                    <button class="page-btn" id="nextPage" disabled>
+                    <button class="page-btn" id="nextPage" disabled onclick="console.log('nextPage button clicked directly'); updatePageCounter(Math.min(parseInt(document.getElementById('pageCount').textContent), parseInt(document.getElementById('currentPage').textContent) + 1));">
                         <i class="fas fa-chevron-right"></i>
                     </button>
-                    <button class="page-btn" id="zoomReset" title="Reset zoom">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
+                </div>
+                <!-- Add PDF Search Control -->
+                <div class="search-control">
+                    <div class="search-input-container">
+                        <input type="text" id="pdfSearchInput" placeholder="Search in PDF..." class="search-input">
+                        <button id="pdfSearchBtn" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="search-navigation">
+                        <button id="prevSearchResult" class="search-nav-btn" disabled>
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <span id="searchResultsCount">0/0</span>
+                        <button id="nextSearchResult" class="search-nav-btn" disabled>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="pdf-viewer" id="pdfViewer">
@@ -404,7 +428,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Use type="module" to enable ES6 module imports -->
     <script type="module" src="/frontend/src/js/main.js"></script>
     
@@ -446,7 +470,7 @@
                 }
                 
                 // Show loading indicator
-                pdfContainer.innerHTML = `<div class="pdf-loading">Loading PDF from path: ${pdfUrl}</div>`;
+                pdfContainer.innerHTML = '';
                 
                 // Load the PDF
                 const loadingTask = pdfjsLib.getDocument(pdfUrl);
@@ -492,11 +516,7 @@
                                 // Add the canvas to the page div
                                 pageDiv.appendChild(canvas);
                                 
-                                // Add page number indicator
-                                const pageNumberDiv = document.createElement('div');
-                                pageNumberDiv.className = 'page-number';
-                                pageNumberDiv.textContent = pageNum;
-                                pageDiv.appendChild(pageNumberDiv);
+                                // Page number indicators have been removed as requested
                                 
                                 return pageDiv;
                             });
@@ -525,12 +545,14 @@
                         // Update all file paths in the file system
                         updateFilePaths(pdfUrl);
                     }).catch(function(error) {
-                        console.error('[Test] Error rendering pages:', error);
+                        console.error(`[Workspace] Error rendering PDF from path ${pdfUrl}:`, error);
+                        pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
                         pathIndex++;
                         tryNextPath();
                     });
                 }).catch(function(error) {
-                    console.error(`[Test] Error loading PDF from path ${pdfUrl}:`, error);
+                    console.error(`[Workspace] Error loading PDF from path ${pdfUrl}:`, error);
+                    pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
                     pathIndex++;
                     tryNextPath();
                 });
@@ -570,12 +592,47 @@
             tryNextPath();
         }
         
-        // Run the test after a delay to ensure everything is loaded
-        setTimeout(testDirectPDFRendering, 2000);
+        // Commented out automatic test to allow proper file selection from the file tree
+        // setTimeout(testDirectPDFRendering, 2000);
     </script>
     
     <!-- Fallback script for direct modal control -->
     <script>
+        // Direct function to update page counter
+        function updatePageCounter(pageNum) {
+            console.log('Direct updatePageCounter called with pageNum:', pageNum);
+            
+            // Update the current page display
+            const currentPageElement = document.getElementById('currentPage');
+            if (currentPageElement) {
+                currentPageElement.textContent = pageNum;
+                console.log('Updated current page display to', pageNum);
+            } else {
+                console.warn('currentPage element not found');
+                return false;
+            }
+            
+            // Get the total pages
+            const pageCountElement = document.getElementById('pageCount');
+            const totalPages = pageCountElement ? parseInt(pageCountElement.textContent) : 1;
+            
+            // Enable/disable navigation buttons
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+            
+            if (prevPageBtn) {
+                prevPageBtn.disabled = pageNum <= 1;
+                console.log('prevPage button', prevPageBtn.disabled ? 'disabled' : 'enabled');
+            }
+            
+            if (nextPageBtn) {
+                nextPageBtn.disabled = pageNum >= totalPages;
+                console.log('nextPage button', nextPageBtn.disabled ? 'disabled' : 'enabled');
+            }
+            
+            return true;
+        }
+        
         // Direct modal control functions
         function directOpenModal(modalId) {
             console.log('Direct open modal called for: ' + modalId);
@@ -1150,6 +1207,8 @@
         
         // Function to select an item
         function selectItem(itemId) {
+            console.log(`[Workspace] selectItem called with itemId: ${itemId}`);
+            
             // Find the item in the file system
             const findItem = (folder) => {
                 if (folder.id === itemId) {
@@ -1168,9 +1227,17 @@
             
             const item = findItem(fileSystem);
             
+            if (!item) {
+                console.error(`[Workspace] Item with id ${itemId} not found in file system`);
+                return;
+            }
+            
+            console.log(`[Workspace] Found item:`, item);
+            
             // Only select the item if it's a file
             if (item && item.type === 'file') {
                 selectedItemId = itemId;
+                console.log(`[Workspace] Selected item ID set to: ${selectedItemId}`);
                 
                 // Remove selected class from all items
                 document.querySelectorAll('.tree-item-content').forEach(item => {
@@ -1183,7 +1250,127 @@
                     selectedItem.classList.add('selected');
                 }
                 
-                console.log(`Selected item: ${itemId}`);
+                console.log(`[Workspace] Selected item: ${itemId}`);
+                
+                // Load the PDF file if it's a PDF
+                if (item.fileType === 'pdf') {
+                    console.log(`[Workspace] Item is a PDF, path: ${item.path}`);
+                    
+                    // Check if path is valid
+                    if (!item.path || item.path === '#') {
+                        console.error(`[Workspace] Invalid PDF path: ${item.path}`);
+                        return;
+                    }
+                    
+                    try {
+                        // Try to use the PDF.js library directly
+                        if (typeof pdfjsLib !== 'undefined') {
+                            console.log(`[Workspace] Using PDF.js to load: ${item.path}`);
+                            
+                            const pdfContainer = document.getElementById('pdfPagesContainer');
+                            if (pdfContainer) {
+                                pdfContainer.innerHTML = '';
+                                
+                                const loadingTask = pdfjsLib.getDocument(item.path);
+                                loadingTask.promise.then(function(pdf) {
+                                    console.log(`[Workspace] PDF loaded successfully with ${pdf.numPages} pages`);
+                                    
+                                    // Clear container
+                                    pdfContainer.innerHTML = '';
+                                    
+                                    // Create a document fragment to hold all pages
+                                    const fragment = document.createDocumentFragment();
+                                    
+                                    // Function to render a specific page
+                                    function renderPage(pageNum) {
+                                        return pdf.getPage(pageNum).then(function(page) {
+                                            console.log(`[Workspace] Rendering page ${pageNum}`);
+                                            
+                                            // Create a div for this page
+                                            const pageDiv = document.createElement('div');
+                                            pageDiv.className = 'pdf-page';
+                                            pageDiv.dataset.pageNumber = pageNum;
+                                            
+                                            // Create a canvas for this page
+                                            const canvas = document.createElement('canvas');
+                                            const ctx = canvas.getContext('2d');
+                                            
+                                            // Set viewport
+                                            const viewport = page.getViewport({ scale: 1.0 });
+                                            canvas.height = viewport.height;
+                                            canvas.width = viewport.width;
+                                            
+                                            // Render the page content on the canvas
+                                            const renderContext = {
+                                                canvasContext: ctx,
+                                                viewport: viewport
+                                            };
+                                            
+                                            return page.render(renderContext).promise.then(function() {
+                                                console.log(`[Workspace] Page ${pageNum} rendered successfully`);
+                                                
+                                                // Add the canvas to the page div
+                                                pageDiv.appendChild(canvas);
+                                                
+                                                // Page number indicators have been removed as requested
+                                                
+                                                return pageDiv;
+                                            });
+                                        });
+                                    }
+                                    
+                                    // Create an array of promises for all pages
+                                    const renderPromises = [];
+                                    for (let i = 1; i <= pdf.numPages; i++) {
+                                        renderPromises.push(renderPage(i));
+                                    }
+                                    
+                                    // Wait for all pages to be rendered
+                                    Promise.all(renderPromises).then(pageDivs => {
+                                        console.log(`[Workspace] All ${pageDivs.length} pages rendered successfully`);
+                                        
+                                        // Add all page divs to the fragment
+                                        pageDivs.forEach(pageDiv => {
+                                            fragment.appendChild(pageDiv);
+                                        });
+                                        
+                                        // Append all pages to the container
+                                        pdfContainer.appendChild(fragment);
+                                        console.log('[Workspace] All pages added to container');
+                                        
+                                        // Update page count display
+                                        const pageCountElement = document.getElementById('pageCount');
+                                        if (pageCountElement) {
+                                            pageCountElement.textContent = pdf.numPages;
+                                        }
+                                        
+                                        // Update current page display
+                                        const currentPageElement = document.getElementById('currentPage');
+                                        if (currentPageElement) {
+                                            currentPageElement.textContent = 1;
+                                        }
+                                    }).catch(function(error) {
+                                        console.error('[Workspace] Error rendering pages:', error);
+                                        pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
+                                    });
+                                }).catch(function(error) {
+                                    console.error('[Workspace] Error loading PDF:', error);
+                                    pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
+                                });
+                            } else {
+                                console.error('[Workspace] pdfPagesContainer not found in the DOM');
+                            }
+                        } else {
+                            console.error('[Workspace] PDF.js library not available');
+                        }
+                    } catch (error) {
+                        console.error('[Workspace] Error loading PDF:', error);
+                    }
+                } else {
+                    console.log(`[Workspace] Item is not a PDF, fileType: ${item.fileType}`);
+                }
+            } else {
+                console.log(`[Workspace] Item is not a file, type: ${item.type}`);
             }
         }
         

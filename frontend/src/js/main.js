@@ -10,7 +10,7 @@ import { initSettings, saveSettings, saveProfile } from './settings.js';
 import { initSidebar, toggleSidebar } from './sidebar.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { initChat, sendChatMessage } from './chat.js';
-import { initPDF, loadPDF, setZoomLevel, prevPage, nextPage } from './pdf.js';
+import { initPDF, loadPDF, setZoomLevel, prevPage, nextPage, testPageCounter } from './pdf.js';
 import { initFileTree, createNewFolder, createNewNote, sortFileSystem } from './filetree.js';
 
 // Make functions available globally
@@ -26,6 +26,7 @@ window.sendChatMessage = sendChatMessage;
 window.loadPDF = loadPDF;
 window.prevPage = prevPage;
 window.nextPage = nextPage;
+window.testPageCounter = testPageCounter;
 window.createNewFolder = createNewFolder;
 window.createNewNote = createNewNote;
 window.sortFiles = sortFileSystem;
@@ -57,16 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('[Main] pdfPagesContainer found, initializing PDF viewer');
         initPDF();
         
-        // Test: Load a PDF directly
-        console.log('[Main] Testing direct PDF loading');
-        setTimeout(() => {
-            console.log('[Main] Attempting to load test PDF');
-            if (typeof loadPDF === 'function') {
-                loadPDF('/assets/Files/final review.pdf');
-            } else {
-                console.error('[Main] loadPDF function not available for direct test');
-            }
-        }, 1000);
+        // Removed automatic PDF loading test to allow proper file selection
     } else {
         console.error('[Main] pdfPagesContainer not found, PDF viewer not initialized');
     }

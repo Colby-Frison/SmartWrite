@@ -283,7 +283,7 @@ function selectItem(itemId) {
                     
                     const pdfContainer = document.getElementById('pdfPagesContainer');
                     if (pdfContainer) {
-                        pdfContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
+                        pdfContainer.innerHTML = '';
                         
                         const loadingTask = pdfjsLib.getDocument(item.path);
                         loadingTask.promise.then(function(pdf) {
@@ -327,11 +327,7 @@ function selectItem(itemId) {
                                         // Add the canvas to the page div
                                         pageDiv.appendChild(canvas);
                                         
-                                        // Add page number indicator
-                                        const pageNumberDiv = document.createElement('div');
-                                        pageNumberDiv.className = 'page-number';
-                                        pageNumberDiv.textContent = pageNum;
-                                        pageDiv.appendChild(pageNumberDiv);
+                                        // Page number indicators have been removed as requested
                                         
                                         return pageDiv;
                                     });
