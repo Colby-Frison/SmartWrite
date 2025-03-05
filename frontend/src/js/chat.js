@@ -1,6 +1,12 @@
-/**
- * chat.js - Handles all chat-related functionality
- */
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const genAI = new GoogleGenerativeAI("YOUR_GEMINI_API_KEY");
+
+async function getGeminiAIResponse(message) {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(message);
+    return result.response.text(); 
+
+}
 
 // Auto-resize chat input
 function autoResizeChatInput() {
@@ -11,12 +17,13 @@ function autoResizeChatInput() {
             this.style.height = 'auto';
             const newHeight = Math.min(this.scrollHeight, 150);
             this.style.height = newHeight + 'px';
+            
         });
     }
 }
 
 // Send a chat message
-function sendChatMessage() {
+async function sendChatMessage() {
     const chatInput = document.getElementById('chatInput');
     const chatMessages = document.getElementById('chatMessages');
     
@@ -28,7 +35,7 @@ function sendChatMessage() {
             <div class="message-content">
                 <p>${chatInput.value.trim()}</p>
             </div>
-        `;
+        `; 
         chatMessages.appendChild(userMessage);
         
         // Clear input
@@ -39,8 +46,10 @@ function sendChatMessage() {
         // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
-        // Simulate AI response (in a real app, this would call an API)
-        setTimeout(() => {
+        try {
+            // Get AI response from Gemini
+            const aiResponse = await getGeminiAIResponse(message);
+            
             // Create AI message
             const aiMessage = document.createElement('div');
             aiMessage.className = 'chat-message ai-message';
@@ -49,15 +58,16 @@ function sendChatMessage() {
                     <i class="fas fa-robot"></i>
                 </div>
                 <div class="message-content">
-                    <p>I'm analyzing your notes about "${message}"...</p>
-                    <p>This is a simulated response. In the actual application, this would be a response from the AI assistant based on your notes and question.</p>
+                    <p>${aiResponse}</p>
                 </div>
             `;
             chatMessages.appendChild(aiMessage);
             
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
-        }, 1000);
+        } catch (error) {
+            console.error('Error getting response from Gemini AI:', error);
+        }
     }
 }
 
@@ -82,5 +92,8 @@ function initChat() {
         });
     }
 }
+ 
+export { initChat, sendChatMessage };
+export { getGeminiAIResponse }; // Export for testing 
 
-export { initChat, sendChatMessage }; 
+
