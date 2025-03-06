@@ -117,17 +117,48 @@ function renderAllPages() {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             
-            // Render the page
-        const renderContext = {
+            // Create a wrapper div for the canvas and text layer
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.width = `${viewport.width}px`;
+            wrapper.style.height = `${viewport.height}px`;
+            
+            // Create text layer div
+            const textLayerDiv = document.createElement('div');
+            textLayerDiv.className = 'textLayer';
+            textLayerDiv.style.width = `${viewport.width}px`;
+            textLayerDiv.style.height = `${viewport.height}px`;
+            
+            // Add canvas and text layer to wrapper
+            wrapper.appendChild(canvas);
+            wrapper.appendChild(textLayerDiv);
+            
+            // Add wrapper to page div
+            pageDiv.appendChild(wrapper);
+            
+            // Render the page content on the canvas
+            const renderContext = {
                 canvasContext: context,
-            viewport: viewport
-        };
-        
-            return page.render(renderContext).promise.then(function() {
+                viewport: viewport
+            };
+            
+            // Get text content of the page
+            const textContent = page.getTextContent();
+            
+            // Render both canvas and text layer
+            return Promise.all([
+                page.render(renderContext).promise,
+                textContent
+            ]).then(function([_, content]) {
                 console.log(`[PDF] Page ${pageNum} rendered successfully`);
                 
-                // Add the canvas to the page div
-                pageDiv.appendChild(canvas);
+                // Render text layer
+                pdfjsLib.renderTextLayer({
+                    textContent: content,
+                    container: textLayerDiv,
+                    viewport: viewport,
+                    textDivs: []
+                });
                 
                 // Remove the skeleton loader once the page is rendered
                 setTimeout(() => {
