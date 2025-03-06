@@ -10,7 +10,7 @@ import { initSettings, saveSettings, saveProfile } from './settings.js';
 import { initSidebar, toggleSidebar } from './sidebar.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { initChat, sendChatMessage } from './chat.js';
-import { initPDF, loadPDF, setZoomLevel, prevPage, nextPage, testPageCounter } from './pdf.js';
+import { initPDF, loadPDF, setZoomLevel } from './pdf.js';
 import { initFileTree, createNewFolder, createNewNote, sortFileSystem } from './filetree.js';
 
 // Make functions available globally
@@ -24,17 +24,13 @@ window.toggleSidebar = toggleSidebar;
 window.toggleTheme = toggleTheme;
 window.sendChatMessage = sendChatMessage;
 window.loadPDF = loadPDF;
-window.prevPage = prevPage;
-window.nextPage = nextPage;
-window.testPageCounter = testPageCounter;
 window.createNewFolder = createNewFolder;
 window.createNewNote = createNewNote;
 window.sortFiles = sortFileSystem;
 
 console.log('[Main] Functions exported to window object:', 
     ['openModal', 'closeModal', 'saveSettings', 'saveProfile', 'toggleSidebar', 
-     'toggleTheme', 'sendChatMessage', 'loadPDF', 'prevPage', 'nextPage', 
-     'createNewFolder', 'createNewNote', 'sortFiles']
+     'toggleTheme', 'sendChatMessage', 'loadPDF', 'createNewFolder', 'createNewNote', 'sortFiles']
     .filter(name => typeof window[name] === 'function')
     .join(', ')
 );

@@ -353,17 +353,8 @@ function selectItem(itemId) {
                                 pdfContainer.appendChild(fragment);
                                 console.log('[FileTree] All pages added to container');
                                 
-                                // Update page count display
-                                const pageCountElement = document.getElementById('pageCount');
-                                if (pageCountElement) {
-                                    pageCountElement.textContent = pdf.numPages;
-                                }
+                                // Page counter updates have been removed
                                 
-                                // Update current page display
-                                const currentPageElement = document.getElementById('currentPage');
-                                if (currentPageElement) {
-                                    currentPageElement.textContent = 1;
-                                }
                             }).catch(function(error) {
                                 console.error('[FileTree] Error rendering pages:', error);
                                 pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;

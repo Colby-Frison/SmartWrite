@@ -155,19 +155,7 @@
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <div class="page-control">
-                    <button class="page-btn" id="prevPage" disabled onclick="console.log('prevPage button clicked directly'); updatePageCounter(Math.max(1, parseInt(document.getElementById('currentPage').textContent) - 1));">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="page-info">
-                        Page <span id="currentPage">1</span> of <span id="pageCount">1</span>
-                        <button onclick="updatePageCounter(2)" style="margin-left: 10px; padding: 2px 5px; font-size: 12px;">Test Page 2</button>
-                        <button onclick="updatePageCounter(3)" style="margin-left: 5px; padding: 2px 5px; font-size: 12px;">Test Page 3</button>
-                    </span>
-                    <button class="page-btn" id="nextPage" disabled onclick="console.log('nextPage button clicked directly'); updatePageCounter(Math.min(parseInt(document.getElementById('pageCount').textContent), parseInt(document.getElementById('currentPage').textContent) + 1));">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
+                <!-- Page controls have been removed -->
                 <!-- Add PDF Search Control -->
                 <div class="search-control">
                     <div class="search-input-container">
@@ -175,7 +163,7 @@
                         <button id="pdfSearchBtn" class="search-btn">
                             <i class="fas fa-search"></i>
                         </button>
-                    </div>
+            </div>
                     <div class="search-navigation">
                         <button id="prevSearchResult" class="search-nav-btn" disabled>
                             <i class="fas fa-chevron-up"></i>
@@ -188,6 +176,13 @@
                 </div>
             </div>
             <div class="pdf-viewer" id="pdfViewer">
+                <!-- Initial skeleton screen that shows until a PDF is loaded -->
+                <div id="pdfInitialSkeleton" class="pdf-initial-skeleton">
+                    <!-- Just one skeleton placeholder -->
+                    <div class="pdf-skeleton">
+                        <div class="pdf-skeleton-shimmer"></div>
+                    </div>
+                </div>
                 <div id="pdfPagesContainer"></div>
             </div>
             <div class="pdf-file-bar">
@@ -432,6 +427,56 @@
     <!-- Use type="module" to enable ES6 module imports -->
     <script type="module" src="/frontend/src/js/main.js"></script>
     
+    <!-- Direct script for skeleton handling -->
+    <script>
+        // Function to hide the skeleton screen
+        function hideSkeletonScreen() {
+            console.log('[Workspace] Hiding skeleton screen directly');
+            const skeleton = document.getElementById('pdfInitialSkeleton');
+            if (skeleton) {
+                skeleton.classList.add('hidden');
+                skeleton.style.display = 'none';
+                console.log('[Workspace] Skeleton screen hidden');
+            }
+        }
+        
+        // Function to show the skeleton screen
+        function showSkeletonScreen() {
+            console.log('[Workspace] Showing skeleton screen directly');
+            const skeleton = document.getElementById('pdfInitialSkeleton');
+            if (skeleton) {
+                skeleton.classList.remove('hidden');
+                skeleton.style.display = 'flex';
+                console.log('[Workspace] Skeleton screen shown');
+            }
+        }
+        
+        // Add a mutation observer to detect when PDF pages are added
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+            if (pdfPagesContainer) {
+                console.log('[Workspace] Setting up mutation observer for PDF pages container');
+                
+                // Create a mutation observer to watch for changes
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            // Check if any PDF pages were added
+                            const pdfPages = pdfPagesContainer.querySelectorAll('.pdf-page');
+                            if (pdfPages.length > 0) {
+                                console.log('[Workspace] PDF pages detected, hiding skeleton screen');
+                                hideSkeletonScreen();
+                            }
+                        }
+                    });
+                });
+                
+                // Start observing the container for changes
+                observer.observe(pdfPagesContainer, { childList: true, subtree: true });
+            }
+        });
+    </script>
+    
     <!-- Test function for direct PDF rendering -->
     <script>
         // Direct test function for PDF rendering
@@ -598,41 +643,6 @@
     
     <!-- Fallback script for direct modal control -->
     <script>
-        // Direct function to update page counter
-        function updatePageCounter(pageNum) {
-            console.log('Direct updatePageCounter called with pageNum:', pageNum);
-            
-            // Update the current page display
-            const currentPageElement = document.getElementById('currentPage');
-            if (currentPageElement) {
-                currentPageElement.textContent = pageNum;
-                console.log('Updated current page display to', pageNum);
-            } else {
-                console.warn('currentPage element not found');
-                return false;
-            }
-            
-            // Get the total pages
-            const pageCountElement = document.getElementById('pageCount');
-            const totalPages = pageCountElement ? parseInt(pageCountElement.textContent) : 1;
-            
-            // Enable/disable navigation buttons
-            const prevPageBtn = document.getElementById('prevPage');
-            const nextPageBtn = document.getElementById('nextPage');
-            
-            if (prevPageBtn) {
-                prevPageBtn.disabled = pageNum <= 1;
-                console.log('prevPage button', prevPageBtn.disabled ? 'disabled' : 'enabled');
-            }
-            
-            if (nextPageBtn) {
-                nextPageBtn.disabled = pageNum >= totalPages;
-                console.log('nextPage button', nextPageBtn.disabled ? 'disabled' : 'enabled');
-            }
-            
-            return true;
-        }
-        
         // Direct modal control functions
         function directOpenModal(modalId) {
             console.log('Direct open modal called for: ' + modalId);
@@ -1338,17 +1348,8 @@
                                         pdfContainer.appendChild(fragment);
                                         console.log('[Workspace] All pages added to container');
                                         
-                                        // Update page count display
-                                        const pageCountElement = document.getElementById('pageCount');
-                                        if (pageCountElement) {
-                                            pageCountElement.textContent = pdf.numPages;
-                                        }
+                                        // Page counter updates have been removed
                                         
-                                        // Update current page display
-                                        const currentPageElement = document.getElementById('currentPage');
-                                        if (currentPageElement) {
-                                            currentPageElement.textContent = 1;
-                                        }
                                     }).catch(function(error) {
                                         console.error('[Workspace] Error rendering pages:', error);
                                         pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;

@@ -301,25 +301,22 @@
 
 /* PDF viewer styles */
 .pdf-viewer {
-    flex: 1;
+    overflow-y: auto;
+    height: 100%;
     width: 100%;
-    overflow: auto;
-    background: var(--bg-primary);
-    position: relative;
-    display: block;
-    padding: 20px;
-    scroll-behavior: smooth;
-    border-radius: 0;
-    margin-bottom: 0;
+    background-color: var(--bg-primary);
+    position: relative; /* Ensure proper positioning for the skeleton */
 }
 
 #pdfPagesContainer {
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    transition: transform 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
 }
 
 .pdf-page {
@@ -528,6 +525,7 @@
     z-index: 10;
 }
 
+/* Zoom control styles */
 .zoom-control {
     display: flex;
     align-items: center;
@@ -554,60 +552,26 @@
 .zoom-level {
     font-size: 14px;
     color: var(--text-primary);
+    background: var(--bg-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
     min-width: 50px;
     text-align: center;
     user-select: none;
-    padding: 5px 8px;
-    border-radius: 4px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    cursor: default;
 }
 
 .zoom-level:hover {
     background: var(--bg-hover);
 }
 
-/* Page control styles */
-.page-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+/* Page control styles have been removed */
 
-.page-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
-}
-
-.page-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.page-btn:not(:disabled):hover {
-    background: var(--bg-hover);
-}
-
-.page-info {
-    font-size: 14px;
-    color: var(--text-primary);
-    user-select: none;
-}
-
-/* PDF canvas styles */
 #pdf-canvas {
     display: block;
     margin: 0 auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    background-color: white;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Remove all Electron-related styles */
@@ -1643,16 +1607,200 @@ textarea.form-input {
 }
 
 /* Loading and error styles removed */
-
 .pdf-error {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-    font-size: 18px;
-    color: var(--error-color);
-    text-align: center;
     padding: 20px;
+    text-align: center;
+    border-radius: 5px;
+    margin: 20px;
+    background-color: rgba(211, 47, 47, 0.1);
+    color: #d32f2f;
+    border-left: 4px solid #d32f2f;
+}
+
+/* Skeleton screen styles */
+.pdf-skeleton {
+    background-color: var(--bg-secondary);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: block;
+    z-index: 1;
+}
+
+.pdf-skeleton-shimmer {
+    display: none;
+}
+
+.pdf-loading {
+    padding: 20px;
+    text-align: center;
+    border-radius: 5px;
+    margin: 20px auto;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-left: 4px solid var(--accent-primary);
+    max-width: 80%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-loading i {
+    margin-right: 8px;
+    color: var(--accent-primary);
+    animation: spin 3s infinite linear;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* PDF Page Skeleton */
+.pdf-page-skeleton {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 1100px; /* Standard A4 height at 96 DPI */
+    background-color: var(--bg-secondary);
+    z-index: 10;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Pulsing Animation */
+.pdf-page-skeleton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 0%,
+        var(--bg-primary) 25%,
+        var(--bg-secondary) 50%,
+        var(--bg-primary) 75%,
+        var(--bg-secondary) 100%
+    );
+    background-size: 400% 100%;
+    animation: pulse 3s linear infinite;
+}
+
+@keyframes pulse {
+    0% {
+        background-position: 0% 0;
+    }
+    100% {
+        background-position: 400% 0;
+    }
+}
+
+.pdf-page-skeleton.loaded {
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* PDF Initial Skeleton */
+.pdf-initial-skeleton {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background-color: var(--bg-primary);
+}
+
+.pdf-initial-skeleton .pdf-skeleton {
+    background-color: var(--bg-secondary);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    display: block;
+    z-index: 1;
+    width: 6.5in; /* Reduced from 8.5in */
+    height: 11in; /* Standard A4 height at 96 DPI */
+    max-width: 70vw; /* Reduced from 90vw */
+    max-height: 90vh;
+}
+
+/* Pulsing Animation */
+.pdf-skeleton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-secondary);
+    animation: fade-background .8s ease-in-out infinite alternate;
+    will-change: background-color;
+}
+
+.pdf-skeleton::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-secondary);
+    opacity: 0;
+    animation: fade-opacity .8s ease-in-out infinite alternate;
+    will-change: opacity;
+}
+
+@keyframes fade-background {
+    from {
+        background-color: var(--bg-secondary);
+    }
+    to {
+        background-color: color-mix(in srgb, var(--bg-secondary) 90%, rgb(81, 81, 81) 10%);
+    }
+}
+
+@keyframes fade-opacity {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 0.05;
+    }
+}
+
+.pdf-skeleton:hover::after {
+    background-color: var(--bg-tertiary);
+}
+
+.pdf-skeleton:hover::before {
+    opacity: 0.1;
+}
+
+.pdf-initial-skeleton.hidden {
+    display: none !important;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
 }
 
 /* PDF Search Styles */
