@@ -31,24 +31,65 @@ function setZoomLevel(zoom) {
     }
     
     // Apply zoom to all pages
-    const canvases = document.querySelectorAll('.pdf-page canvas');
-    canvases.forEach(canvas => {
-        const pageNum = parseInt(canvas.parentElement.dataset.pageNumber);
+    const pages = document.querySelectorAll('.pdf-page');
+    pages.forEach(pageDiv => {
+        const pageNum = parseInt(pageDiv.dataset.pageNumber);
         if (pdfDoc) {
             pdfDoc.getPage(pageNum).then(page => {
                 const viewport = page.getViewport({ scale: zoom });
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        
-                const renderContext = {
-                    canvasContext: canvas.getContext('2d'),
-                    viewport: viewport
-                };
                 
-                page.render(renderContext);
+                // Get the canvas and text layer
+                const canvas = pageDiv.querySelector('canvas');
+                const textLayer = pageDiv.querySelector('.textLayer');
+                const wrapper = pageDiv.querySelector('div[style*="position: relative"]');
+                
+                if (canvas && textLayer && wrapper) {
+                    // Update canvas dimensions
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    // Update wrapper dimensions
+                    wrapper.style.width = `${viewport.width}px`;
+                    wrapper.style.height = `${viewport.height}px`;
+                    
+                    // Update text layer dimensions
+                    textLayer.style.width = `${viewport.width}px`;
+                    textLayer.style.height = `${viewport.height}px`;
+                    
+                    // Re-render the page content
+                    const renderContext = {
+                        canvasContext: canvas.getContext('2d'),
+                        viewport: viewport
+                    };
+                    
+                    // Get text content and re-render both canvas and text layer
+                    page.getTextContent().then(textContent => {
+                        Promise.all([
+                            page.render(renderContext).promise,
+                            Promise.resolve(textContent)
+                        ]).then(([_, content]) => {
+                            // Clear existing text layer content
+                            textLayer.innerHTML = '';
+                            
+                            // Re-render text layer with new scale
+                            pdfjsLib.renderTextLayer({
+                                textContent: content,
+                                container: textLayer,
+                                viewport: viewport,
+                                textDivs: [],
+                                enhanceTextSelection: true,
+                                textLayerMode: 2,
+                                renderInteractiveForms: true
+                            });
+                        });
+                    });
+                }
             });
         }
     });
+    
+    // Save zoom level to state
+    setCurrentZoom(zoom);
 }
 
 // Render all pages of the PDF
@@ -128,6 +169,17 @@ function renderAllPages() {
             textLayerDiv.className = 'textLayer';
             textLayerDiv.style.width = `${viewport.width}px`;
             textLayerDiv.style.height = `${viewport.height}px`;
+            textLayerDiv.style.position = 'absolute';
+            textLayerDiv.style.left = '0';
+            textLayerDiv.style.top = '0';
+            textLayerDiv.style.right = '0';
+            textLayerDiv.style.bottom = '0';
+            textLayerDiv.style.overflow = 'hidden';
+            textLayerDiv.style.opacity = '0.2';
+            textLayerDiv.style.lineHeight = '1.0';
+            textLayerDiv.style.pointerEvents = 'auto';
+            textLayerDiv.style.userSelect = 'text';
+            textLayerDiv.style.cursor = 'text';
             
             // Add canvas and text layer to wrapper
             wrapper.appendChild(canvas);
@@ -152,18 +204,32 @@ function renderAllPages() {
             ]).then(function([_, content]) {
                 console.log(`[PDF] Page ${pageNum} rendered successfully`);
                 
-                // Render text layer
+                // Render text layer with enhanced configuration
                 pdfjsLib.renderTextLayer({
                     textContent: content,
                     container: textLayerDiv,
                     viewport: viewport,
-                    textDivs: []
+                    textDivs: [],
+                    enhanceTextSelection: true,
+                    textLayerMode: 2,
+                    renderInteractiveForms: true
+                });
+                
+                // Add text selection event listeners
+                textLayerDiv.addEventListener('mouseup', function(e) {
+                    const selection = window.getSelection();
+                    if (selection.toString().length > 0) {
+                        // Handle text selection
+                        const selectedText = selection.toString();
+                        console.log(`[PDF] Selected text: ${selectedText}`);
+                        // You can add custom handling for selected text here
+                    }
                 });
                 
                 // Remove the skeleton loader once the page is rendered
                 setTimeout(() => {
                     skeletonDiv.classList.add('loaded');
-                }, 100); // Small delay to ensure smooth transition
+                }, 100);
                 
                 return pageDiv;
             });
