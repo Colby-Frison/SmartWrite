@@ -123,9 +123,9 @@
         }
         
         .pdf-viewer {
-            overflow-y: auto;
-            height: 100%;
-            width: 100%;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
             background-color: var(--bg-primary);
         }
 
@@ -1493,97 +1493,8 @@
                     }
                     
                     try {
-                        // Try to use the PDF.js library directly
-                        if (typeof pdfjsLib !== 'undefined') {
-                            console.log(`[Workspace] Using PDF.js to load: ${item.path}`);
-                            
-                            const pdfContainer = document.getElementById('pdfPagesContainer');
-                            if (pdfContainer) {
-                                pdfContainer.innerHTML = '';
-                                
-                                const loadingTask = pdfjsLib.getDocument(item.path);
-                                loadingTask.promise.then(function(pdf) {
-                                    console.log(`[Workspace] PDF loaded successfully with ${pdf.numPages} pages`);
-                                    
-                                    // Clear container
-                                    pdfContainer.innerHTML = '';
-                                    
-                                    // Create a document fragment to hold all pages
-                                    const fragment = document.createDocumentFragment();
-                                    
-                                    // Function to render a specific page
-                                    function renderPage(pageNum) {
-                                        return pdf.getPage(pageNum).then(function(page) {
-                                            console.log(`[Workspace] Rendering page ${pageNum}`);
-                                            
-                                            // Create a div for this page
-                                            const pageDiv = document.createElement('div');
-                                            pageDiv.className = 'pdf-page';
-                                            pageDiv.dataset.pageNumber = pageNum;
-                                            
-                                            // Create a canvas for this page
-                                            const canvas = document.createElement('canvas');
-                                            const ctx = canvas.getContext('2d');
-                                            
-                                            // Set viewport
-                                            const viewport = page.getViewport({ scale: 1.0 });
-                                            canvas.height = viewport.height;
-                                            canvas.width = viewport.width;
-                                            
-                                            // Render the page content on the canvas
-                                            const renderContext = {
-                                                canvasContext: ctx,
-                                                viewport: viewport
-                                            };
-                                            
-                                            return page.render(renderContext).promise.then(function() {
-                                                console.log(`[Workspace] Page ${pageNum} rendered successfully`);
-                                                
-                                                // Add the canvas to the page div
-                                                pageDiv.appendChild(canvas);
-                                                
-                                                // Page number indicators have been removed as requested
-                                                
-                                                return pageDiv;
-                                            });
-                                        });
-                                    }
-                                    
-                                    // Create an array of promises for all pages
-                                    const renderPromises = [];
-                                    for (let i = 1; i <= pdf.numPages; i++) {
-                                        renderPromises.push(renderPage(i));
-                                    }
-                                    
-                                    // Wait for all pages to be rendered
-                                    Promise.all(renderPromises).then(pageDivs => {
-                                        console.log(`[Workspace] All ${pageDivs.length} pages rendered successfully`);
-                                        
-                                        // Add all page divs to the fragment
-                                        pageDivs.forEach(pageDiv => {
-                                            fragment.appendChild(pageDiv);
-                                        });
-                                        
-                                        // Append all pages to the container
-                                        pdfContainer.appendChild(fragment);
-                                        console.log('[Workspace] All pages added to container');
-                                        
-                                        // Page counter updates have been removed
-                                        
-                                    }).catch(function(error) {
-                                        console.error('[Workspace] Error rendering pages:', error);
-                                        pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
-                                    });
-                                }).catch(function(error) {
-                                    console.error('[Workspace] Error loading PDF:', error);
-                                    pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
-                                });
-                            } else {
-                                console.error('[Workspace] pdfPagesContainer not found in the DOM');
-                            }
-                        } else {
-                            console.error('[Workspace] PDF.js library not available');
-                        }
+                        // Use the loadPDF function from pdf.js
+                        window.loadPDF(item.path);
                     } catch (error) {
                         console.error('[Workspace] Error loading PDF:', error);
                     }
