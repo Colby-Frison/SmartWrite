@@ -30,11 +30,6 @@ function setZoomLevel(zoom) {
         zoomLevelElement.textContent = `${Math.round(zoom * 100)}%`;
     }
     
-    // Re-render all pages with new zoom
-    if (pdfDoc) {
-        renderAllPages();
-    }
-    
     // Save zoom level to state
     setCurrentZoom(zoom);
 }
@@ -63,13 +58,11 @@ async function renderPage(pageNum) {
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     
-    // Create text layer
+    // Create text layer with proper positioning
     const textLayer = document.createElement('div');
     textLayer.className = 'textLayer';
     textLayer.style.width = `${viewport.width}px`;
     textLayer.style.height = `${viewport.height}px`;
-    textLayer.style.transform = `scale(${currentZoom})`;
-    textLayer.style.transformOrigin = '0 0';
     
     // Add elements to wrapper
     wrapper.appendChild(canvas);
@@ -97,8 +90,7 @@ async function renderPage(pageNum) {
             textDivs: [],
             enhanceTextSelection: true,
             textLayerMode: 2,
-            renderInteractiveForms: true,
-            transform: [currentZoom, 0, 0, currentZoom, 0, 0]
+            renderInteractiveForms: true
         })
     ]);
     
@@ -179,27 +171,39 @@ async function loadPDF(url) {
         return;
     }
     
-    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    if (!pdfPagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found');
+    const pdfContainer = document.getElementById('pdfContainer');
+    if (!pdfContainer) {
+        console.error('[PDF] pdfContainer not found');
         return;
     }
     
     // Show loading message
-    pdfPagesContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+    const pdfViewer = document.getElementById('pdfViewer');
+    if (pdfViewer) {
+        pdfViewer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+    }
     
     try {
-        // Load PDF document
-        const loadingTask = pdfjsLib.getDocument(url);
-        pdfDoc = await loadingTask.promise;
+        // Create object element for PDF
+        const objectElement = document.createElement('object');
+        objectElement.type = 'application/pdf';
+        objectElement.data = url;
+        objectElement.width = '100%';
+        objectElement.height = '100%';
         
-        console.log(`[PDF] PDF loaded successfully with ${pdfDoc.numPages} pages`);
+        // Create iframe fallback
+        const iframeElement = document.createElement('iframe');
+        iframeElement.src = url;
+        iframeElement.width = '100%';
+        iframeElement.height = '100%';
+        iframeElement.style.display = 'none';
         
-        // Update state
-        setCurrentPDF(url);
+        // Clear container
+        pdfContainer.innerHTML = '';
         
-        // Reset current page
-        currentPage = 1;
+        // Add elements to container
+        pdfContainer.appendChild(objectElement);
+        pdfContainer.appendChild(iframeElement);
         
         // Hide initial skeleton if it exists
         const pdfInitialSkeleton = document.getElementById('pdfInitialSkeleton');
@@ -213,12 +217,31 @@ async function loadPDF(url) {
             pdfControls.style.display = 'flex';
         }
         
-        // Render all pages
-        await renderAllPages();
+        // Update state
+        setCurrentPDF(url);
+        
+        // Add event listener for PDF load
+        objectElement.addEventListener('load', function() {
+            console.log('[PDF] PDF loaded successfully');
+            if (pdfViewer) {
+                pdfViewer.innerHTML = '';
+                pdfViewer.appendChild(pdfContainer);
+            }
+        });
+        
+        // Add event listener for PDF error
+        objectElement.addEventListener('error', function(error) {
+            console.error('[PDF] Error loading PDF:', error);
+            // Show iframe fallback
+            iframeElement.style.display = 'block';
+            objectElement.style.display = 'none';
+        });
         
     } catch (error) {
         console.error('[PDF] Error loading PDF:', error);
-        pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
+        if (pdfViewer) {
+            pdfViewer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
+        }
     }
 }
 
@@ -226,88 +249,19 @@ async function loadPDF(url) {
 async function searchPDF(searchText) {
     console.log(`[PDF] Searching for text: "${searchText}"`);
     
-    if (!pdfDoc) {
-        console.error('[PDF] No PDF document loaded');
-        return;
-    }
-    
     if (!searchText || searchText.trim() === '') {
-        clearSearchResults();
         return;
     }
     
-    // Clear previous results
-    clearSearchResults();
-    
-    // Show loading indicator
-    const searchResultsCount = document.getElementById('searchResultsCount');
-    if (searchResultsCount) {
-        searchResultsCount.textContent = 'Searching...';
-    }
-    
-    try {
-        const results = [];
-        
-        // Search each page
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-            const page = await pdfDoc.getPage(pageNum);
-            const textContent = await page.getTextContent();
-            const viewport = page.getViewport({ scale: currentZoom });
-            
-            // Process text items
-            for (const item of textContent.items) {
-                const text = item.str;
-                const searchTermLower = searchText.toLowerCase();
-                const textLower = text.toLowerCase();
-                let index = textLower.indexOf(searchTermLower);
-                
-                while (index !== -1) {
-                    const matchLength = searchText.length;
-                    
-                    // Transform coordinates
-                    const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-                    
-                    // Calculate match position
-                    const rect = {
-                        left: tx[4] + (item.width * (index / text.length)),
-                        top: tx[5] - item.height,
-                        right: tx[4] + (item.width * ((index + matchLength) / text.length)),
-                        bottom: tx[5],
-                        pageIndex: pageNum,
-                        matchText: text.substr(index, matchLength)
-                    };
-                    
-                    results.push(rect);
-                    index = textLower.indexOf(searchTermLower, index + 1);
-                }
-            }
-        }
-        
-        // Update search results
-        searchResults = results;
-        currentSearchResultIndex = results.length > 0 ? 0 : -1;
-        
-        // Update UI
-        if (searchResultsCount) {
-            searchResultsCount.textContent = results.length > 0 ? `1/${results.length}` : '0/0';
-        }
-        
-        // Enable/disable navigation buttons
-        const prevSearchBtn = document.getElementById('prevSearchResult');
-        const nextSearchBtn = document.getElementById('nextSearchResult');
-        if (prevSearchBtn) prevSearchBtn.disabled = results.length <= 1;
-        if (nextSearchBtn) nextSearchBtn.disabled = results.length <= 1;
-        
-        // Highlight results
-        if (results.length > 0) {
-            highlightSearchResults();
-            navigateToSearchResult(0);
-        }
-        
-    } catch (error) {
-        console.error('[PDF] Error searching PDF:', error);
-        if (searchResultsCount) {
-            searchResultsCount.textContent = 'Error';
+    // Use browser's built-in PDF search
+    const pdfContainer = document.getElementById('pdfContainer');
+    if (pdfContainer) {
+        const objectElement = pdfContainer.querySelector('object');
+        if (objectElement) {
+            // Focus the PDF viewer
+            objectElement.focus();
+            // Use browser's find functionality
+            window.find(searchText);
         }
     }
 }
@@ -419,11 +373,6 @@ function goToPage(pageNum) {
 function initPDF() {
     console.log('[PDF] Initializing PDF functionality');
     
-    if (typeof pdfjsLib === 'undefined') {
-        console.error('[PDF] PDF.js library not loaded');
-        return;
-    }
-    
     // Set up zoom controls
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
@@ -439,16 +388,11 @@ function initPDF() {
     // Set up search functionality
     const searchInput = document.getElementById('pdfSearchInput');
     const searchBtn = document.getElementById('pdfSearchBtn');
-    const prevSearchBtn = document.getElementById('prevSearchResult');
-    const nextSearchBtn = document.getElementById('nextSearchResult');
     
     if (searchInput) {
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
                 searchPDF(searchInput.value);
-            }
-            if (searchInput.value.trim() === '') {
-                clearSearchResults();
             }
         });
     }
@@ -457,14 +401,6 @@ function initPDF() {
         searchBtn.addEventListener('click', () => {
             if (searchInput) searchPDF(searchInput.value);
         });
-    }
-    
-    if (prevSearchBtn) {
-        prevSearchBtn.addEventListener('click', prevSearchResult);
-    }
-    
-    if (nextSearchBtn) {
-        nextSearchBtn.addEventListener('click', nextSearchResult);
     }
     
     // Add keyboard shortcut for search

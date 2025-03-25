@@ -32,6 +32,29 @@
         }
         
         /* PDF Viewer Styles */
+        .pdf-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: var(--bg-primary);
+        }
+        
+        .pdf-container object,
+        .pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: var(--bg-primary);
+        }
+        
+        /* Remove unnecessary styles */
+        .pdf-page,
+        .pdf-page-wrapper,
+        .textLayer,
+        .search-highlight {
+            display: none;
+        }
+        
         .pdf-page {
             position: relative;
             margin-bottom: 15px;
@@ -52,6 +75,7 @@
         .pdf-page canvas {
             display: block;
             margin: 0 auto;
+            user-select: none;
         }
         
         .page-number {
@@ -120,6 +144,8 @@
             cursor: text;
             z-index: 2;
             mix-blend-mode: multiply;
+            transform-origin: 0 0;
+            transform: scale(1);
         }
 
         .textLayer > span {
@@ -357,7 +383,6 @@
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <!-- Page controls have been removed -->
                 <!-- Add PDF Search Control -->
                 <div class="search-control">
                     <div class="search-input-container">
@@ -365,27 +390,20 @@
                         <button id="pdfSearchBtn" class="search-btn">
                             <i class="fas fa-search"></i>
                         </button>
-            </div>
-                    <div class="search-navigation">
-                        <button id="prevSearchResult" class="search-nav-btn" disabled>
-                            <i class="fas fa-chevron-up"></i>
-                        </button>
-                        <span id="searchResultsCount">0/0</span>
-                        <button id="nextSearchResult" class="search-nav-btn" disabled>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
                     </div>
                 </div>
             </div>
             <div class="pdf-viewer" id="pdfViewer">
                 <!-- Initial skeleton screen that shows until a PDF is loaded -->
                 <div id="pdfInitialSkeleton" class="pdf-initial-skeleton">
-                    <!-- Just one skeleton placeholder -->
                     <div class="pdf-skeleton">
                         <div class="pdf-skeleton-shimmer"></div>
                     </div>
                 </div>
-                <div id="pdfPagesContainer"></div>
+                <!-- Native PDF viewer container -->
+                <div id="pdfContainer" class="pdf-container">
+                    <!-- PDF will be loaded here -->
+                </div>
             </div>
             <div class="pdf-file-bar">
                 <div class="pdf-files" id="pdfFiles">
