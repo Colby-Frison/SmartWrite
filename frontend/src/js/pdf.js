@@ -2,10 +2,6 @@
  * pdf.js - Handles all PDF-related functionality
  */
 
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-import { setCurrentPDF, getCurrentZoom, setCurrentZoom } from './state.js';
-
 // Global variables
 let currentPage = 1;
 let pdfDoc = null;
@@ -16,7 +12,9 @@ let currentSearchResultIndex = -1;
 let currentZoom = 1.0;
 
 // Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
 
 // Set zoom level
 function setZoomLevel(zoom) {
@@ -33,7 +31,7 @@ function setZoomLevel(zoom) {
     }
     
     // Re-render all pages with new zoom level
-        if (pdfDoc) {
+    if (pdfDoc) {
         const pdfContainer = document.getElementById('pdfContainer');
         if (pdfContainer) {
             pdfContainer.innerHTML = '';
@@ -77,11 +75,11 @@ async function renderPage(pageNum) {
         wrapper.style.height = `${viewport.height}px`;
         
         // Render page content
-                const renderContext = {
+        const renderContext = {
             canvasContext: context,
-                    viewport: viewport
-                };
-                
+            viewport: viewport
+        };
+        
         await page.render(renderContext).promise;
         
         // Render text layer
@@ -106,123 +104,55 @@ async function renderPage(pageNum) {
     }
 }
 
-// Render text layer
-async function renderTextLayer(textLayer, textContent, viewport) {
-    const textLayerDiv = textLayer;
-    textLayerDiv.innerHTML = '';
-    
-    // Render text content
-    for (const item of textContent.items) {
-        const textSpan = document.createElement('span');
-        textSpan.textContent = item.str;
-        textSpan.style.left = `${item.transform[4]}px`;
-        textSpan.style.top = `${viewport.height - item.transform[5]}px`;
-        textSpan.style.fontSize = `${Math.sqrt(item.transform[0] * item.transform[0] + item.transform[1] * item.transform[1])}px`;
-        textLayerDiv.appendChild(textSpan);
-    }
-}
-
-// Render all pages
-async function renderAllPages() {
-    console.log('[PDF] Rendering all pages');
-    
-    if (!pdfDoc) {
-        console.error('[PDF] No PDF document loaded');
-        return;
-    }
-    
-    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    if (!pdfPagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found');
-        return;
-    }
-    
-    // Clear existing content
-    pdfPagesContainer.innerHTML = '';
-    
-    // Show loading indicator
-    const loadingMessage = document.createElement('div');
-    loadingMessage.className = 'pdf-loading';
-    loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rendering PDF...';
-    pdfPagesContainer.appendChild(loadingMessage);
-    
-    try {
-        // Render all pages
-    const renderPromises = [];
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-        renderPromises.push(renderPage(i));
-    }
-    
-        const pageDivs = await Promise.all(renderPromises);
-        
-        // Clear loading message
-        pdfPagesContainer.innerHTML = '';
-        
-        // Add all pages to container
-        pageDivs.forEach(pageDiv => {
-            pdfPagesContainer.appendChild(pageDiv);
-        });
-        
-        // Mark current page
-        const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${currentPage}"]`);
-        if (currentPageDiv) {
-            currentPageDiv.classList.add('current-page');
-                currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        
-        console.log('[PDF] All pages rendered successfully');
-    } catch (error) {
-        console.error('[PDF] Error rendering pages:', error);
-        pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
-    }
-}
-
 // Load a PDF from a URL
-export async function loadPDF(url) {
-    console.log('[PDF] Loading PDF from URL:', url);
-    const pdfContainer = document.getElementById('pdfContainer');
-    if (!pdfContainer) {
-        throw new Error('PDF container not found');
-    }
-
+function loadPDF(url) {
+    console.log(`[PDF.js] Loading PDF from URL: ${url}`);
+    
     try {
         // Show loading state
-        pdfContainer.innerHTML = `
-            <div class="pdf-loading">
-                <div class="spinner"></div>
-                <span>Loading PDF...</span>
-            </div>
-        `;
-
+        const pdfViewer = document.getElementById('pdfViewer');
+        if (pdfViewer) {
+            pdfViewer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+        }
+        
         // Load the PDF document
         const loadingTask = pdfjsLib.getDocument(url);
-        const pdf = await loadingTask.promise;
-        console.log('[PDF] PDF loaded successfully, rendering pages');
-
-        // Clear the container
-        pdfContainer.innerHTML = '';
+        loadingTask.promise.then(function(pdf) {
+            pdfDoc = pdf;
+            totalPages = pdf.numPages;
+            
+            console.log(`[PDF.js] PDF loaded successfully with ${totalPages} pages`);
+            
+            // Clear the container
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (pdfContainer) {
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Render all pages
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                renderPage(pageNum);
+            }
+            
+            // Hide loading state
+            if (pdfViewer) {
+                pdfViewer.innerHTML = '';
+                pdfViewer.appendChild(pdfContainer);
+            }
+        }).catch(function(error) {
+            console.error('[PDF.js] Error loading PDF:', error);
+            throw error;
+        });
         
-        // Render all pages
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            await renderPage(pageNum);
-        }
-
-        console.log('[PDF] All pages rendered successfully');
+        return true;
     } catch (error) {
-        console.error('[PDF] Error loading PDF:', error);
-        pdfContainer.innerHTML = `
-            <div class="pdf-error">
-                <p>Error loading PDF: ${error.message}</p>
-                <a href="${url}" target="_blank">Download PDF instead</a>
-            </div>
-        `;
+        console.error('[PDF.js] Error loading PDF:', error);
         throw error;
     }
 }
 
 // Search for text in the PDF
-export function searchPDF(searchText) {
+function searchPDF(searchText) {
     console.log(`[PDF.js] Searching for text: "${searchText}"`);
     
     if (!searchText || searchText.trim() === '') {
@@ -335,25 +265,62 @@ function goToPage(pageNum) {
     if (!pdfPagesContainer) return;
     
     // Update current page class
-        const allPages = pdfPagesContainer.querySelectorAll('.pdf-page');
-        allPages.forEach(page => page.classList.remove('current-page'));
-        
-        const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
-        if (currentPageDiv) {
-            currentPageDiv.classList.add('current-page');
-            currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+    const allPages = pdfPagesContainer.querySelectorAll('.pdf-page');
+    allPages.forEach(page => page.classList.remove('current-page'));
+    
+    const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
+    if (currentPageDiv) {
+        currentPageDiv.classList.add('current-page');
+        currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Initialize PDF functionality
-export function initPDF() {
-    console.log('[PDF] Initializing PDF.js');
-    const pdfContainer = document.getElementById('pdfContainer');
-    if (!pdfContainer) {
-        console.error('[PDF] PDF container not found');
-        return;
+function initPDF() {
+    console.log('[PDF.js] Initializing PDF functionality');
+    
+    // Set up zoom controls
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => setZoomLevel(currentZoom + 0.25));
     }
-    console.log('[PDF] PDF container found, ready to load PDFs');
+    
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => setZoomLevel(currentZoom - 0.25));
+    }
+    
+    // Set up search functionality
+    const searchInput = document.getElementById('pdfSearchInput');
+    const searchBtn = document.getElementById('pdfSearchBtn');
+    
+    if (searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchPDF(searchInput.value);
+            }
+        });
+    }
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            if (searchInput) searchPDF(searchInput.value);
+        });
+    }
+    
+    // Add keyboard shortcut for search
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                if (searchInput.value.trim() !== '') {
+                    searchInput.select();
+                }
+            }
+        }
+    });
 }
 
 // Export functions to window object

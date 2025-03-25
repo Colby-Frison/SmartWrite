@@ -13,7 +13,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
     <script>
         // Set up PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('[PDF.js] Worker initialized');
+        } else {
+            console.error('[PDF.js] PDF.js library not loaded');
+        }
         
         // Add error handler for PDF.js
         window.addEventListener('error', function(event) {
@@ -32,110 +37,43 @@
         }
         
         /* PDF Viewer Styles */
-        .pdf-viewer {
+        .pdf-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: var(--bg-primary);
+            padding: 20px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            align-items: center;
+        }
+        
+        .pdf-container object,
+        .pdf-container iframe {
+            width: 100%;
             height: 100%;
-            background-color: var(--bg-primary);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .pdf-container {
-            flex: 1;
-            overflow: auto;
-            padding: 20px;
+            border: none;
             background-color: var(--bg-primary);
         }
-
+        
+        /* Remove unnecessary styles */
+        .pdf-page,
+        .pdf-page-wrapper,
+        .textLayer,
+        .search-highlight {
+            display: none;
+        }
+        
         .pdf-page {
             position: relative;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            background-color: var(--pdf-bg);
             border-radius: 4px;
             overflow: hidden;
-        }
-
-        .pdf-page canvas {
-            display: block;
-            margin: 0 auto;
-        }
-
-        .textLayer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 0.2;
-            line-height: 1.0;
-            pointer-events: auto;
-            user-select: text;
-            cursor: text;
-            z-index: 2;
-            mix-blend-mode: multiply;
-        }
-
-        .textLayer > span {
-            color: transparent;
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: 0% 0%;
-            user-select: text;
-        }
-
-        .textLayer ::selection {
-            background: var(--accent-primary);
-            color: transparent;
-        }
-
-        .pdf-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-secondary);
-            gap: 16px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .pdf-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-            text-align: center;
-            color: var(--error-color);
-            gap: 16px;
-        }
-
-        .pdf-error a {
-            color: var(--accent-primary);
-            text-decoration: none;
-        }
-
-        .pdf-error a:hover {
-            text-decoration: underline;
+            will-change: transform;
+            display: block !important;
         }
         
         .pdf-page-wrapper {
@@ -143,6 +81,13 @@
             margin: 0 auto;
             transform-origin: top left;
             will-change: transform;
+            display: block !important;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            margin: 0 auto;
+            user-select: none;
         }
         
         .page-number {
@@ -168,6 +113,16 @@
         
         .page-number:active {
             transform: scale(0.95);
+        }
+        
+        .pdf-error {
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
+            background-color: rgba(211, 47, 47, 0.1);
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
         }
         
         #pdfPagesContainer {
@@ -203,6 +158,7 @@
             mix-blend-mode: multiply;
             transform-origin: 0 0;
             transform: scale(1);
+            display: block !important;
         }
 
         .textLayer > span {
@@ -428,9 +384,44 @@
     <!-- Main Content Area -->
     <div class="main-content">
         <!-- PDF Viewer Section -->
-        <div id="pdfViewer" class="pdf-viewer">
-            <div id="pdfContainer" class="pdf-container">
-                <!-- PDF will be loaded here -->
+        <div class="pdf-section">
+            <!-- PDF Controls -->
+            <div class="pdf-controls">
+                <div class="zoom-control">
+                    <button class="zoom-btn" id="zoomOut">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" id="zoomIn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <!-- Add PDF Search Control -->
+                <div class="search-control">
+                    <div class="search-input-container">
+                        <input type="text" id="pdfSearchInput" placeholder="Search in PDF..." class="search-input">
+                        <button id="pdfSearchBtn" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="pdf-viewer" id="pdfViewer">
+                <!-- Initial skeleton screen that shows until a PDF is loaded -->
+                <div id="pdfInitialSkeleton" class="pdf-initial-skeleton">
+                    <div class="pdf-skeleton">
+                        <div class="pdf-skeleton-shimmer"></div>
+                    </div>
+                </div>
+                <!-- Native PDF viewer container -->
+                <div id="pdfContainer" class="pdf-container">
+                    <!-- PDF will be loaded here -->
+                </div>
+            </div>
+            <div class="pdf-file-bar">
+                <div class="pdf-files" id="pdfFiles">
+                    <!-- PDF file tabs will be added here dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -666,93 +657,33 @@
         </div>
     </div>
     
-    <!-- Load our modules -->
-    <script type="module">
-        // Import the PDF module
-        import { loadPDF, initPDF } from '/frontend/src/js/pdf.js';
-        
-        // Export functions to window object
-        window.loadPDF = loadPDF;
-        window.initPDF = initPDF;
-        
-        // Initialize PDF functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            initPDF();
-            console.log('[Workspace] PDF module initialized');
-        });
-    </script>
-    
-    <!-- Direct script for PDF loading -->
+    <!-- Load our scripts -->
+    <script src="/frontend/src/js/pdf.js"></script>
+    <script src="/frontend/src/js/filetree.js"></script>
     <script>
-        // Function to select an item
-        async function selectItem(itemId) {
-            try {
-                console.log('[Workspace] Selecting item:', itemId);
-                
-                // Find the item in the file system
-                function findItem(folder) {
-                    // Check if current folder matches
-                    if (folder.id === itemId) {
-                        return folder;
-                    }
-                    
-                    // Check children if they exist
-                    if (folder.children && folder.children.length > 0) {
-                        for (const child of folder.children) {
-                            const found = findItem(child);
-                            if (found) return found;
-                        }
-                    }
-                    
-                    return null;
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize file tree
+            renderFileTree();
+            
+            // Initialize PDF viewer
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (pdfContainer) {
+                console.log('[Workspace] PDF container found, initializing PDF viewer');
+                if (typeof window.initPDF === 'function') {
+                    window.initPDF();
                 }
-                
-                const selectedItem = findItem(fileSystem);
-                if (!selectedItem) {
-                    console.error('[Workspace] Item not found in file system');
-                    return;
-                }
-                
-                // Update UI
-                document.querySelectorAll('.tree-item-content').forEach(el => {
-                    el.classList.remove('selected');
-                    if (el.closest('.tree-item').dataset.id === selectedItem.id) {
-                        el.classList.add('selected');
-                    }
-                });
-                
-                // Handle file selection
-                if (selectedItem.type === 'file') {
-                    const filePath = selectedItem.path;
-                    console.log('[Workspace] Loading file:', filePath);
-                    
-                    // Try to load PDF using the module
-                    if (window.loadPDF) {
-                        try {
-                            await window.loadPDF(filePath);
-                        } catch (error) {
-                            console.error('[Workspace] Error loading PDF with module:', error);
-                            // Fallback to direct PDF loading
-                            const pdfContainer = document.getElementById('pdfContainer');
-                            if (pdfContainer) {
-                                pdfContainer.innerHTML = `
-                                    <object
-                                        data="${filePath}"
-                                        type="application/pdf"
-                                        width="100%"
-                                        height="100%"
-                                    >
-                                        <p>Unable to display PDF file. <a href="${filePath}" target="_blank">Download</a> instead.</p>
-                                    </object>
-                                `;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('[Workspace] Error in selectItem:', error);
             }
-        }
+            
+            console.log('[Workspace] Application initialized');
+        });
+        
+        // Add error handler for script loading
+        window.addEventListener('error', function(event) {
+            if (event.filename && event.filename.includes('pdf.js')) {
+                console.error('[PDF.js Error]', event.message);
+            }
+        });
     </script>
     
     <!-- Direct script for skeleton handling -->
@@ -1543,6 +1474,149 @@
             renderFileTree();
         }
         
+        // Function to select an item
+        function selectItem(itemId) {
+            console.log(`[Workspace] selectItem called with itemId: ${itemId}`);
+            
+            // Find the item in the file system
+            const findItem = (folder) => {
+                if (folder.id === itemId) {
+                    return folder;
+                }
+                
+                if (folder.children) {
+                    for (const child of folder.children) {
+                        const found = findItem(child);
+                        if (found) return found;
+                    }
+                }
+                
+                return null;
+            };
+            
+            const item = findItem(fileSystem);
+            
+            if (!item) {
+                console.error(`[Workspace] Item with id ${itemId} not found in file system`);
+                return;
+            }
+            
+            console.log(`[Workspace] Found item:`, item);
+            
+            // Only select the item if it's a file
+            if (item && item.type === 'file') {
+                selectedItemId = itemId;
+                console.log(`[Workspace] Selected item ID set to: ${selectedItemId}`);
+                
+                // Remove selected class from all items
+                document.querySelectorAll('.tree-item-content').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                // Add selected class to selected item
+                const selectedItem = document.querySelector(`.tree-item[data-id="${itemId}"] > .tree-item-content`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+                
+                console.log(`[Workspace] Selected item: ${itemId}`);
+                
+                // Load the PDF file if it's a PDF
+                if (item.fileType === 'pdf') {
+                    console.log(`[Workspace] Item is a PDF, path: ${item.path}`);
+                    
+                    // Check if path is valid
+                    if (!item.path || item.path === '#') {
+                        console.error(`[Workspace] Invalid PDF path: ${item.path}`);
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const pdfViewer = document.getElementById('pdfViewer');
+                    const pdfContainer = document.getElementById('pdfContainer');
+                    
+                    if (pdfViewer) {
+                        // Clear previous content
+                        pdfViewer.innerHTML = '';
+                        
+                        // Create and show loading indicator
+                        const loadingDiv = document.createElement('div');
+                        loadingDiv.className = 'pdf-loading';
+                        loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading PDF...';
+                        pdfViewer.appendChild(loadingDiv);
+                        
+                        // Create container for PDF
+                        const container = document.createElement('div');
+                        container.id = 'pdfContainer';
+                        container.className = 'pdf-container';
+                        pdfViewer.appendChild(container);
+                    }
+                    
+                    // Try to load PDF using PDF.js
+                    if (typeof pdfjsLib !== 'undefined') {
+                        console.log('[Workspace] Loading PDF with PDF.js');
+                        const loadingTask = pdfjsLib.getDocument(item.path);
+                        
+                        loadingTask.promise.then(async function(pdf) {
+                            console.log(`[Workspace] PDF loaded successfully with ${pdf.numPages} pages`);
+                            
+                            // Clear the container
+                            const pdfContainer = document.getElementById('pdfContainer');
+                            if (pdfContainer) {
+                                pdfContainer.innerHTML = '';
+                                
+                                // Render all pages
+                                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                    await renderPage(pdf, pageNum);
+                                }
+                                
+                                // Remove loading indicator
+                                const loadingDiv = pdfViewer.querySelector('.pdf-loading');
+                                if (loadingDiv) {
+                                    loadingDiv.remove();
+                                }
+                            }
+                        }).catch(function(error) {
+                            console.error('[Workspace] Error loading PDF:', error);
+                            // Show error message
+                            const pdfContainer = document.getElementById('pdfContainer');
+                            if (pdfContainer) {
+                                pdfContainer.innerHTML = `
+                                    <div class="pdf-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Error loading PDF: ${error.message}
+                                    </div>`;
+                            }
+                            // Remove loading indicator
+                            const loadingDiv = pdfViewer.querySelector('.pdf-loading');
+                            if (loadingDiv) {
+                                loadingDiv.remove();
+                            }
+                        });
+                    } else {
+                        console.warn('[Workspace] PDF.js not available, using fallback');
+                        // Fallback to direct PDF loading
+                        const pdfContainer = document.getElementById('pdfContainer');
+                        if (pdfContainer) {
+                            pdfContainer.innerHTML = `
+                                <object data="${item.path}" type="application/pdf" width="100%" height="100%">
+                                    <p>Your browser does not support PDFs. <a href="${item.path}">Download the PDF</a>.</p>
+                                </object>`;
+                        }
+                        // Remove loading indicator
+                        const loadingDiv = pdfViewer.querySelector('.pdf-loading');
+                        if (loadingDiv) {
+                            loadingDiv.remove();
+                        }
+                    }
+                } else {
+                    console.log(`[Workspace] Item is not a PDF, fileType: ${item.fileType}`);
+                }
+            } else {
+                console.log(`[Workspace] Item is not a file, type: ${item.type}`);
+            }
+        }
+        
         // Function to create a new folder
         function createNewFolder() {
             const folderName = document.getElementById('folderName').value.trim();
@@ -1611,6 +1685,75 @@
         function sortFiles(sortType) {
             // Call the module function
             window.sortFiles(sortType);
+        }
+
+        // Function to render a single PDF page
+        async function renderPage(pdf, pageNum) {
+            console.log(`[Workspace] Rendering page ${pageNum}`);
+            
+            try {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.0 });
+                
+                // Create page container
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page';
+                pageContainer.dataset.pageNumber = pageNum;
+                
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Create text layer
+                const textLayer = document.createElement('div');
+                textLayer.className = 'textLayer';
+                textLayer.style.width = `${viewport.width}px`;
+                textLayer.style.height = `${viewport.height}px`;
+                
+                // Create wrapper for canvas and text layer
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pdf-page-wrapper';
+                wrapper.style.width = `${viewport.width}px`;
+                wrapper.style.height = `${viewport.height}px`;
+                
+                // Render page content
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Render text layer
+                const textContent = await page.getTextContent();
+                await pdfjsLib.renderTextLayer({
+                    textContent: textContent,
+                    container: textLayer,
+                    viewport: viewport,
+                    textDivs: [],
+                    enhanceTextSelection: true,
+                    textLayerMode: 2,
+                    renderInteractiveForms: true
+                });
+                
+                // Add elements to page container
+                wrapper.appendChild(canvas);
+                wrapper.appendChild(textLayer);
+                pageContainer.appendChild(wrapper);
+                
+                // Add page container to PDF container
+                const pdfContainer = document.getElementById('pdfContainer');
+                if (pdfContainer) {
+                    pdfContainer.appendChild(pageContainer);
+                }
+                
+                console.log(`[Workspace] Page ${pageNum} rendered successfully`);
+            } catch (error) {
+                console.error(`[Workspace] Error rendering page ${pageNum}:`, error);
+                throw error;
+            }
         }
     </script>
 </body>
