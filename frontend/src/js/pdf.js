@@ -417,6 +417,17 @@ function initPDF() {
     });
 }
 
+// Export functions to window object
+window.loadPDF = loadPDF;
+window.searchPDF = searchPDF;
+window.clearSearchResults = clearSearchResults;
+window.nextSearchResult = nextSearchResult;
+window.prevSearchResult = prevSearchResult;
+window.goToPage = goToPage;
+window.setZoomLevel = setZoomLevel;
+window.initPDF = initPDF;
+
+// Export for module usage
 export { 
     initPDF, 
     loadPDF, 
@@ -426,12 +437,4 @@ export {
     nextSearchResult,
     prevSearchResult,
     goToPage
-};
-
-// Export functions to window object
-window.loadPDF = loadPDF;
-window.searchPDF = searchPDF;
-window.clearSearchResults = clearSearchResults;
-window.nextSearchResult = nextSearchResult;
-window.prevSearchResult = prevSearchResult;
-window.goToPage = goToPage; 
+}; 

@@ -644,8 +644,9 @@
         </div>
     </div>
     
-    <!-- Use type="module" to enable ES6 module imports -->
+    <!-- Load our modules -->
     <script type="module" src="/frontend/src/js/main.js"></script>
+    <script type="module" src="/frontend/src/js/pdf.js"></script>
     
     <!-- Direct script for skeleton handling -->
     <script>
@@ -1493,8 +1494,19 @@
                     }
                     
                     try {
-                        // Use the loadPDF function from pdf.js
-                        window.loadPDF(item.path);
+                        // Check if loadPDF is available
+                        if (typeof window.loadPDF === 'function') {
+                            window.loadPDF(item.path);
+                        } else {
+                            console.error('[Workspace] loadPDF function not available');
+                            // Fallback to direct PDF loading
+                            const pdfContainer = document.getElementById('pdfContainer');
+                            if (pdfContainer) {
+                                pdfContainer.innerHTML = `<object data="${item.path}" type="application/pdf" width="100%" height="100%">
+                                    <p>Your browser does not support PDFs. <a href="${item.path}">Download the PDF</a>.</p>
+                                </object>`;
+                            }
+                        }
                     } catch (error) {
                         console.error('[Workspace] Error loading PDF:', error);
                     }
