@@ -30,346 +30,196 @@ function setZoomLevel(zoom) {
         zoomLevelElement.textContent = `${Math.round(zoom * 100)}%`;
     }
     
-    // Apply zoom to all pages
-    const pages = document.querySelectorAll('.pdf-page');
-    pages.forEach(pageDiv => {
-        const pageNum = parseInt(pageDiv.dataset.pageNumber);
-        if (pdfDoc) {
-            pdfDoc.getPage(pageNum).then(page => {
-                const viewport = page.getViewport({ scale: zoom });
-                
-                // Get the canvas and text layer
-                const canvas = pageDiv.querySelector('canvas');
-                const textLayer = pageDiv.querySelector('.textLayer');
-                const wrapper = pageDiv.querySelector('div[style*="position: relative"]');
-                
-                if (canvas && textLayer && wrapper) {
-                    // Update canvas dimensions
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    // Update wrapper dimensions
-                    wrapper.style.width = `${viewport.width}px`;
-                    wrapper.style.height = `${viewport.height}px`;
-                    
-                    // Update text layer dimensions
-                    textLayer.style.width = `${viewport.width}px`;
-                    textLayer.style.height = `${viewport.height}px`;
-                    
-                    // Re-render the page content
-                    const renderContext = {
-                        canvasContext: canvas.getContext('2d'),
-                        viewport: viewport
-                    };
-                    
-                    // Get text content and re-render both canvas and text layer
-                    page.getTextContent().then(textContent => {
-                        Promise.all([
-                            page.render(renderContext).promise,
-                            Promise.resolve(textContent)
-                        ]).then(([_, content]) => {
-                            // Clear existing text layer content
-                            textLayer.innerHTML = '';
-                            
-                            // Re-render text layer with new scale
-                            pdfjsLib.renderTextLayer({
-                                textContent: content,
-                                container: textLayer,
-                                viewport: viewport,
-                                textDivs: [],
-                                enhanceTextSelection: true,
-                                textLayerMode: 2,
-                                renderInteractiveForms: true
-                            });
-                        });
-                    });
-                }
-            });
-        }
-    });
+    // Re-render all pages with new zoom
+    if (pdfDoc) {
+        renderAllPages();
+    }
     
     // Save zoom level to state
     setCurrentZoom(zoom);
 }
 
-// Render all pages of the PDF
-function renderAllPages() {
-    console.log('[PDF] renderAllPages called');
+// Render a single page
+async function renderPage(pageNum) {
+    console.log(`[PDF] Rendering page ${pageNum}`);
+    
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: currentZoom });
+    
+    // Create page container
+    const pageDiv = document.createElement('div');
+    pageDiv.className = 'pdf-page';
+    pageDiv.setAttribute('data-page-number', pageNum);
+    
+    // Create wrapper for canvas and text layer
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pdf-page-wrapper';
+    wrapper.style.width = `${viewport.width}px`;
+    wrapper.style.height = `${viewport.height}px`;
+    
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    // Create text layer
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.style.width = `${viewport.width}px`;
+    textLayer.style.height = `${viewport.height}px`;
+    textLayer.style.transform = `scale(${currentZoom})`;
+    textLayer.style.transformOrigin = '0 0';
+    
+    // Add elements to wrapper
+    wrapper.appendChild(canvas);
+    wrapper.appendChild(textLayer);
+    
+    // Add wrapper to page
+    pageDiv.appendChild(wrapper);
+    
+    // Render page content
+    const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+    };
+    
+    // Get text content
+    const textContent = await page.getTextContent();
+    
+    // Render both canvas and text layer
+    await Promise.all([
+        page.render(renderContext).promise,
+        pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayer,
+            viewport: viewport,
+            textDivs: [],
+            enhanceTextSelection: true,
+            textLayerMode: 2,
+            renderInteractiveForms: true,
+            transform: [currentZoom, 0, 0, currentZoom, 0, 0]
+        })
+    ]);
+    
+    // Add text selection event listener
+    textLayer.addEventListener('mouseup', function(e) {
+        const selection = window.getSelection();
+        if (selection.toString().length > 0) {
+            const selectedText = selection.toString();
+            console.log(`[PDF] Selected text: ${selectedText}`);
+            // You can add custom handling for selected text here
+        }
+    });
+    
+    return pageDiv;
+}
+
+// Render all pages
+async function renderAllPages() {
+    console.log('[PDF] Rendering all pages');
     
     if (!pdfDoc) {
         console.error('[PDF] No PDF document loaded');
-        return Promise.reject(new Error('No PDF document loaded'));
+        return;
     }
     
     const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    if (!pdfPagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found in the DOM');
-        return Promise.reject(new Error('pdfPagesContainer not found in the DOM'));
-    }
-    
-    // Store total pages
-    totalPages = pdfDoc.numPages;
-    console.log(`[PDF] Total pages: ${totalPages}`);
-    
-    // Clear existing content (but keep any loading indicators)
-    const loadingIndicator = pdfPagesContainer.querySelector('.pdf-loading');
-    pdfPagesContainer.innerHTML = '';
-    
-    // If we had a loading indicator, add it back
-    if (loadingIndicator) {
-        pdfPagesContainer.appendChild(loadingIndicator);
-    }
-    
-    // Create a document fragment to hold all pages
-    const fragment = document.createDocumentFragment();
-    
-    // Function to render a single page
-    function renderPage(pageNum) {
-        console.log(`[PDF] Starting to render page ${pageNum}`);
-        return pdfDoc.getPage(pageNum).then(function(page) {
-            // Create a div for this page
-            const pageDiv = document.createElement('div');
-            pageDiv.className = 'pdf-page';
-            pageDiv.setAttribute('data-page-number', pageNum);
-            pageDiv.style.position = 'relative'; // Ensure proper positioning for skeleton
-            
-            // Calculate viewport dimensions
-            const viewport = page.getViewport({ scale: 1.0 });
-            console.log(`[PDF] Viewport size for page ${pageNum}: ${viewport.width}x${viewport.height}`);
-            
-            // Add skeleton loader for this page with correct dimensions
-            const skeletonDiv = document.createElement('div');
-            skeletonDiv.className = 'pdf-page-skeleton';
-            skeletonDiv.style.width = `${viewport.width}px`;
-            skeletonDiv.style.height = `${viewport.height}px`;
-            
-            // Add shimmer effect to the skeleton
-            const shimmerContainer = document.createElement('div');
-            shimmerContainer.className = 'pdf-skeleton-shimmer';
-            skeletonDiv.appendChild(shimmerContainer);
-            
-            pageDiv.appendChild(skeletonDiv);
-            
-            // Create a canvas for this page
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            
-            // Set canvas dimensions
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            // Create a wrapper div for the canvas and text layer
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'relative';
-            wrapper.style.width = `${viewport.width}px`;
-            wrapper.style.height = `${viewport.height}px`;
-            
-            // Create text layer div
-            const textLayerDiv = document.createElement('div');
-            textLayerDiv.className = 'textLayer';
-            textLayerDiv.style.width = `${viewport.width}px`;
-            textLayerDiv.style.height = `${viewport.height}px`;
-            textLayerDiv.style.position = 'absolute';
-            textLayerDiv.style.left = '0';
-            textLayerDiv.style.top = '0';
-            textLayerDiv.style.right = '0';
-            textLayerDiv.style.bottom = '0';
-            textLayerDiv.style.overflow = 'hidden';
-            textLayerDiv.style.opacity = '0.2';
-            textLayerDiv.style.lineHeight = '1.0';
-            textLayerDiv.style.pointerEvents = 'auto';
-            textLayerDiv.style.userSelect = 'text';
-            textLayerDiv.style.cursor = 'text';
-            
-            // Add canvas and text layer to wrapper
-            wrapper.appendChild(canvas);
-            wrapper.appendChild(textLayerDiv);
-            
-            // Add wrapper to page div
-            pageDiv.appendChild(wrapper);
-            
-            // Render the page content on the canvas
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            
-            // Get text content of the page
-            const textContent = page.getTextContent();
-            
-            // Render both canvas and text layer
-            return Promise.all([
-                page.render(renderContext).promise,
-                textContent
-            ]).then(function([_, content]) {
-                console.log(`[PDF] Page ${pageNum} rendered successfully`);
-                
-                // Render text layer with enhanced configuration
-                pdfjsLib.renderTextLayer({
-                    textContent: content,
-                    container: textLayerDiv,
-                    viewport: viewport,
-                    textDivs: [],
-                    enhanceTextSelection: true,
-                    textLayerMode: 2,
-                    renderInteractiveForms: true
-                });
-                
-                // Add text selection event listeners
-                textLayerDiv.addEventListener('mouseup', function(e) {
-                    const selection = window.getSelection();
-                    if (selection.toString().length > 0) {
-                        // Handle text selection
-                        const selectedText = selection.toString();
-                        console.log(`[PDF] Selected text: ${selectedText}`);
-                        // You can add custom handling for selected text here
-                    }
-                });
-                
-                // Remove the skeleton loader once the page is rendered
-                setTimeout(() => {
-                    skeletonDiv.classList.add('loaded');
-                }, 100);
-                
-                return pageDiv;
-            });
-        });
-    }
-    
-    // Create an array of promises for all pages
-    const renderPromises = [];
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-        renderPromises.push(renderPage(i));
-    }
-    
-    // Wait for all pages to be rendered
-    return Promise.all(renderPromises).then(pageDivs => {
-        console.log(`[PDF] All ${pageDivs.length} pages rendered successfully`);
-        
-        // Add all page divs to the fragment
-        pageDivs.forEach(pageDiv => {
-            fragment.appendChild(pageDiv);
-        });
-        
-        // Append all pages to the container
-        pdfPagesContainer.appendChild(fragment);
-        
-        // Mark the current page
-        const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${currentPage}"]`);
-        if (currentPageDiv) {
-            currentPageDiv.classList.add('current-page');
-            
-            // Scroll to current page if it's not the first page
-            if (currentPage > 1) {
-                currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-        
-        // Page counter updates have been removed
-        
-        // Apply current zoom level if not 100%
-        if (currentZoom !== 1.0) {
-            setZoomLevel(currentZoom);
-        }
-        
-        return pageDivs;
-    }).catch(error => {
-        console.error('[PDF] Error rendering pages:', error);
-        
-        // Display error message
-        pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
-        
-        return Promise.reject(error);
-    });
-}
-
-// Load a PDF from a URL
-function loadPDF(url) {
-    console.log(`[PDF] Attempting to load PDF from URL: ${url}`);
-    
-    if (!url) {
-        console.error('[PDF] Invalid URL provided');
-        return Promise.reject(new Error('Invalid URL provided'));
-    }
-    
-    // Get the PDF containers
-    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    const pdfInitialSkeleton = document.getElementById('pdfInitialSkeleton');
-    
     if (!pdfPagesContainer) {
         console.error('[PDF] pdfPagesContainer not found');
-        return Promise.reject(new Error('pdfPagesContainer not found'));
-    }
-    
-    // Make sure the initial skeleton is visible during loading
-    if (pdfInitialSkeleton) {
-        console.log('[PDF] Showing initial skeleton during loading');
-        pdfInitialSkeleton.classList.remove('hidden');
+        return;
     }
     
     // Clear existing content
     pdfPagesContainer.innerHTML = '';
     
-    // Add loading message
+    // Show loading indicator
     const loadingMessage = document.createElement('div');
     loadingMessage.className = 'pdf-loading';
-    loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading PDF...';
+    loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rendering PDF...';
     pdfPagesContainer.appendChild(loadingMessage);
     
-    // Create a loading task
-    console.log(`[PDF] Starting to load PDF from URL: ${url}`);
-    const loadingTask = pdfjsLib.getDocument(url);
+    try {
+        // Render all pages
+        const renderPromises = [];
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+            renderPromises.push(renderPage(i));
+        }
+        
+        const pageDivs = await Promise.all(renderPromises);
+        
+        // Clear loading message
+        pdfPagesContainer.innerHTML = '';
+        
+        // Add all pages to container
+        pageDivs.forEach(pageDiv => {
+            pdfPagesContainer.appendChild(pageDiv);
+        });
+        
+        // Mark current page
+        const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${currentPage}"]`);
+        if (currentPageDiv) {
+            currentPageDiv.classList.add('current-page');
+            currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[PDF] All pages rendered successfully');
+    } catch (error) {
+        console.error('[PDF] Error rendering pages:', error);
+        pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
+    }
+}
+
+// Load a PDF from a URL
+async function loadPDF(url) {
+    console.log(`[PDF] Loading PDF from URL: ${url}`);
     
-    return loadingTask.promise.then(function(pdf) {
-        console.log(`[PDF] PDF loaded successfully with ${pdf.numPages} pages`);
+    if (!url) {
+        console.error('[PDF] Invalid URL provided');
+        return;
+    }
+    
+    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+    if (!pdfPagesContainer) {
+        console.error('[PDF] pdfPagesContainer not found');
+        return;
+    }
+    
+    // Show loading message
+    pdfPagesContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+    
+    try {
+        // Load PDF document
+        const loadingTask = pdfjsLib.getDocument(url);
+        pdfDoc = await loadingTask.promise;
         
-        // Store the PDF document
-        pdfDoc = pdf;
+        console.log(`[PDF] PDF loaded successfully with ${pdfDoc.numPages} pages`);
         
-        // Update state with current PDF
+        // Update state
         setCurrentPDF(url);
         
         // Reset current page
         currentPage = 1;
         
-        // Hide the initial skeleton as soon as the PDF is loaded
+        // Hide initial skeleton if it exists
+        const pdfInitialSkeleton = document.getElementById('pdfInitialSkeleton');
         if (pdfInitialSkeleton) {
-            console.log('[PDF] Hiding initial skeleton after PDF load');
             pdfInitialSkeleton.classList.add('hidden');
         }
         
-        // Render all pages
-        return renderAllPages().then(() => {
-            // Make absolutely sure the initial skeleton is hidden
-            if (pdfInitialSkeleton) {
-                console.log('[PDF] Ensuring initial skeleton is hidden after rendering');
-                pdfInitialSkeleton.classList.add('hidden');
-                // Force the skeleton to be hidden with inline style as well
-                pdfInitialSkeleton.style.display = 'none';
-            }
-            
-            // Show PDF controls
-            const pdfControls = document.querySelector('.pdf-controls');
-            if (pdfControls) {
-                pdfControls.style.display = 'flex';
-                console.log('[PDF] PDF controls displayed');
-            } else {
-                console.warn('[PDF] PDF controls element not found');
-            }
-            
-            console.log('[PDF] PDF loaded and rendered successfully');
-            return pdf;
-        });
-    }).catch(function(error) {
-        console.error('[PDF] Error loading PDF:', error);
-        
-        // Display error message
-        if (pdfPagesContainer) {
-            pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
+        // Show PDF controls
+        const pdfControls = document.querySelector('.pdf-controls');
+        if (pdfControls) {
+            pdfControls.style.display = 'flex';
         }
         
-        return Promise.reject(error);
-    });
+        // Render all pages
+        await renderAllPages();
+        
+    } catch (error) {
+        console.error('[PDF] Error loading PDF:', error);
+        pdfPagesContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
+    }
 }
 
 // Search for text in the PDF
@@ -378,136 +228,103 @@ async function searchPDF(searchText) {
     
     if (!pdfDoc) {
         console.error('[PDF] No PDF document loaded');
-        return Promise.reject(new Error('No PDF document loaded'));
+        return;
     }
     
     if (!searchText || searchText.trim() === '') {
-        console.warn('[PDF] Empty search text');
         clearSearchResults();
-        return Promise.resolve([]);
+        return;
     }
     
-    // Clear previous search results
+    // Clear previous results
     clearSearchResults();
     
-    // Show loading indicator in search results count
+    // Show loading indicator
     const searchResultsCount = document.getElementById('searchResultsCount');
     if (searchResultsCount) {
         searchResultsCount.textContent = 'Searching...';
     }
     
-    // Disable search buttons during search
-    const prevSearchBtn = document.getElementById('prevSearchResult');
-    const nextSearchBtn = document.getElementById('nextSearchResult');
-    if (prevSearchBtn) prevSearchBtn.disabled = true;
-    if (nextSearchBtn) nextSearchBtn.disabled = true;
-    
     try {
-        // Array to store all search results
         const results = [];
         
         // Search each page
-        for (let pageIndex = 1; pageIndex <= pdfDoc.numPages; pageIndex++) {
-            const page = await pdfDoc.getPage(pageIndex);
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
             const textContent = await page.getTextContent();
-            const viewport = page.getViewport({ scale: 1.0 });
+            const viewport = page.getViewport({ scale: currentZoom });
             
             // Process text items
-            for (let i = 0; i < textContent.items.length; i++) {
-                const item = textContent.items[i];
+            for (const item of textContent.items) {
                 const text = item.str;
-                
-                // Check if the text contains the search term (case insensitive)
                 const searchTermLower = searchText.toLowerCase();
                 const textLower = text.toLowerCase();
                 let index = textLower.indexOf(searchTermLower);
                 
                 while (index !== -1) {
-                    // Calculate position of the match
                     const matchLength = searchText.length;
                     
-                    // Transform text coordinates to viewport coordinates
-                    const tx = pdfjsLib.Util.transform(
-                        viewport.transform,
-                        item.transform
-                    );
+                    // Transform coordinates
+                    const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
                     
-                    // Calculate the rectangle for this text item
+                    // Calculate match position
                     const rect = {
-                        left: tx[4],
+                        left: tx[4] + (item.width * (index / text.length)),
                         top: tx[5] - item.height,
-                        right: tx[4] + (item.width * (index + matchLength) / text.length),
+                        right: tx[4] + (item.width * ((index + matchLength) / text.length)),
                         bottom: tx[5],
-                        pageIndex: pageIndex,
+                        pageIndex: pageNum,
                         matchText: text.substr(index, matchLength)
                     };
                     
-                    // Adjust left position for the specific match
-                    rect.left += item.width * (index / text.length);
-                    
-                    // Store the result
                     results.push(rect);
-                    
-                    // Look for next occurrence
                     index = textLower.indexOf(searchTermLower, index + 1);
                 }
             }
         }
         
-        console.log(`[PDF] Search completed. Found ${results.length} results`);
-        
-        // Store search results
+        // Update search results
         searchResults = results;
+        currentSearchResultIndex = results.length > 0 ? 0 : -1;
         
-        // Update search results count
+        // Update UI
         if (searchResultsCount) {
             searchResultsCount.textContent = results.length > 0 ? `1/${results.length}` : '0/0';
         }
         
-        // Enable/disable search navigation buttons
+        // Enable/disable navigation buttons
+        const prevSearchBtn = document.getElementById('prevSearchResult');
+        const nextSearchBtn = document.getElementById('nextSearchResult');
         if (prevSearchBtn) prevSearchBtn.disabled = results.length <= 1;
         if (nextSearchBtn) nextSearchBtn.disabled = results.length <= 1;
         
-        // Highlight search results
+        // Highlight results
         if (results.length > 0) {
             highlightSearchResults();
-            // Navigate to the first result
-            currentSearchResultIndex = 0;
             navigateToSearchResult(0);
         }
         
-        return results;
     } catch (error) {
         console.error('[PDF] Error searching PDF:', error);
-        
-        // Update search results count
         if (searchResultsCount) {
             searchResultsCount.textContent = 'Error';
         }
-        
-        return Promise.reject(error);
     }
 }
 
 // Clear search results
 function clearSearchResults() {
-    console.log('[PDF] Clearing search results');
-    
-    // Remove all highlight elements
     const highlights = document.querySelectorAll('.search-highlight');
     highlights.forEach(highlight => highlight.remove());
     
-    // Reset search results
     searchResults = [];
     currentSearchResultIndex = -1;
     
-    // Update search results count
     const searchResultsCount = document.getElementById('searchResultsCount');
     if (searchResultsCount) {
         searchResultsCount.textContent = '0/0';
     }
     
-    // Disable search navigation buttons
     const prevSearchBtn = document.getElementById('prevSearchResult');
     const nextSearchBtn = document.getElementById('nextSearchResult');
     if (prevSearchBtn) prevSearchBtn.disabled = true;
@@ -516,218 +333,107 @@ function clearSearchResults() {
 
 // Highlight search results
 function highlightSearchResults() {
-    console.log(`[PDF] Highlighting ${searchResults.length} search results`);
-    
-    // Get the PDF container
     const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    if (!pdfPagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found');
-        return;
-    }
+    if (!pdfPagesContainer) return;
     
-    // Create highlights for each result
     searchResults.forEach((result, index) => {
-        // Find the page div
         const pageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${result.pageIndex}"]`);
-        if (!pageDiv) {
-            console.warn(`[PDF] Page div for page ${result.pageIndex} not found`);
-            return;
-        }
+        if (!pageDiv) return;
         
-        // Create highlight element
         const highlight = document.createElement('div');
         highlight.className = 'search-highlight';
         highlight.dataset.resultIndex = index;
         
-        // Position the highlight
         highlight.style.left = `${result.left}px`;
         highlight.style.top = `${result.top}px`;
         highlight.style.width = `${result.right - result.left}px`;
         highlight.style.height = `${result.bottom - result.top}px`;
         
-        // Add click event to navigate to this result
-        highlight.addEventListener('click', () => {
-            navigateToSearchResult(index);
-        });
+        highlight.addEventListener('click', () => navigateToSearchResult(index));
         
-        // Add highlight to the page
         pageDiv.appendChild(highlight);
     });
 }
 
-// Navigate to a specific search result
+// Navigate to a search result
 function navigateToSearchResult(resultIndex) {
-    console.log(`[PDF] Navigating to search result ${resultIndex}`);
+    if (resultIndex < 0 || resultIndex >= searchResults.length) return;
     
-    if (resultIndex < 0 || resultIndex >= searchResults.length) {
-        console.error(`[PDF] Invalid result index: ${resultIndex}`);
-        return;
-    }
-    
-    // Remove current highlight from previous result
-    const currentHighlight = document.querySelector('.search-highlight.current');
-    if (currentHighlight) {
-        currentHighlight.classList.remove('current');
-    }
-    
-    // Get the result
     const result = searchResults[resultIndex];
-    
-    // Update current result index
     currentSearchResultIndex = resultIndex;
     
-    // Update search results count
+    // Update UI
     const searchResultsCount = document.getElementById('searchResultsCount');
     if (searchResultsCount) {
         searchResultsCount.textContent = `${resultIndex + 1}/${searchResults.length}`;
     }
     
-    // Go to the page containing the result
+    // Go to page
     goToPage(result.pageIndex);
     
-    // Add current class to the highlight
+    // Highlight current result
+    const currentHighlight = document.querySelector('.search-highlight.current');
+    if (currentHighlight) currentHighlight.classList.remove('current');
+    
     const highlight = document.querySelector(`.search-highlight[data-result-index="${resultIndex}"]`);
     if (highlight) {
         highlight.classList.add('current');
-        
-        // Scroll to the highlight
-        setTimeout(() => {
-            highlight.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-        }, 100);
+        setTimeout(() => highlight.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
     }
 }
 
-// Navigate to the next search result
+// Navigate to next/previous search result
 function nextSearchResult() {
-    console.log('[PDF] Next search result');
-    
-    if (searchResults.length === 0) {
-        console.warn('[PDF] No search results');
-        return;
-    }
-    
-    // Calculate next index (with wrap-around)
+    if (searchResults.length === 0) return;
     const nextIndex = (currentSearchResultIndex + 1) % searchResults.length;
     navigateToSearchResult(nextIndex);
 }
 
-// Navigate to the previous search result
 function prevSearchResult() {
-    console.log('[PDF] Previous search result');
-    
-    if (searchResults.length === 0) {
-        console.warn('[PDF] No search results');
-        return;
-    }
-    
-    // Calculate previous index (with wrap-around)
+    if (searchResults.length === 0) return;
     const prevIndex = (currentSearchResultIndex - 1 + searchResults.length) % searchResults.length;
     navigateToSearchResult(prevIndex);
 }
 
 // Go to a specific page
 function goToPage(pageNum) {
-    console.log(`[PDF] goToPage called with pageNum: ${pageNum}`);
+    if (!pdfDoc || pageNum < 1 || pageNum > pdfDoc.numPages) return;
     
-    if (!pdfDoc) {
-        console.error('[PDF] No PDF document loaded');
-        return;
-    }
-    
-    if (pageNum < 1 || pageNum > totalPages) {
-        console.error(`[PDF] Invalid page number: ${pageNum}`);
-        return;
-    }
-    
-    // Update current page
     currentPage = pageNum;
     
-    // Remove current-page class from all pages
     const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    if (pdfPagesContainer) {
-        const allPages = pdfPagesContainer.querySelectorAll('.pdf-page');
-        allPages.forEach(page => page.classList.remove('current-page'));
-        
-        // Add current-page class to the new current page
-        const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
-        if (currentPageDiv) {
-            currentPageDiv.classList.add('current-page');
-            
-            // Scroll to the page
-            currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
+    if (!pdfPagesContainer) return;
     
-    console.log(`[PDF] Navigated to page ${pageNum}`);
+    // Update current page class
+    const allPages = pdfPagesContainer.querySelectorAll('.pdf-page');
+    allPages.forEach(page => page.classList.remove('current-page'));
+    
+    const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
+    if (currentPageDiv) {
+        currentPageDiv.classList.add('current-page');
+        currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Initialize PDF functionality
 function initPDF() {
-    console.log('[PDF] initPDF function called');
+    console.log('[PDF] Initializing PDF functionality');
     
-    // Check if PDF.js is available
     if (typeof pdfjsLib === 'undefined') {
         console.error('[PDF] PDF.js library not loaded');
         return;
-    } else {
-        console.log('[PDF] PDF.js library detected, version:', pdfjsLib.version);
     }
     
-    // Check if worker is set up correctly
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        console.warn('[PDF] PDF.js worker source not set');
-    } else {
-        console.log('[PDF] PDF.js worker source:', pdfjsLib.GlobalWorkerOptions.workerSrc);
-    }
-    
-    // Ensure the initial skeleton is visible when no PDF is loaded
-    const pdfInitialSkeleton = document.getElementById('pdfInitialSkeleton');
-    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
-    
-    if (pdfInitialSkeleton) {
-        // Only show the skeleton if no PDF is loaded
-        if (!pdfDoc && (!pdfPagesContainer || pdfPagesContainer.children.length === 0)) {
-            pdfInitialSkeleton.classList.remove('hidden');
-            console.log('[PDF] Initial skeleton displayed');
-        } else {
-            pdfInitialSkeleton.classList.add('hidden');
-            console.log('[PDF] Initial skeleton hidden (PDF already loaded)');
-        }
-    }
-    
-    // Set up zoom buttons
+    // Set up zoom controls
     const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    
     if (zoomInBtn) {
-        zoomInBtn.addEventListener('click', function() {
-            console.log('[PDF] Zoom in button clicked');
-            setZoomLevel(currentZoom + 0.25);
-        });
-        console.log('[PDF] Zoom in button event listener added');
-    } else {
-        console.error('[PDF] Zoom in button not found');
+        zoomInBtn.addEventListener('click', () => setZoomLevel(currentZoom + 0.25));
     }
     
-    const zoomOutBtn = document.getElementById('zoomOut');
     if (zoomOutBtn) {
-        console.log('[PDF] Found zoomOut button:', zoomOutBtn);
-        
-        // Remove any existing event listeners
-        zoomOutBtn.removeEventListener('click', function() {
-            setZoomLevel(currentZoom - 0.25);
-        });
-        
-        // Add new event listener
-        zoomOutBtn.addEventListener('click', function() {
-            console.log('[PDF] zoomOut button clicked');
-            setZoomLevel(currentZoom - 0.25);
-        });
-        
-        console.log('[PDF] Added click event to zoomOut button');
-    } else {
-        console.error('[PDF] zoomOut button not found');
+        zoomOutBtn.addEventListener('click', () => setZoomLevel(currentZoom - 0.25));
     }
     
     // Set up search functionality
@@ -737,68 +443,42 @@ function initPDF() {
     const nextSearchBtn = document.getElementById('nextSearchResult');
     
     if (searchInput) {
-        console.log('[PDF] Adding keyup event to search input');
-        searchInput.addEventListener('keyup', function(e) {
-            // Search on Enter key
+        searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {
-                searchPDF(this.value);
+                searchPDF(searchInput.value);
             }
-            
-            // Clear results if input is empty
-            if (this.value.trim() === '') {
+            if (searchInput.value.trim() === '') {
                 clearSearchResults();
             }
         });
-    } else {
-        console.error('[PDF] pdfSearchInput not found');
     }
     
-    // Add keyboard shortcut (Ctrl+F) to focus search input
-    document.addEventListener('keydown', function(e) {
-        // Check if Ctrl+F is pressed
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-            // Prevent default browser search
-            e.preventDefault();
-            
-            // Focus the search input
-            if (searchInput) {
-                searchInput.focus();
-                
-                // If there's text in the input, select it
-                if (searchInput.value.trim() !== '') {
-                    searchInput.select();
-                }
-                
-                console.log('[PDF] Search input focused via Ctrl+F');
-            }
-        }
-    });
-    
     if (searchBtn) {
-        console.log('[PDF] Adding click event to search button');
-        searchBtn.addEventListener('click', function() {
-            const searchText = searchInput ? searchInput.value : '';
-            searchPDF(searchText);
+        searchBtn.addEventListener('click', () => {
+            if (searchInput) searchPDF(searchInput.value);
         });
-    } else {
-        console.error('[PDF] pdfSearchBtn not found');
     }
     
     if (prevSearchBtn) {
-        console.log('[PDF] Adding click event to previous search result button');
         prevSearchBtn.addEventListener('click', prevSearchResult);
-    } else {
-        console.error('[PDF] prevSearchResult button not found');
     }
     
     if (nextSearchBtn) {
-        console.log('[PDF] Adding click event to next search result button');
         nextSearchBtn.addEventListener('click', nextSearchResult);
-    } else {
-        console.error('[PDF] nextSearchResult button not found');
     }
     
-    console.log('[PDF] PDF functionality initialized');
+    // Add keyboard shortcut for search
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                if (searchInput.value.trim() !== '') {
+                    searchInput.select();
+                }
+            }
+        }
+    });
 }
 
 export { 
@@ -810,9 +490,9 @@ export {
     nextSearchResult,
     prevSearchResult,
     goToPage
-}; 
+};
 
-// Export functions to window object for direct access
+// Export functions to window object
 window.loadPDF = loadPDF;
 window.searchPDF = searchPDF;
 window.clearSearchResults = clearSearchResults;

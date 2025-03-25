@@ -39,6 +39,14 @@
             background-color: var(--pdf-bg);
             border-radius: 4px;
             overflow: hidden;
+            will-change: transform;
+        }
+        
+        .pdf-page-wrapper {
+            position: relative;
+            margin: 0 auto;
+            transform-origin: top left;
+            will-change: transform;
         }
         
         .pdf-page canvas {
@@ -111,8 +119,7 @@
             user-select: text;
             cursor: text;
             z-index: 2;
-            transform-origin: 0 0;
-            transform: scale(1);
+            mix-blend-mode: multiply;
         }
 
         .textLayer > span {
@@ -154,11 +161,141 @@
             background-color: var(--accent-primary);
         }
 
-        /* PDF Page Wrapper */
-        .pdf-page > div[style*="position: relative"] {
-            transform-origin: top left;
-            transform: scale(1);
-            will-change: transform;
+        /* Search Highlight Styles */
+        .search-highlight {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.3);
+            border: 1px solid rgba(255, 255, 0, 0.5);
+            pointer-events: auto;
+            z-index: 3;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-highlight:hover {
+            background-color: rgba(255, 255, 0, 0.5);
+        }
+
+        .search-highlight.current {
+            background-color: rgba(255, 255, 0, 0.7);
+            border-color: rgba(255, 255, 0, 0.9);
+        }
+
+        /* Loading and Error States */
+        .pdf-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* PDF Controls */
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            padding: 5px 10px;
+            border: none;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .zoom-btn:hover {
+            background-color: var(--accent-primary);
+        }
+
+        .zoom-level {
+            min-width: 60px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* Search Controls */
+        .search-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-input-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-input {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            width: 200px;
+        }
+
+        .search-btn {
+            padding: 5px 10px;
+            border: none;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-btn:hover {
+            background-color: var(--accent-primary);
+        }
+
+        .search-navigation {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-nav-btn {
+            padding: 5px 10px;
+            border: none;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-nav-btn:hover:not(:disabled) {
+            background-color: var(--accent-primary);
+        }
+
+        .search-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #searchResultsCount {
+            min-width: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* Current Page Indicator */
+        .pdf-page.current-page {
+            border: 2px solid var(--accent-primary);
         }
     </style>
 </head>
