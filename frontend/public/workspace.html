@@ -37,32 +37,25 @@
         }
         
         /* PDF Viewer Styles */
-        .pdf-container {
-            width: 100%;
+        .pdf-viewer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             height: 100%;
-            overflow: auto;
+            background-color: var(--bg-primary);
+            position: relative;
+        }
+
+        .pdf-container {
+            flex: 1;
+            overflow-y: scroll;
+            overflow-x: hidden;
             background-color: var(--bg-primary);
             padding: 20px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        
-        .pdf-container object,
-        .pdf-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background-color: var(--bg-primary);
-        }
-        
-        /* Remove unnecessary styles */
-        .pdf-page,
-        .pdf-page-wrapper,
-        .textLayer,
-        .search-highlight {
-            display: none;
         }
         
         .pdf-page {
@@ -73,7 +66,6 @@
             border-radius: 4px;
             overflow: hidden;
             will-change: transform;
-            display: block !important;
         }
         
         .pdf-page-wrapper {
@@ -81,7 +73,6 @@
             margin: 0 auto;
             transform-origin: top left;
             will-change: transform;
-            display: block !important;
         }
         
         .pdf-page canvas {
@@ -159,6 +150,8 @@
             transform-origin: 0 0;
             transform: scale(1);
             display: block !important;
+            width: 100%;
+            height: 100%;
         }
 
         .textLayer > span {
@@ -413,9 +406,9 @@
                         <div class="pdf-skeleton-shimmer"></div>
                     </div>
                 </div>
-                <!-- Native PDF viewer container -->
+                <!-- PDF container -->
                 <div id="pdfContainer" class="pdf-container">
-                    <!-- PDF will be loaded here -->
+                    <!-- PDF pages will be added here -->
                 </div>
             </div>
             <div class="pdf-file-bar">
@@ -1693,18 +1686,25 @@
             
             try {
                 const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 1.0 });
+                const originalViewport = page.getViewport({ scale: 1.0 });
+                
+                // Calculate scale to fit the page width while maintaining aspect ratio
+                const containerWidth = document.getElementById('pdfContainer').clientWidth - 40; // Account for padding
+                const scale = Math.min(containerWidth / originalViewport.width, 1.0);
+                const viewport = page.getViewport({ scale });
                 
                 // Create page container
                 const pageContainer = document.createElement('div');
                 pageContainer.className = 'pdf-page';
                 pageContainer.dataset.pageNumber = pageNum;
+                pageContainer.style.width = `${viewport.width}px`;
+                pageContainer.style.height = `${viewport.height}px`;
                 
                 // Create canvas
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
                 canvas.width = viewport.width;
+                canvas.height = viewport.height;
                 
                 // Create text layer
                 const textLayer = document.createElement('div');
@@ -1749,7 +1749,7 @@
                     pdfContainer.appendChild(pageContainer);
                 }
                 
-                console.log(`[Workspace] Page ${pageNum} rendered successfully`);
+                console.log(`[Workspace] Page ${pageNum} rendered successfully with dimensions: ${viewport.width}x${viewport.height}`);
             } catch (error) {
                 console.error(`[Workspace] Error rendering page ${pageNum}:`, error);
                 throw error;
