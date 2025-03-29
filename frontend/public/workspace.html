@@ -37,6 +37,14 @@
         }
         
         /* PDF Viewer Styles */
+        .pdf-section {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
         .pdf-viewer {
             flex: 1;
             display: flex;
@@ -133,36 +141,13 @@
             box-sizing: border-box;
         }
         
-        .pdf-viewer {
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-            background-color: var(--bg-primary);
-        }
-
         /* Text Layer Styles */
-        .textLayer {
-            position: absolute;
-            left: 2px;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 0.8; /* Much higher opacity */
-            line-height: 1.0;
-            pointer-events: auto;
-            user-select: text;
-            cursor: text;
-            z-index: 2;
-            mix-blend-mode: darken; /* Changed to darken for better visibility */
-        }
-
         .textLayer > span {
             color: transparent;
             position: absolute;
             white-space: pre;
             cursor: text;
-            transform-origin: 0% 0%;
+            transform-origin: left top;
             border: none;
             padding: 0;
             margin: 0;
@@ -170,6 +155,34 @@
             user-select: text;
             -webkit-font-smoothing: subpixel-antialiased;
             text-rendering: optimizeLegibility;
+            /* Basic text properties */
+            font-size: normal;
+            line-height: normal;
+            /* Prevent any stretching */
+            display: inline-block;
+            width: fit-content !important;
+            height: auto !important;
+            /* Ensure proper text boundaries */
+            white-space: pre;
+            overflow: visible;
+        }
+
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.8;
+            line-height: 1.0;
+            pointer-events: auto;
+            user-select: text;
+            cursor: text;
+            z-index: 2;
+            /* Ensure proper text rendering */
+            mix-blend-mode: multiply;
+            transform-origin: 0 0;
         }
 
         /* Much more visible selection styles */
@@ -217,10 +230,9 @@
             position: absolute;
             background-color: rgba(255, 255, 0, 0.3);
             border: 1px solid rgba(255, 255, 0, 0.5);
-            pointer-events: auto;
+            pointer-events: none;
             z-index: 3;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
+            mix-blend-mode: multiply;
         }
 
         .search-highlight:hover {
@@ -228,8 +240,9 @@
         }
 
         .search-highlight.current {
-            background-color: rgba(255, 255, 0, 0.7);
-            border-color: rgba(255, 255, 0, 0.9);
+            background-color: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.8);
+            box-shadow: 0 0 3px rgba(76, 175, 80, 0.5);
         }
 
         /* Loading and Error States */
@@ -246,25 +259,27 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 10px;
+            padding: 6px;
             background-color: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
+            height: 32px;
         }
 
         .zoom-control {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .zoom-btn {
-            padding: 5px 10px;
+            padding: 3px 8px;
             border: none;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            font-size: 12px;
         }
 
         .zoom-btn:hover {
@@ -272,76 +287,190 @@
         }
 
         .zoom-level {
-            min-width: 60px;
+            min-width: 50px;
             text-align: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Search Controls - Updated */
+        .search-icon {
+            padding: 2px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .search-icon:hover {
+            color: var(--accent-primary);
+        }
+
+        .search-modal {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            display: none;
+            z-index: 9999;
+            width: 70%;
+            max-width: 700px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translateX(-50%) translateY(-20px);
+        }
+
+        .search-modal.active {
+            display: block !important;
+            opacity: 0.9 !important;
+            visibility: visible !important;
+            transform: translateX(-50%) translateY(0);
+            animation: bounceDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes bounceDown {
+            0% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            70% {
+                transform: translateX(-50%) translateY(5px);
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .search-modal:not(.active) {
+            animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideUp {
+            0% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 0.9;
+            }
+            20% {
+                transform: translateX(-50%) translateY(10px);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        .search-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-modal-header span {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .search-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 2px;
+            font-size: 12px;
+            transition: color 0.2s ease;
+            margin-left: 4px;
+        }
+
+        .search-modal-close:hover {
+            color: var(--accent-primary);
+        }
+
+        .search-modal-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 3px 6px;
+            min-height: 32px;
+        }
+
+        .search-input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            min-height: 24px;
+            opacity: 0.95;
+            margin-top: 2px;
+        }
+
+        .search-input-group i {
+            font-size: 12px;
+            opacity: 1;
             color: var(--text-secondary);
         }
 
-        /* Search Controls */
-        .search-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-input-container {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
         .search-input {
-            padding: 5px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            width: 200px;
-        }
-
-        .search-btn {
-            padding: 5px 10px;
+            flex: 1;
             border: none;
-            background-color: var(--bg-primary);
+            background: none;
             color: var(--text-primary);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .search-btn:hover {
-            background-color: var(--accent-primary);
+            padding: 2px 4px;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+            line-height: 1.2;
         }
 
         .search-navigation {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 2px;
+            border-left: 1px solid var(--border-color);
+            padding-left: 4px;
+        }
+
+        .search-count {
+            color: var(--text-secondary);
+            font-size: 12px;
+            min-width: 60px;
+            text-align: center;
         }
 
         .search-nav-btn {
-            padding: 5px 10px;
+            background: none;
             border: none;
-            background-color: var(--bg-primary);
             color: var(--text-primary);
-            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            padding: 1px 4px;
+            font-size: 12px;
+            transition: color 0.2s ease;
         }
 
         .search-nav-btn:hover:not(:disabled) {
-            background-color: var(--accent-primary);
+            color: var(--accent-primary);
         }
 
         .search-nav-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        #searchResultsCount {
-            min-width: 40px;
-            text-align: center;
             color: var(--text-secondary);
+            cursor: not-allowed;
         }
 
         /* Current Page Indicator */
@@ -397,7 +526,7 @@
     <div class="main-content">
         <!-- PDF Viewer Section -->
         <div class="pdf-section">
-            <!-- PDF Controls -->
+            <!-- PDF Controls - Updated -->
             <div class="pdf-controls">
                 <div class="zoom-control">
                     <button class="zoom-btn" id="zoomOut">
@@ -408,17 +537,32 @@
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <!-- Add PDF Search Control -->
-                <div class="search-control">
-                    <div class="search-input-container">
-                        <input type="text" id="pdfSearchInput" placeholder="Search in PDF..." class="search-input">
-                        <button id="pdfSearchBtn" class="search-btn">
+                <button class="search-icon" id="searchIcon">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="pdf-viewer" id="pdfViewer">
+                <!-- Search Modal - Moved inside PDF viewer -->
+                <div id="searchModal" class="search-modal">
+                    <div class="search-modal-content">
+                        <div class="search-input-group">
                             <i class="fas fa-search"></i>
+                            <input type="text" id="pdfSearchInput" class="search-input" placeholder="Search in document...">
+                        </div>
+                        <div class="search-navigation">
+                            <button id="prevResult" class="search-nav-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span id="searchCount" class="search-count">No results</span>
+                            <button id="nextResult" class="search-nav-btn" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <button id="closeSearchModal" class="search-modal-close">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="pdf-viewer" id="pdfViewer">
                 <!-- Initial skeleton screen that shows until a PDF is loaded -->
                 <div id="pdfInitialSkeleton" class="pdf-initial-skeleton">
                     <div class="pdf-skeleton">
@@ -1459,8 +1603,7 @@
             }
             
             fileContent.innerHTML = `
-                <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas fa-chevron-right"></i></span>
-                <span class="tree-item-icon"><i class="fas ${fileIcon}"></i></span>
+                <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas ${fileIcon}"></i></span>
                 <span class="tree-item-text">${file.name}</span>
             `;
             
@@ -1548,8 +1691,22 @@
                     const pdfContainer = document.getElementById('pdfContainer');
                     
                     if (pdfViewer) {
-                        // Clear previous content
+                        // Store the search modal if it exists
+                        const searchModal = document.getElementById('searchModal');
+                        
+                        // Clear previous content while preserving the search modal
+                        const elementsToKeep = [];
+                        if (searchModal) {
+                            elementsToKeep.push(searchModal);
+                        }
+                        
+                        // Clear the viewer
                         pdfViewer.innerHTML = '';
+                        
+                        // Restore preserved elements
+                        elementsToKeep.forEach(element => {
+                            pdfViewer.appendChild(element);
+                        });
                         
                         // Create and show loading indicator
                         const loadingDiv = document.createElement('div');
@@ -1747,20 +1904,52 @@
                 
                 await page.render(renderContext).promise;
                 
-                // Get text content
+                // Get text content with improved positioning and font info
                 const textContent = await page.getTextContent({
                     normalizeWhitespace: true,
-                    disableCombineTextItems: false
+                    disableCombineTextItems: false,
+                    includeMarkedContent: true,
+                    includeStyles: true  // Get font size information
                 });
                 
-                // Render text layer
+                // Calculate base font size from viewport
+                const baseFontSize = Math.floor(12 * scale);
+                
+                // Add font size to the text layer div
+                textLayerDiv.style.fontSize = `${baseFontSize}px`;
+                
+                // Render text layer with improved alignment and positioning
                 await pdfjsLib.renderTextLayer({
                     textContent: textContent,
                     container: textLayerDiv,
                     viewport: viewport,
                     textDivs: [],
-                    enhanceTextSelection: true
+                    enhanceTextSelection: true,
+                    textLayerMode: 1,
+                    renderInteractiveForms: true,
+                    useCanvasWidth: false,
+                    isOffscreenCanvasSupported: true,
+                    expandTextDivs: false
                 }).promise;
+                
+                // After rendering, adjust spans based on their font size
+                const spans = textLayerDiv.querySelectorAll('span');
+                spans.forEach(span => {
+                    if (span.style.fontSize) {
+                        // Extract the original font size and calculate scale factor
+                        const originalSize = parseFloat(span.style.fontSize);
+                        const scaleFactor = originalSize / baseFontSize;
+                        
+                        // Apply scaling transform if font size differs from base size
+                        if (scaleFactor !== 1) {
+                            span.style.transform = `scale(${scaleFactor})`;
+                            span.style.transformOrigin = 'left top';
+                            
+                            // Adjust the height to match the scaled size
+                            span.style.height = (originalSize / baseFontSize * 100) + '%';
+                        }
+                    }
+                });
                 
                 // Add elements to page container
                 wrapper.appendChild(canvas);
@@ -1777,6 +1966,270 @@
             } catch (error) {
                 console.error(`[Workspace] Error rendering page ${pageNum}:`, error);
                 throw error;
+            }
+        }
+
+        // Global search variables
+        let currentSearchResults = [];
+        let currentResultIndex = -1;
+
+        function clearSearchHighlights() {
+            document.querySelectorAll('.search-highlight').forEach(highlight => highlight.remove());
+            currentSearchResults = [];
+            currentResultIndex = -1;
+        }
+
+        function highlightSearchResults(searchTerm) {
+            if (!searchTerm) return;
+            
+            clearSearchHighlights();
+            
+            const textLayers = document.querySelectorAll('.textLayer');
+            const searchRegex = new RegExp(searchTerm, 'gi');
+            let totalMatches = 0;
+            
+            textLayers.forEach(textLayer => {
+                const textElements = textLayer.querySelectorAll('span');
+                const textLayerRect = textLayer.getBoundingClientRect();
+                
+                textElements.forEach(span => {
+                    const text = span.textContent;
+                    let match;
+                    
+                    // Get the span's computed style for accurate measurements
+                    const spanStyle = window.getComputedStyle(span);
+                    const spanRect = span.getBoundingClientRect();
+                    
+                    while ((match = searchRegex.exec(text)) !== null) {
+                        const highlight = document.createElement('div');
+                        highlight.className = 'search-highlight';
+                        
+                        // Calculate the position of the match within the span
+                        const preMatchText = text.substring(0, match.index);
+                        const matchText = match[0];
+                        
+                        // Create temporary span for measurements
+                        const tempSpan = document.createElement('span');
+                        Object.assign(tempSpan.style, {
+                            font: spanStyle.font,
+                            fontSize: spanStyle.fontSize,
+                            letterSpacing: spanStyle.letterSpacing,
+                            position: 'absolute',
+                            visibility: 'hidden',
+                            whiteSpace: 'pre',
+                            display: 'inline-block',
+                            transform: 'none'
+                        });
+                        
+                        // Measure pre-match width
+                        tempSpan.textContent = preMatchText;
+                        document.body.appendChild(tempSpan);
+                        const preMatchWidth = tempSpan.getBoundingClientRect().width;
+                        
+                        // Measure match width
+                        tempSpan.textContent = matchText;
+                        const matchWidth = tempSpan.getBoundingClientRect().width;
+                        tempSpan.remove();
+                        
+                        // Get the transform matrix from the span
+                        const transform = spanStyle.transform;
+                        const matrix = new DOMMatrix(transform);
+                        const scale = matrix.a; // Horizontal scale factor
+                        
+                        // Calculate position relative to text layer, accounting for transform
+                        const scaledPreMatchWidth = preMatchWidth * scale;
+                        const scaledMatchWidth = matchWidth * scale;
+                        const left = spanRect.left - textLayerRect.left + scaledPreMatchWidth;
+                        const top = spanRect.top - textLayerRect.top;
+                        
+                        // Position and size the highlight
+                        highlight.style.left = `${left}px`;
+                        highlight.style.top = `${top}px`;
+                        highlight.style.width = `${scaledMatchWidth}px`;
+                        highlight.style.height = `${spanRect.height}px`;
+                        
+                        // Apply the same transform as the text span
+                        highlight.style.transform = transform;
+                        highlight.style.transformOrigin = 'left top';
+                        
+                        textLayer.appendChild(highlight);
+                        currentSearchResults.push({
+                            element: highlight,
+                            page: textLayer.closest('.pdf-page')
+                        });
+                        totalMatches++;
+                    }
+                });
+            });
+            
+            if (currentSearchResults.length > 0) {
+                currentResultIndex = 0;
+                const current = currentSearchResults[0];
+                current.element.classList.add('current');
+                current.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                updateSearchCount();
+            }
+            
+            console.log(`Found ${totalMatches} matches for "${searchTerm}"`);
+        }
+
+        function navigateSearchResults(direction) {
+            if (currentSearchResults.length === 0) return;
+            
+            currentSearchResults[currentResultIndex].element.classList.remove('current');
+            
+            if (direction === 'next') {
+                currentResultIndex = (currentResultIndex + 1) % currentSearchResults.length;
+            } else {
+                currentResultIndex = (currentResultIndex - 1 + currentSearchResults.length) % currentSearchResults.length;
+            }
+            
+            const current = currentSearchResults[currentResultIndex];
+            current.element.classList.add('current');
+            current.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            updateSearchCount();
+        }
+
+        // Initialize search controls - Updated
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Search] Initializing search controls');
+            
+            const searchIcon = document.getElementById('searchIcon');
+            const searchModal = document.getElementById('searchModal');
+            const closeSearchModal = document.getElementById('closeSearchModal');
+            const searchInput = document.getElementById('pdfSearchInput');
+            const prevResult = document.getElementById('prevResult');
+            const nextResult = document.getElementById('nextResult');
+            const searchCount = document.getElementById('searchCount');
+            
+            console.log('[Search] Elements found:', {
+                searchIcon: !!searchIcon,
+                searchModal: !!searchModal,
+                closeSearchModal: !!closeSearchModal,
+                searchInput: !!searchInput,
+                prevResult: !!prevResult,
+                nextResult: !!nextResult,
+                searchCount: !!searchCount
+            });
+            
+            if (searchIcon && searchModal && closeSearchModal) {
+                // Toggle search modal
+                searchIcon.addEventListener('click', (e) => {
+                    console.log('[Search] Search icon clicked');
+                    e.stopPropagation(); // Prevent event from bubbling up
+                    searchModal.style.display = 'block';
+                    searchModal.style.opacity = '1';
+                    searchModal.style.visibility = 'visible';
+                    searchModal.classList.add('active');
+                    console.log('[Search] Search modal display:', searchModal.style.display);
+                    console.log('[Search] Search modal classes:', searchModal.className);
+                    
+                    if (searchInput) {
+                        searchInput.value = ''; // Clear previous search
+                        searchInput.focus();
+                        clearSearchHighlights();
+                    }
+                });
+                
+                // Function to close the modal with animation
+                function closeModalWithAnimation() {
+                    searchModal.classList.remove('active');
+                    // Wait for animation to complete before hiding
+                    setTimeout(() => {
+                        searchModal.style.display = 'none';
+                        searchModal.style.opacity = '0';
+                        searchModal.style.visibility = 'hidden';
+                        clearSearchHighlights();
+                    }, 500); // Match the animation duration
+                }
+                
+                // Updated close button behavior
+                closeSearchModal.addEventListener('click', (e) => {
+                    console.log('[Search] Close button clicked');
+                    e.stopPropagation(); // Prevent event from bubbling up
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        // If there's text, clear it
+                        searchInput.value = '';
+                        clearSearchHighlights();
+                        updateSearchCount();
+                    } else {
+                        // If no text, close the modal with animation
+                        closeModalWithAnimation();
+                    }
+                });
+                
+                // Close modal when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (searchModal.style.display === 'block' && 
+                        e.target !== searchModal && 
+                        !searchModal.contains(e.target) && 
+                        e.target !== searchIcon && 
+                        !searchIcon.contains(e.target)) {
+                        closeModalWithAnimation();
+                    }
+                });
+            }
+            
+            if (searchInput) {
+                // Search input events
+                let debounceTimeout;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounceTimeout);
+                    debounceTimeout = setTimeout(() => {
+                        const searchTerm = searchInput.value.trim();
+                        if (searchTerm) {
+                            highlightSearchResults(searchTerm);
+                            updateSearchCount();
+                        } else {
+                            clearSearchHighlights();
+                            updateSearchCount();
+                        }
+                    }, 300); // Debounce search for better performance
+                });
+                
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            navigateSearchResults('prev');
+                        } else {
+                            navigateSearchResults('next');
+                        }
+                    } else if (e.key === 'Escape') {
+                        closeModalWithAnimation();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        navigateSearchResults('prev');
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        navigateSearchResults('next');
+                    }
+                });
+            }
+            
+            // Navigation buttons
+            if (prevResult && nextResult) {
+                prevResult.addEventListener('click', () => navigateSearchResults('prev'));
+                nextResult.addEventListener('click', () => navigateSearchResults('next'));
+            }
+        });
+
+        // Update search count display
+        function updateSearchCount() {
+            const searchCount = document.getElementById('searchCount');
+            const prevResult = document.getElementById('prevResult');
+            const nextResult = document.getElementById('nextResult');
+            
+            if (searchCount) {
+                if (currentSearchResults.length === 0) {
+                    searchCount.textContent = 'No results';
+                    prevResult.disabled = true;
+                    nextResult.disabled = true;
+                } else {
+                    searchCount.textContent = `${currentResultIndex + 1} of ${currentSearchResults.length}`;
+                    prevResult.disabled = false;
+                    nextResult.disabled = false;
+                }
             }
         }
     </script>
