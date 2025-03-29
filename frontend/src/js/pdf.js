@@ -62,29 +62,56 @@ async function renderPage(pageNum) {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         
-        // Create text layer
+        // Create text layer with proper positioning
         const textLayer = document.createElement('div');
         textLayer.className = 'textLayer';
         textLayer.style.width = `${viewport.width}px`;
         textLayer.style.height = `${viewport.height}px`;
+        
+        // Ensure consistent text positioning
+        const transform = `scale(${viewport.scale})`;
+        textLayer.style.transform = transform;
+        textLayer.style.transformOrigin = '0% 0%';
+        textLayer.style.webkitTransformOrigin = '0% 0%';
+        textLayer.style.mozTransformOrigin = '0% 0%';
+        textLayer.style.msTransformOrigin = '0% 0%';
         
         // Create wrapper for canvas and text layer
         const wrapper = document.createElement('div');
         wrapper.className = 'pdf-page-wrapper';
         wrapper.style.width = `${viewport.width}px`;
         wrapper.style.height = `${viewport.height}px`;
+        wrapper.style.position = 'relative';
         
-        // Render page content
+        // Render page content with improved text rendering
         const renderContext = {
             canvasContext: context,
-            viewport: viewport
+            viewport: viewport,
+            textLayerMode: 2,
+            renderInteractiveForms: true,
+            enhanceTextSelection: true
         };
         
         await page.render(renderContext).promise;
         
-        // Render text layer
-        const textContent = await page.getTextContent();
-        await renderTextLayer(textLayer, textContent, viewport);
+        // Get text content with improved positioning
+        const textContent = await page.getTextContent({
+            normalizeWhitespace: true,
+            disableCombineTextItems: false,
+            includeMarkedContent: true
+        });
+        
+        // Render text layer with improved alignment
+        await pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayer,
+            viewport: viewport,
+            textDivs: [],
+            enhanceTextSelection: true,
+            textLayerMode: 2,
+            renderInteractiveForms: true,
+            useCanvasWidth: true
+        }).promise;
         
         // Add elements to page container
         wrapper.appendChild(canvas);
