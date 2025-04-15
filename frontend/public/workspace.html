@@ -30,6 +30,16 @@
         // Test PDF.js availability
         console.log('[PDF.js] Library loaded, version:', pdfjsLib ? pdfjsLib.version : 'not available');
     </script>
+    
+    <!-- Marked library for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Prism.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <style>
         /* Ensure modal is visible when active */
         .modal-overlay.active {
@@ -38,35 +48,45 @@
         
         /* PDF Viewer Styles */
         .pdf-section {
-            position: relative;
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            left: 0;
         }
 
         .pdf-viewer {
             flex: 1;
             display: flex;
             flex-direction: column;
-            height: 100%;
-            background-color: var(--bg-primary);
             position: relative;
-            overflow: hidden; /* Prevent double scrollbars */
+            overflow: auto;
+            min-height: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            left: 0;
+            background-color: var(--bg-primary);
         }
 
         .pdf-container {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            overflow-x: hidden;
-            background-color: var(--bg-primary);
-            padding: 20px;
-            box-sizing: border-box;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 0; /* Allow container to shrink */
-            height: 100%;
+            padding: 20px 48px;
+            min-height: 100%;
+            width: 100%;
+            position: relative;
+            background-color: var(--bg-primary);
+            transform-origin: center top;
+            margin: 0;
+            box-sizing: border-box;
+            left: 0;
         }
         
         .pdf-page {
@@ -75,17 +95,21 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             background-color: var(--pdf-bg);
             border-radius: 4px;
-            overflow: hidden;
+            overflow: visible;
             will-change: transform;
-            flex-shrink: 0; /* Prevent page from shrinking */
+            flex-shrink: 0;
+            display: inline-block;
+            vertical-align: top;
+            margin-right: 0;
+            transform-origin: center top;
         }
         
         .pdf-page-wrapper {
             position: relative;
-            margin: 0 auto;
-            transform-origin: top left;
+            margin: 0;
+            transform-origin: center top;
             will-change: transform;
-            flex-shrink: 0; /* Prevent wrapper from shrinking */
+            flex-shrink: 0;
             -webkit-font-smoothing: subpixel-antialiased;
             text-rendering: optimizeLegibility;
         }
@@ -140,7 +164,7 @@
             width: 100%;
             box-sizing: border-box;
         }
-        
+
         /* Text Layer Styles */
         .textLayer > span {
             color: transparent;
@@ -263,6 +287,8 @@
             background-color: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
             height: 32px;
+            flex-shrink: 0;
+            z-index: 1;
         }
 
         .zoom-control {
@@ -477,16 +503,479 @@
         .pdf-page.current-page {
             border: 2px solid var(--accent-primary);
         }
+
+        /* Add resize handles */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
+            z-index: 100;
+            padding: 0 12px;
+            margin: 0 -12px;
+        }
+
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 12px;
+            width: 2px;
+            height: 100%;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover::after {
+            background-color: var(--accent-primary);
+        }
+
+        .resize-handle.left {
+            right: -1px;
+        }
+
+        .resize-handle.right {
+            left: -1px;
+        }
+
+        /* Update sidebar styles */
+        .sidebar {
+            position: relative;
+            width: 250px;
+            min-width: 48px;
+            max-width: 500px;
+            height: 100vh;
+            background-color: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: row;
+            flex-shrink: 0;
+            z-index: 10;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar.collapsed {
+            width: 48px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-nav {
+            width: 48px;
+            height: 100%;
+            background-color: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+
+        .nav-button {
+            width: 100%;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-hover);
+        }
+
+        .nav-button.active {
+            color: var(--accent-primary);
+            background-color: var(--bg-hover);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+        }
+
+        .sidebar-panel {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            position: relative;
+        }
+
+        .sidebar-panel.active {
+            display: flex;
+            background-color: var(--bg-primary);
+        }
+
+        /* Update the chat section to be inside the sidebar */
+        .chat-section {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+            border: none;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px; /* Add padding to prevent messages from being hidden behind input */
+            background-color: var(--bg-primary);
+            margin: 0;
+            min-height: 0;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            max-width: 85%;
+        }
+
+        .message.assistant {
+            margin-right: auto;
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message-content {
+            padding: 8px 12px;
+            border-radius: 12px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Chat input styles */
+        .chat-input-container {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border: 0px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 48px;
+            max-height: 200px;
+            height: auto;
+            z-index: 2;
+        }
+
+        .chat-input-blocker {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 90px;
+            background-color: var(--bg-primary);
+            z-index: 1;
+        }
+
+        .chat-input-container textarea {
+            width: 100%;
+            flex: 1;
+            min-height: 24px;
+            max-height: 150px;
+            padding: 8px;
+            border: 0px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .chat-input-controls {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px;
+            padding-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .model-select {
+            position: relative;
+            display: inline-block;
+            margin-right: auto;
+            align-items: left;
+        }
+
+        .model-select-button {
+            padding: 4px 8px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .model-select-button:hover {
+            color: var(--text-primary);
+        }
+
+        .model-select-button i {
+            font-size: 10px;
+        }
+
+        .model-dropdown {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            min-width: 150px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .model-dropdown.active {
+            display: block;
+        }
+
+        .model-option {
+            padding: 6px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .model-option:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .model-option.active {
+            color: var(--accent-primary);
+        }
+
+        .model-option i {
+            font-size: 12px;
+            opacity: 0;
+        }
+
+        .model-option.active i {
+            opacity: 1;
+        }
+
+        .chat-input-container button {
+            padding: 4px;
+            font-size: 10px;
+            gap: 4px;
+            line-height: 1;
+            margin: auto 0;
+        }
+
+        .chat-input-container button:hover {
+            color: var(--accent-primary);
+            background-color: var(--bg-hover);
+        }
+
+        /* Remove the old chat section styles */
+        .chat-section {
+            position: relative;
+            border: none;
+            width: auto;
+            min-width: 0;
+            max-width: none;
+            height: 100%;
+        }
+
+        /* Override styles for proper PDF positioning */
+        .workspace {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-content {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+            margin: 0;
+            padding-left: 10px;
+            left: 0;
+        }
+
+        .file-tree {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+        }
+
+        .file-tree-header {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+        }
+
+        .file-tree-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            background-color: var(--bg-primary);
+        }
+
+        /* Folder selection styles */
+        .folder-select-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .folder-select-container .form-input {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .folder-select-container .modal-btn {
+            padding: 6px 12px;
+            white-space: nowrap;
+        }
+        
+        /* Empty workspace message */
+        .empty-workspace-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-workspace-message i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+        
+        .empty-workspace-message h3 {
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .empty-workspace-message p {
+            margin-bottom: 16px;
+            font-size: 14px;
+            max-width: 300px;
+        }
+        
+        /* Tree error styles */
+        .tree-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .tree-error i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #e74c3c;
+        }
+        
+        .tree-error p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .tree-retry-btn {
+            padding: 4px 12px;
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .tree-retry-btn:hover {
+            background-color: var(--accent-hover);
+        }
     </style>
 </head>
 <body class="workspace">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <button class="settings-button" id="sidebarSettingsBtn" onclick="directOpenModal('settingsModal')">
+        <div class="sidebar-nav">
+            <div class="sidebar-nav-top">
+                <button class="nav-button active" id="fileTreeBtn" title="Files">
+                    <i class="fas fa-folder"></i>
+                </button>
+                <button class="nav-button" id="chatBtn" title="Chat">
+                    <i class="fas fa-comments"></i>
+                </button>
+            </div>
+            <div class="sidebar-nav-bottom">
+                <button class="nav-button" id="sidebarSettingsBtn" title="Settings">
                 <i class="fas fa-cog"></i>
             </button>
         </div>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-panel active" id="fileTreePanel">
         <div class="file-tree">
             <div class="file-tree-header">
                 <div class="file-tree-actions">
@@ -502,21 +991,57 @@
                 </div>
             </div>
             <div class="file-tree-content" id="fileTree">
-                <!-- File tree will be dynamically populated here -->
+                        <!-- File tree content -->
             </div>
-            <!-- Sort menu dropdown -->
-            <div class="sort-menu" id="sortMenu">
-                <div class="sort-menu-item" onclick="sortFiles('name')">
-                    <i class="fas fa-sort-alpha-down"></i>
-                    <span>Sort by name</span>
                 </div>
-                <div class="sort-menu-item" onclick="sortFiles('modified')">
-                    <i class="fas fa-clock"></i>
-                    <span>Sort by modified</span>
                 </div>
-                <div class="sort-menu-item" onclick="sortFiles('created')">
-                    <i class="fas fa-calendar"></i>
-                    <span>Sort by created</span>
+            <div class="sidebar-panel" id="chatPanel">
+                <div class="chat-section">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-content">
+                                Hello! I'm here to help you analyze your documents. What would you like to know?
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-blocker"></div>
+                    <div class="chat-input-container">
+                        <textarea 
+                            id="chatInput" 
+                            placeholder="Type your message here..."
+                            rows="1"
+                            oninput="if (this.scrollHeight > this.clientHeight) {
+                                this.style.height = 'auto';
+                                const newHeight = Math.min(this.scrollHeight, 150);
+                                this.style.height = newHeight + 'px';
+                                this.parentElement.style.height = Math.min(newHeight + 60, 200) + 'px';
+                            }"
+                        ></textarea>
+                        <div class="chat-input-controls">
+                            <div class="model-select">
+                                <button class="model-select-button" id="modelSelectBtn">
+                                    GPT-4 <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="model-dropdown" id="modelDropdown">
+                                    <div class="model-option active">
+                                        <span>GPT-4</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="model-option">
+                                        <span>GPT-3.5</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="model-option">
+                                        <span>Claude 3</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="sendMessage">
+                                Send 
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -538,40 +1063,13 @@
                     </button>
                 </div>
                 <button class="search-icon" id="searchIcon">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-            <div class="pdf-viewer" id="pdfViewer">
-                <!-- Search Modal - Moved inside PDF viewer -->
-                <div id="searchModal" class="search-modal">
-                    <div class="search-modal-content">
-                        <div class="search-input-group">
                             <i class="fas fa-search"></i>
-                            <input type="text" id="pdfSearchInput" class="search-input" placeholder="Search in document...">
-                        </div>
-                        <div class="search-navigation">
-                            <button id="prevResult" class="search-nav-btn" disabled>
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <span id="searchCount" class="search-count">No results</span>
-                            <button id="nextResult" class="search-nav-btn" disabled>
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                        <button id="closeSearchModal" class="search-modal-close">
-                            <i class="fas fa-times"></i>
                         </button>
                     </div>
-                </div>
-                <!-- Initial skeleton screen that shows until a PDF is loaded -->
-                <div id="pdfInitialSkeleton" class="pdf-initial-skeleton">
-                    <div class="pdf-skeleton">
-                        <div class="pdf-skeleton-shimmer"></div>
-                    </div>
-                </div>
-                <!-- PDF container -->
+            <div class="pdf-viewer">
                 <div id="pdfContainer" class="pdf-container">
-                    <!-- PDF pages will be added here -->
+                    <div id="pdfPagesContainer" class="pdf-pages-container"></div>
+                    <div id="markdownContainer" class="markdown-container"></div>
                 </div>
             </div>
             <div class="pdf-file-bar">
@@ -579,29 +1077,6 @@
                     <!-- PDF file tabs will be added here dynamically -->
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Chat Section -->
-    <div class="chat-section">
-        <div class="chat-messages" id="chatMessages">
-            <div class="message assistant">
-                <div class="message-content">
-                    Hello! I'm here to help you analyze your documents. What would you like to know?
-                </div>
-            </div>
-        </div>
-        <div class="chat-input-container">
-            <textarea 
-                id="chatInput" 
-                placeholder="Type your message here..."
-                rows="1"
-                oninput="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
-                onkeyup="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
-            ></textarea>
-            <button id="sendMessage">
-                <i class="fas fa-paper-plane"></i>
-            </button>
         </div>
     </div>
 
@@ -719,6 +1194,16 @@
                                     <input type="checkbox" id="smoothScroll" checked>
                                     <span class="toggle-slider"></span>
                                 </label>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Local Workspace Folder</div>
+                                    <div class="settings-item-description">Select a local folder to use as your workspace</div>
+                                </div>
+                                <div class="folder-select-container">
+                                    <input type="text" id="workspacePath" class="form-input" readonly placeholder="No folder selected">
+                                    <button id="selectWorkspaceFolder" class="modal-btn modal-btn-primary">Select Folder</button>
+                                </div>
                             </div>
                         </div>
 
@@ -1060,72 +1545,52 @@
     <script>
         // Direct modal control functions
         function directOpenModal(modalId) {
-            console.log('Direct open modal called for: ' + modalId);
+            console.log('Opening modal:', modalId);
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                modal.classList.add('active');
+                
+                // If it's the settings modal, initialize tabs and load settings
+                if (modalId === 'settingsModal') {
+                    initSettingsTabs();
+                    loadSettingsPreservingWorkspace();
+                }
+                
+                console.log('Modal opened:', modalId);
             } else {
-                console.error('Modal not found: ' + modalId);
+                console.error('Modal not found:', modalId);
             }
         }
         
+        // Function to close a modal directly
         function directCloseModal(modalId) {
+            console.log('Closing modal:', modalId);
             const modal = document.getElementById(modalId);
             if (modal) {
-                // If closing the settings modal, save all settings
-                if (modalId === 'settingsModal') {
-                    saveAllSettings(false); // Pass false to not close the modal again (would cause infinite loop)
-                }
-                
+                // Simply hide the modal
                 modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+                modal.classList.remove('active');
+                
+                // Force body to be scrollable again if it was locked
                 document.body.style.overflow = '';
+                
+                console.log('Modal closed:', modalId);
+            } else {
+                console.error('Modal not found:', modalId);
             }
         }
         
         // File tree functionality
-        // Sample file structure
+        // Initialize with empty file system
         const fileSystem = {
             id: 'root',
-            name: 'My Files',
             type: 'folder',
-            children: [
-                {
-                    id: 'folder1',
-                    name: 'Study Notes',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file1',
-                            name: 'final review.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/final review.pdf'
-                        },
-                        {
-                            id: 'file2',
-                            name: 'HW 3-Ch1.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/HW 3-Ch1.pdf'
-                        }
-                    ]
-                },
-                {
-                    id: 'folder2',
-                    name: 'Project Research',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file3',
-                            name: 'Appendix.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/Appendix.pdf'
-                        }
-                    ]
-                }
-            ]
+            children: []
         };
         
         // Export fileSystem to window object for debugging
@@ -1151,6 +1616,7 @@
         function sendChatMessage() {
             const chatInput = document.getElementById('chatInput');
             const chatMessages = document.getElementById('chatMessages');
+            const chatInputContainer = document.querySelector('.chat-input-container');
             
             // Check if input is not empty
             if (chatInput && chatInput.value.trim() !== '') {
@@ -1177,9 +1643,10 @@
                 `;
                 chatMessages.appendChild(userMessageElement);
                 
-                // Clear input
+                // Clear input and reset heights
                 chatInput.value = '';
                 chatInput.style.height = 'auto';
+                chatInputContainer.style.height = '100px';
                 
                 // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1297,341 +1764,574 @@
         }
         
         // Load saved settings
-        function loadSettings() {
-            console.log('Loading saved settings');
+        function loadSettingsPreservingWorkspace() {
+            // Remember current workspace path
+            const workspacePath = document.getElementById('workspacePath');
+            const currentPath = workspacePath ? workspacePath.value : '';
             
-            // Load theme setting
-            const savedTheme = localStorage.getItem('darkMode');
+            // Load other settings
             const themeToggle = document.getElementById('themeToggle');
-            if (savedTheme !== null && themeToggle) {
-                themeToggle.checked = savedTheme === 'true';
-                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+            if (themeToggle) {
+                const theme = localStorage.getItem('theme') || 'dark';
+                themeToggle.checked = theme === 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
             }
             
-            // Load zoom setting
-            const savedZoom = localStorage.getItem('defaultZoom');
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                const savedFontSize = localStorage.getItem('fontSize') || '16';
+                fontSize.value = savedFontSize;
+                document.documentElement.style.fontSize = savedFontSize + 'px';
+            }
+            
             const defaultZoom = document.getElementById('defaultZoom');
-            if (savedZoom !== null && defaultZoom) {
+            if (defaultZoom) {
+                const savedZoom = localStorage.getItem('defaultZoom') || '1';
                 defaultZoom.value = savedZoom;
             }
             
-            // Load other settings
-            const savedAutoSave = localStorage.getItem('autoSave');
-            const autoSave = document.getElementById('autoSave');
-            if (savedAutoSave !== null && autoSave) {
-                autoSave.checked = savedAutoSave === 'true';
-            }
-            
-            const savedSpellCheck = localStorage.getItem('spellCheck');
-            const spellCheck = document.getElementById('spellCheck');
-            if (savedSpellCheck !== null && spellCheck) {
-                spellCheck.checked = savedSpellCheck === 'true';
-            }
-            
-            const savedDisablePopups = localStorage.getItem('disablePopups');
-            const disablePopups = document.getElementById('disablePopups');
-            if (savedDisablePopups !== null && disablePopups) {
-                disablePopups.checked = savedDisablePopups === 'true';
-            }
-            
-            const savedSmoothScroll = localStorage.getItem('smoothScroll');
             const smoothScroll = document.getElementById('smoothScroll');
-            if (savedSmoothScroll !== null && smoothScroll) {
+            if (smoothScroll) {
+                const savedSmoothScroll = localStorage.getItem('smoothScroll');
                 smoothScroll.checked = savedSmoothScroll === 'true';
             }
             
-            const savedFontSize = localStorage.getItem('fontSize');
-            const fontSize = document.getElementById('fontSize');
-            if (savedFontSize !== null && fontSize) {
-                fontSize.value = savedFontSize;
+            // Restore workspace path
+            if (workspacePath && currentPath) {
+                workspacePath.value = currentPath;
             }
         }
         
-        // Save settings
-        function saveAllSettings(shouldCloseModal = true) {
-            console.log('Saving all settings');
+        // Function to save settings
+        function saveSettings() {
+            console.log('Saving settings');
             
             // Save theme setting
             const themeToggle = document.getElementById('themeToggle');
             if (themeToggle) {
-                localStorage.setItem('darkMode', themeToggle.checked);
-                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+                localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
             }
             
-            // Save zoom setting
+            // Save font size setting
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                localStorage.setItem('fontSize', fontSize.value);
+            }
+            
+            // Save default zoom setting
             const defaultZoom = document.getElementById('defaultZoom');
             if (defaultZoom) {
                 localStorage.setItem('defaultZoom', defaultZoom.value);
             }
             
-            // Save other settings
-            const autoSave = document.getElementById('autoSave');
-            if (autoSave) {
-                localStorage.setItem('autoSave', autoSave.checked);
-            }
-            
-            const spellCheck = document.getElementById('spellCheck');
-            if (spellCheck) {
-                localStorage.setItem('spellCheck', spellCheck.checked);
-            }
-            
-            const disablePopups = document.getElementById('disablePopups');
-            if (disablePopups) {
-                localStorage.setItem('disablePopups', disablePopups.checked);
-            }
-            
+            // Save smooth scroll setting
             const smoothScroll = document.getElementById('smoothScroll');
             if (smoothScroll) {
                 localStorage.setItem('smoothScroll', smoothScroll.checked);
             }
             
-            const fontSize = document.getElementById('fontSize');
-            if (fontSize) {
-                localStorage.setItem('fontSize', fontSize.value);
-                document.documentElement.style.fontSize = fontSize.value + 'px';
+            // Check workspace folder path
+            const workspacePath = document.getElementById('workspacePath');
+            if (workspacePath && !workspacePath.value.trim()) {
+                // Clear the saved path if input is empty
+                localStorage.removeItem('workspaceFolderPath');
+                // Reset file system and show empty state
+                if (typeof initializeFileSystem === 'function') {
+                    initializeFileSystem();
+                }
             }
             
-            // Close the modal if requested
-            if (shouldCloseModal) {
+            // Close the modal with enhanced close function
+                directCloseModal('settingsModal');
+        }
+
+        // Local file workspace functionality
+        
+        // Function to handle folder selection with cross-browser support
+        async function selectWorkspaceFolder() {
+            try {
+                // Try modern File System Access API first (Chrome, Edge, etc.)
+                if (typeof window.showDirectoryPicker === 'function') {
+                    try {
+                        // Show directory picker
+                        const directoryHandle = await window.showDirectoryPicker();
+                        
+                        // Save folder path
+                        const workspacePath = document.getElementById('workspacePath');
+                        if (workspacePath) {
+                            workspacePath.value = directoryHandle.name;
+                            localStorage.setItem('workspaceFolderPath', directoryHandle.name);
+                            
+                            // Store handle for current session
+                            window.workspaceFolderHandle = directoryHandle;
+                            
+                            // Update file system with files from this folder
+                            await updateFileSystemFromLocalFolder(directoryHandle);
+                        }
+                    } catch (error) {
+                        console.error('Error with directory picker:', error);
+                        if (error.name === 'AbortError') {
+                            console.log('User cancelled folder selection');
+                            // Only clear if no path is already set
+                            const savedPath = localStorage.getItem('workspaceFolderPath');
+                            if (!savedPath) {
+                                // Keep showing empty state
+                                ensureEmptyFileTree();
+                            }
+                        } else {
+                            // If error is not user cancellation, try fallback
+                            useFallbackFolderSelection();
+                        }
+                    }
+                } else {
+                    // Browser doesn't support File System Access API (Firefox, Safari, etc.)
+                    console.log('Browser does not support File System Access API, using fallback method');
+                    useFallbackFolderSelection();
+                }
+            } catch (error) {
+                console.error('Error in folder selection:', error);
+                useFallbackFolderSelection();
+            }
+        }
+        
+        // Helper function to ensure file tree is empty
+        function ensureEmptyFileTree() {
+            console.log('Ensuring file tree is empty');
+            
+            // Reset file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
+            };
+            
+            // Reset expandedFolders
+            if (window.expandedFolders) {
+                window.expandedFolders.clear();
+                window.expandedFolders.add('root');
+            }
+            
+            // Reset selected item
+            window.selectedItemId = null;
+            
+            // Render empty file tree
+            if (typeof window.renderFileTree === 'function') {
+                window.renderFileTree();
+            } else {
+                // If renderFileTree isn't available yet, empty the file tree element directly
+                const fileTreeElement = document.getElementById('fileTree');
+                if (fileTreeElement) {
+                    fileTreeElement.innerHTML = '';
+                }
+            }
+            
+            // Show empty workspace message
+            showEmptyWorkspaceMessage();
+        }
+        
+        // Fallback folder selection for Firefox, Safari, and other browsers
+        function useFallbackFolderSelection() {
+            // Create a hidden file input element
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            // Try different directory attributes for maximum compatibility
+            fileInput.setAttribute('webkitdirectory', '');
+            fileInput.setAttribute('directory', '');
+            fileInput.setAttribute('mozdirectory', '');
+            fileInput.setAttribute('multiple', '');
+            
+            // Handle file selection
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    // Get the folder name from the first file's path
+                    const firstFile = this.files[0];
+                    let folderName = 'Unknown Folder';
+                    
+                    // Different browsers provide different path information
+                    if (firstFile.webkitRelativePath) {
+                        folderName = firstFile.webkitRelativePath.split('/')[0];
+                    } else if (firstFile.name) {
+                        // Try to extract folder name from file path if available
+                        const pathMatch = firstFile.name.match(/([^\/\\]+)[\\/][^\/\\]+$/);
+                        if (pathMatch) {
+                            folderName = pathMatch[1];
+                        }
+                    }
+                    
+                    // Update UI with folder name
+                    const workspacePath = document.getElementById('workspacePath');
+                    if (workspacePath) {
+                        workspacePath.value = folderName;
+                        localStorage.setItem('workspaceFolderPath', folderName);
+                    }
+                    
+                    // Process all selected files
+                    processFilesFromInput(this.files);
+                }
+            });
+            
+            // Trigger the file input dialog
+            fileInput.click();
+        }
+        
+        // Process files from the file input element (fallback method)
+        function processFilesFromInput(files) {
+            try {
+                if (!files || files.length === 0) {
+                    console.log('No files selected, showing empty state');
+                    // Clear file system
+                    window.fileSystem = {
+                        id: 'root',
+                        type: 'folder',
+                        children: []
+                    };
+                    
+                    // Render empty file tree
+            renderFileTree();
+            
+                    // Show empty workspace message
+                    showEmptyWorkspaceMessage();
+                    return;
+                }
+                
+                // Create new file system structure
+                const newFileSystem = {
+                    id: 'root',
+                    type: 'folder',
+                    children: []
+                };
+                
+                // Create a map to track folders
+                const folderMap = new Map();
+                folderMap.set('root', newFileSystem);
+                
+                // Process each file
+                Array.from(files).forEach(file => {
+                    // Get the path parts
+                    const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : ['root', file.name];
+                    
+                    // Skip the first part (base folder name)
+                    let currentPath = '';
+                    let parentFolderId = 'root';
+                    
+                    // Create folder structure
+                    for (let i = 0; i < pathParts.length - 1; i++) {
+                        const folderName = pathParts[i];
+                        currentPath += '/' + folderName;
+                        
+                        // Skip root folder (already exists)
+                        if (i === 0) continue;
+                        
+                        // Create folder if it doesn't exist
+                        if (!folderMap.has(currentPath)) {
+                            const folderId = generateUniqueId();
+                            const newFolder = {
+                                id: folderId,
+                                name: folderName,
+                                type: 'folder',
+                                children: []
+                            };
+                            
+                            // Add to parent folder
+                            const parentFolder = folderMap.get(parentFolderId);
+                            parentFolder.children.push(newFolder);
+                            
+                            // Add to folder map
+                            folderMap.set(currentPath, newFolder);
+                        }
+                        
+                        parentFolderId = currentPath;
+                    }
+                    
+                    // Process file
+                    const fileName = pathParts[pathParts.length - 1];
+                    
+                    // Determine file type
+                    let fileType = 'unknown';
+                    if (fileName.toLowerCase().endsWith('.pdf')) {
+                        fileType = 'pdf';
+                    } else if (/\.(jpe?g|png|gif|bmp|webp)$/i.test(fileName)) {
+                        fileType = 'image';
+                    } else if (/\.(md|markdown)$/i.test(fileName)) {
+                        fileType = 'markdown';
+                    } else if (/\.(docx?|xlsx?|pptx?|txt|json|csv)$/i.test(fileName)) {
+                        fileType = 'doc';
+                    }
+                    
+                    // Create file object
+                    const fileObj = {
+                        id: generateUniqueId(),
+                        name: fileName,
+                        type: 'file',
+                        fileType: fileType,
+                        file: file,
+                        lastModified: file.lastModified,
+                        size: file.size
+                    };
+                    
+                    // Add to parent folder
+                    const parentFolder = folderMap.get(parentFolderId);
+                    parentFolder.children.push(fileObj);
+                });
+                
+                // Update the global file system
+                fileSystem.children = newFileSystem.children;
+                
+                // Clear selected item
+                selectedItemId = null;
+                
+                // Re-render the file tree - make sure to use the properly scoped function
+                if (typeof window.renderFileTree === 'function') {
+                    window.renderFileTree();
+                } else if (typeof renderFileTree === 'function') {
+                    renderFileTree();
+                } else {
+                    console.error('renderFileTree function not found');
+                    // Fallback to reloading the page
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+                
+                // Hide any empty workspace message
+                hideEmptyWorkspaceMessage();
+                
+                console.log('File system updated from input files:', fileSystem);
+            } catch (error) {
+                console.error('Error processing files from input:', error);
+                alert('Error reading workspace folder: ' + error.message);
+                
+                // Close settings modal in case of error
                 directCloseModal('settingsModal');
             }
         }
         
-        // Add event listeners when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Direct script loaded');
-            
-            // Add click handler to settings button
-            const settingsBtn = document.getElementById('sidebarSettingsBtn');
-            if (settingsBtn) {
-                console.log('Settings button found in direct script');
-                settingsBtn.onclick = function() {
-                    console.log('Settings button clicked in direct script');
-                    directOpenModal('settingsModal');
-                    // Initialize tabs when modal is opened
-                    initSettingsTabs();
-                    // Load saved settings
-                    loadSettings();
-                    return false;
-                };
+        // Function to get file content for display (supports both modern and fallback methods)
+        async function getFileContent(fileItem) {
+            if (!fileItem) {
+                console.error('Invalid file item');
+                return null;
             }
             
-            // Add click handlers to close buttons
-            const closeButtons = document.querySelectorAll('.modal-close');
-            closeButtons.forEach(function(btn) {
-                btn.onclick = function() {
-                    const modalId = this.closest('.modal-overlay').id;
-                    directCloseModal(modalId);
-                    return false;
-                };
-            });
-            
-            // Add event listeners for settings changes
-            const themeToggle = document.getElementById('themeToggle');
-            if (themeToggle) {
-                themeToggle.addEventListener('change', function() {
-                    document.documentElement.setAttribute('data-theme', this.checked ? 'dark' : 'light');
-                });
-            }
-            
-            const fontSize = document.getElementById('fontSize');
-            if (fontSize) {
-                fontSize.addEventListener('change', function() {
-                    document.documentElement.style.fontSize = this.value + 'px';
-                });
-            }
-            
-            // Add click handler to modal overlay for closing when clicking outside
-            const modalOverlays = document.querySelectorAll('.modal-overlay');
-            modalOverlays.forEach(function(overlay) {
-                overlay.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        directCloseModal(this.id);
-                    }
-                });
-            });
-            
-            // Add event listeners for chat
-            const sendButton = document.getElementById('sendMessage');
-            if (sendButton) {
-                sendButton.addEventListener('click', function() {
-                    sendChatMessage();
-                });
-            }
-            
-            const chatInput = document.getElementById('chatInput');
-            if (chatInput) {
-                chatInput.addEventListener('keydown', function(e) {
-                    // Send message on Enter key (but not with Shift+Enter)
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault(); // Prevent default to avoid newline
-                        sendChatMessage();
-                    }
-                });
-            }
-            
-            // Initialize file tree
-            renderFileTree();
-            
-            // Add click handlers for file tree action buttons
-            const newNoteBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(1)');
-            if (newNoteBtn) {
-                newNoteBtn.addEventListener('click', function() {
-                    directOpenModal('newNoteModal');
-                });
-            }
-            
-            const newFolderBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(2)');
-            if (newFolderBtn) {
-                newFolderBtn.addEventListener('click', function() {
-                    directOpenModal('newFolderModal');
-                });
-            }
-            
-            const sortBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(3)');
-            if (sortBtn) {
-                sortBtn.addEventListener('click', function() {
-                    const sortMenu = document.getElementById('sortMenu');
-                    if (sortMenu) {
-                        sortMenu.classList.toggle('active');
-                    }
-                });
-            }
-            
-            // Add click handler to sort menu items
-            document.querySelectorAll('.sort-menu-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const sortType = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    sortFileSystem(sortType);
-                    document.getElementById('sortMenu').classList.remove('active');
-                });
-            });
-        });
-        
-        // Function to render the file tree
-        function renderFileTree() {
-            const fileTreeElement = document.getElementById('fileTree');
-            if (!fileTreeElement) return;
-            
-            // Clear existing content
-            fileTreeElement.innerHTML = '';
-            
-            // Render the root folder's children
-            renderFolder(fileTreeElement, fileSystem);
-            
-            console.log('File tree rendered');
-        }
-        
-        // Function to render a folder and its children
-        function renderFolder(parentElement, folder) {
-            const isExpanded = expandedFolders.has(folder.id);
-            
-            if (folder.id !== 'root') {
-                // Create folder item
-                const folderElement = document.createElement('div');
-                folderElement.className = 'tree-item' + (isExpanded ? ' expanded' : '');
-                folderElement.dataset.id = folder.id;
+            try {
+                let file = null;
                 
-                // Create folder content
-                const folderContent = document.createElement('div');
-                folderContent.className = 'tree-item-content' + (selectedItemId === folder.id ? ' selected' : '');
-                folderContent.innerHTML = `
-                    <span class="tree-item-toggle"><i class="fas fa-chevron-right"></i></span>
-                    <span class="tree-item-icon"><i class="fas fa-folder${isExpanded ? '-open' : ''}"></i></span>
-                    <span class="tree-item-text">${folder.name}</span>
-                `;
-                
-                // Add click event to toggle folder
-                folderContent.addEventListener('click', function(e) {
-                    // If clicking on the toggle icon or anywhere on the folder content
-                    toggleFolder(folder.id);
-                    e.stopPropagation();
-                    // No longer selecting the folder when clicked
-                });
-                
-                folderElement.appendChild(folderContent);
-                
-                // Create container for children
-                const childrenContainer = document.createElement('div');
-                childrenContainer.className = 'tree-item-children';
-                folderElement.appendChild(childrenContainer);
-                
-                parentElement.appendChild(folderElement);
-                
-                // If expanded, render children
-                if (isExpanded && folder.children && folder.children.length > 0) {
-                    folder.children.forEach(child => {
-                        if (child.type === 'folder') {
-                            renderFolder(childrenContainer, child);
-                        } else {
-                            renderFile(childrenContainer, child);
-                        }
-                    });
+                // Modern API method (using fileHandle)
+                if (fileItem.fileHandle) {
+                    file = await fileItem.fileHandle.getFile();
+                } 
+                // Fallback method (using direct file reference)
+                else if (fileItem.file) {
+                    file = fileItem.file;
+                } else {
+                    console.error('File item has no file reference');
+                    return null;
                 }
+                
+                // For PDFs, create a blob URL
+                if (fileItem.fileType === 'pdf') {
+                    const blobURL = URL.createObjectURL(file);
+                    return { url: blobURL, type: 'pdf' };
+                }
+                
+                // For other file types, return appropriate data
+                return { file, type: fileItem.fileType };
+            } catch (error) {
+                console.error('Error getting file content:', error);
+                return null;
+            }
+        }
+
+        // Function to update file system from local folder (using File System Access API)
+        async function updateFileSystemFromLocalFolder(directoryHandle) {
+            try {
+                // If directoryHandle is a string (from localStorage), try to recover the actual handle
+                if (typeof directoryHandle === 'string') {
+                    if (window.workspaceFolderHandle) {
+                        directoryHandle = window.workspaceFolderHandle;
             } else {
-                // For root folder, just render its children directly
-                if (folder.children && folder.children.length > 0) {
-                    folder.children.forEach(child => {
-                        if (child.type === 'folder') {
-                            renderFolder(parentElement, child);
+                        // We don't have a valid handle, show the empty state
+                        fileSystem.children = [];
+                        
+                        // Make sure to use the properly scoped function
+                        if (typeof window.renderFileTree === 'function') {
+                            window.renderFileTree();
+                        } else if (typeof renderFileTree === 'function') {
+                            renderFileTree();
                         } else {
-                            renderFile(parentElement, child);
+                            console.error('renderFileTree function not found');
+                            // Fallback to reloading the page
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
                         }
+                        
+                        showEmptyWorkspaceMessage();
+                        return;
+                    }
+                }
+                
+                // Clear the existing file system
+                const newFileSystem = {
+                    id: 'root',
+                    type: 'folder',
+                    children: []
+                };
+                
+                // Process the directory recursively
+                await processDirectory(directoryHandle, newFileSystem.children);
+                
+                // Update the global file system
+                fileSystem.children = newFileSystem.children;
+                
+                // Clear selected item
+                selectedItemId = null;
+                
+                // Re-render the file tree - make sure to use the properly scoped function
+                if (typeof window.renderFileTree === 'function') {
+                    window.renderFileTree();
+                } else if (typeof renderFileTree === 'function') {
+                    renderFileTree();
+                } else {
+                    console.error('renderFileTree function not found');
+                    // Fallback to reloading the page
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+                
+                // Hide any empty workspace message
+                hideEmptyWorkspaceMessage();
+                
+                console.log('File system updated from local folder:', fileSystem);
+            } catch (error) {
+                console.error('Error updating file system:', error);
+                alert('Error reading workspace folder: ' + error.message);
+                
+                // Close settings modal in case of error
+                directCloseModal('settingsModal');
+            }
+        }
+        
+        // Function to process a directory recursively
+        async function processDirectory(directoryHandle, children) {
+            // Process files and subfolders
+            for await (const entry of directoryHandle.values()) {
+                if (entry.kind === 'file') {
+                    // Process file
+                    const file = await entry.getFile();
+                    
+                    // Determine file type
+                    let fileType = 'unknown';
+                    if (file.name.toLowerCase().endsWith('.pdf')) {
+                        fileType = 'pdf';
+                    } else if (/\.(jpe?g|png|gif|bmp|webp)$/i.test(file.name)) {
+                        fileType = 'image';
+                    } else if (/\.(md|markdown)$/i.test(file.name)) {
+                        fileType = 'markdown';
+                    } else if (/\.(docx?|xlsx?|pptx?|txt|json|csv)$/i.test(file.name)) {
+                        fileType = 'doc';
+                    }
+                    
+                    // Add file to children
+                    children.push({
+                        id: generateUniqueId(),
+                        name: file.name,
+                        type: 'file',
+                        fileType: fileType,
+                        fileHandle: entry,
+                        lastModified: file.lastModified,
+                        size: file.size
                     });
+                } else if (entry.kind === 'directory') {
+                    // Process subfolder
+                    const subfolderChildren = [];
+                    const subfolderId = generateUniqueId();
+                    
+                    // Add subfolder to children first
+                    children.push({
+                        id: subfolderId,
+                        name: entry.name,
+                        type: 'folder',
+                        children: subfolderChildren,
+                        folderHandle: entry
+                    });
+                    
+                    // Recursively process subfolder
+                    await processDirectory(entry, subfolderChildren);
                 }
             }
         }
         
-        // Function to render a file
-        function renderFile(parentElement, file) {
-            const fileElement = document.createElement('div');
-            fileElement.className = 'tree-item';
-            fileElement.dataset.id = file.id;
+        // Generate a unique ID for files and folders
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+        
+        // Function to show empty workspace message
+        function showEmptyWorkspaceMessage() {
+            console.log('Showing empty workspace message');
             
-            // Create file content
-            const fileContent = document.createElement('div');
-            fileContent.className = 'tree-item-content' + (selectedItemId === file.id ? ' selected' : '');
-            
-            // Choose icon based on file type
-            let fileIcon = 'fa-file';
-            if (file.fileType === 'pdf') {
-                fileIcon = 'fa-file-pdf';
-            } else if (file.fileType === 'image') {
-                fileIcon = 'fa-file-image';
-            } else if (file.fileType === 'doc' || file.fileType === 'docx') {
-                fileIcon = 'fa-file-word';
+            // Find or create PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) {
+                console.error('PDF viewer element not found');
+                return;
             }
             
-            fileContent.innerHTML = `
-                <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas ${fileIcon}"></i></span>
-                <span class="tree-item-text">${file.name}</span>
+            // Find or create PDF container
+            let pdfContainer = document.getElementById('pdfContainer');
+            if (!pdfContainer) {
+                console.log('Creating new PDF container');
+                pdfContainer = document.createElement('div');
+                pdfContainer.id = 'pdfContainer';
+                pdfContainer.className = 'pdf-container';
+                pdfViewer.appendChild(pdfContainer);
+            } else {
+                // Clear existing content
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Create and add empty workspace message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-workspace-message';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-folder-open"></i>
+                <h3>No Workspace Folder Selected</h3>
+                <p>Select a local folder to use as your workspace in Settings > PDF Viewer.</p>
+                <button id="selectWorkspaceFolderBtn" class="modal-btn modal-btn-primary">
+                    <i class="fas fa-folder"></i> Select Folder
+                </button>
             `;
+            pdfContainer.appendChild(emptyMessage);
             
-            // Add click event to select file
-            fileContent.addEventListener('click', function() {
-                selectItem(file.id);
-                // Simulate opening the file
-                console.log(`Opening file: ${file.name}`);
-            });
-            
-            fileElement.appendChild(fileContent);
-            parentElement.appendChild(fileElement);
-        }
-        
-        // Function to toggle folder expansion
-        function toggleFolder(folderId) {
-            if (expandedFolders.has(folderId)) {
-                expandedFolders.delete(folderId);
-            } else {
-                expandedFolders.add(folderId);
+            // Add click handler to the button
+            const selectBtn = document.getElementById('selectWorkspaceFolderBtn');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', function() {
+                    // Open settings modal
+                    directOpenModal('settingsModal');
+                    
+                    // Switch to PDF viewer tab
+                    const pdfViewerTab = document.querySelector('.settings-sidebar li[data-setting="pdf-viewer"]');
+                    if (pdfViewerTab) {
+                        pdfViewerTab.click();
+                    }
+                });
             }
-            
-            renderFileTree();
         }
         
-        // Function to select an item
+        // Function to hide empty workspace message
+        function hideEmptyWorkspaceMessage() {
+            const emptyMessage = document.querySelector('.empty-workspace-message');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+        }
+        
+        // Function to select an item in the file tree
         function selectItem(itemId) {
-            console.log(`[Workspace] selectItem called with itemId: ${itemId}`);
+            console.log(`[FileTree] selectItem called with itemId: ${itemId}`);
             
             // Find the item in the file system
             const findItem = (folder) => {
@@ -1652,16 +2352,16 @@
             const item = findItem(fileSystem);
             
             if (!item) {
-                console.error(`[Workspace] Item with id ${itemId} not found in file system`);
+                console.error(`[FileTree] Item with id ${itemId} not found in file system`);
                 return;
             }
             
-            console.log(`[Workspace] Found item:`, item);
+            console.log(`[FileTree] Found item:`, item);
             
             // Only select the item if it's a file
             if (item && item.type === 'file') {
                 selectedItemId = itemId;
-                console.log(`[Workspace] Selected item ID set to: ${selectedItemId}`);
+                console.log(`[FileTree] Selected item ID set to: ${selectedItemId}`);
                 
                 // Remove selected class from all items
                 document.querySelectorAll('.tree-item-content').forEach(item => {
@@ -1674,115 +2374,204 @@
                     selectedItem.classList.add('selected');
                 }
                 
-                console.log(`[Workspace] Selected item: ${itemId}`);
+                console.log(`[FileTree] Selected item: ${itemId}`);
                 
-                // Load the PDF file if it's a PDF
+                // Hide both containers initially
+                const pdfContainer = document.getElementById('pdfPagesContainer');
+                const markdownContainer = document.getElementById('markdownContainer');
+                if (pdfContainer) pdfContainer.style.display = 'none';
+                if (markdownContainer) markdownContainer.style.display = 'none';
+                
+                // Load the file based on its type
                 if (item.fileType === 'pdf') {
-                    console.log(`[Workspace] Item is a PDF, path: ${item.path}`);
+                    console.log(`[FileTree] Item is a PDF file, loading content`);
                     
-                    // Check if path is valid
-                    if (!item.path || item.path === '#') {
-                        console.error(`[Workspace] Invalid PDF path: ${item.path}`);
-                        return;
+                    // Show PDF container
+                    if (pdfContainer) {
+                        pdfContainer.style.display = 'block';
+                        pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF...</div>';
                     }
                     
-                    // Show loading state
-                    const pdfViewer = document.getElementById('pdfViewer');
-                    const pdfContainer = document.getElementById('pdfContainer');
-                    
-                    if (pdfViewer) {
-                        // Store the search modal if it exists
-                        const searchModal = document.getElementById('searchModal');
-                        
-                        // Clear previous content while preserving the search modal
-                        const elementsToKeep = [];
-                        if (searchModal) {
-                            elementsToKeep.push(searchModal);
-                        }
-                        
-                        // Clear the viewer
-                        pdfViewer.innerHTML = '';
-                        
-                        // Restore preserved elements
-                        elementsToKeep.forEach(element => {
-                            pdfViewer.appendChild(element);
-                        });
-                        
-                        // Create and show loading indicator
-                        const loadingDiv = document.createElement('div');
-                        loadingDiv.className = 'pdf-loading';
-                        loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading PDF...';
-                        pdfViewer.appendChild(loadingDiv);
-                        
-                        // Create container for PDF
-                        const container = document.createElement('div');
-                        container.id = 'pdfContainer';
-                        container.className = 'pdf-container';
-                        pdfViewer.appendChild(container);
-                    }
-                    
-                    // Try to load PDF using PDF.js
-                    if (typeof pdfjsLib !== 'undefined') {
-                        console.log('[Workspace] Loading PDF with PDF.js');
-                        const loadingTask = pdfjsLib.getDocument(item.path);
-                        
-                        loadingTask.promise.then(async function(pdf) {
-                            console.log(`[Workspace] PDF loaded successfully with ${pdf.numPages} pages`);
+                    // Get the file content
+                    if (item.file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const arrayBuffer = e.target.result;
+                            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+                            const url = URL.createObjectURL(blob);
                             
-                            // Clear the container
-                            const pdfContainer = document.getElementById('pdfContainer');
+                            // Load the PDF using PDF.js
+                            if (typeof pdfjsLib !== 'undefined') {
+                                const loadingTask = pdfjsLib.getDocument(url);
+                                loadingTask.promise.then(function(pdf) {
+                                    console.log(`[FileTree] PDF loaded successfully with ${pdf.numPages} pages`);
+                                    
+                                    // Clear container
+                                    if (pdfContainer) pdfContainer.innerHTML = '';
+                                    
+                                    // Create a document fragment to hold all pages
+                                    const fragment = document.createDocumentFragment();
+                                    
+                                    // Function to render a specific page
+                                    function renderPage(pageNum) {
+                                        return pdf.getPage(pageNum).then(function(page) {
+                                            console.log(`[FileTree] Rendering page ${pageNum}`);
+                                            
+                                            // Create a div for this page
+                                            const pageDiv = document.createElement('div');
+                                            pageDiv.className = 'pdf-page';
+                                            pageDiv.dataset.pageNumber = pageNum;
+                                            pageDiv.style.marginBottom = '20px';
+                                            
+                                            // Create a canvas for this page
+                                            const canvas = document.createElement('canvas');
+                                            const ctx = canvas.getContext('2d');
+                                            
+                                            // Set viewport
+                                            const viewport = page.getViewport({ scale: 1.0 });
+                                            canvas.height = viewport.height;
+                                            canvas.width = viewport.width;
+                                            
+                                            // Render the page content on the canvas
+                                            const renderContext = {
+                                                canvasContext: ctx,
+                                                viewport: viewport
+                                            };
+                                            
+                                            // Create text layer div
+                                            const textLayerDiv = document.createElement('div');
+                                            textLayerDiv.className = 'textLayer';
+                                            textLayerDiv.style.width = `${viewport.width}px`;
+                                            textLayerDiv.style.height = `${viewport.height}px`;
+                                            
+                                            // Add both canvas and text layer to page div
+                                            pageDiv.appendChild(canvas);
+                                            pageDiv.appendChild(textLayerDiv);
+                                            
+                                            // Render the page
+                                            return page.render(renderContext).promise.then(function() {
+                                                // Render text layer
+                                                return page.getTextContent().then(function(textContent) {
+                                                    // Render text layer
+                                                    pdfjsLib.renderTextLayer({
+                                                        textContent: textContent,
+                                                        container: textLayerDiv,
+                                                        viewport: viewport,
+                                                        textDivs: []
+                                                    });
+                                                    return pageDiv;
+                                                });
+                                            });
+                                        });
+                                    }
+                                    
+                                    // Create an array of promises for rendering all pages
+                                    const renderPromises = [];
+                                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                        renderPromises.push(renderPage(pageNum));
+                                    }
+                                    
+                                    // Wait for all pages to be rendered
+                                    Promise.all(renderPromises).then(pageDivs => {
+                                        console.log(`[FileTree] All ${pageDivs.length} pages rendered successfully`);
+                                        
+                                        // Add all page divs to the fragment
+                                        pageDivs.forEach(pageDiv => {
+                                            fragment.appendChild(pageDiv);
+                                        });
+                                        
+                                        // Append all pages to the container
+                                        pdfContainer.appendChild(fragment);
+                                        console.log('[FileTree] All pages added to container');
+                                    }).catch(function(error) {
+                                        console.error('[FileTree] Error rendering pages:', error);
+                                        pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
+                                    });
+                                }).catch(function(error) {
+                                    console.error('[FileTree] Error loading PDF:', error);
+                                    pdfContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
+                                });
+                            } else {
+                                console.error('[FileTree] PDF.js library not available');
+                                pdfContainer.innerHTML = `<div class="pdf-error">PDF.js library not available</div>`;
+                            }
+                        };
+                        reader.onerror = function(error) {
+                            console.error('[FileTree] Error reading PDF file:', error);
                             if (pdfContainer) {
-                                pdfContainer.innerHTML = '';
-                                
-                                // Render all pages
-                                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                                    await renderPage(pdf, pageNum);
-                                }
-                                
-                                // Remove loading indicator
-                                const loadingDiv = pdfViewer.querySelector('.pdf-loading');
-                                if (loadingDiv) {
-                                    loadingDiv.remove();
-                                }
+                                pdfContainer.innerHTML = `<div class="pdf-error">Error reading PDF file: ${error.message}</div>`;
                             }
-                        }).catch(function(error) {
-                            console.error('[Workspace] Error loading PDF:', error);
-                            // Show error message
-                            const pdfContainer = document.getElementById('pdfContainer');
-                            if (pdfContainer) {
-                                pdfContainer.innerHTML = `
-                                    <div class="pdf-error">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        Error loading PDF: ${error.message}
-                                    </div>`;
-                            }
-                            // Remove loading indicator
-                            const loadingDiv = pdfViewer.querySelector('.pdf-loading');
-                            if (loadingDiv) {
-                                loadingDiv.remove();
-                            }
-                        });
+                        };
+                        reader.readAsArrayBuffer(item.file);
                     } else {
-                        console.warn('[Workspace] PDF.js not available, using fallback');
-                        // Fallback to direct PDF loading
-                        const pdfContainer = document.getElementById('pdfContainer');
+                        console.error('[FileTree] No file content available');
                         if (pdfContainer) {
-                            pdfContainer.innerHTML = `
-                                <object data="${item.path}" type="application/pdf" width="100%" height="100%">
-                                    <p>Your browser does not support PDFs. <a href="${item.path}">Download the PDF</a>.</p>
-                                </object>`;
+                            pdfContainer.innerHTML = `<div class="pdf-error">No file content available</div>`;
                         }
-                        // Remove loading indicator
-                        const loadingDiv = pdfViewer.querySelector('.pdf-loading');
-                        if (loadingDiv) {
-                            loadingDiv.remove();
-                        }
+                    }
+                } else if (item.fileType === 'markdown') {
+                    console.log(`[FileTree] Item is a markdown file, loading content`);
+                    
+                    // Show markdown container
+                    if (markdownContainer) {
+                        markdownContainer.style.display = 'block';
+                        markdownContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading markdown...</div>';
+                    }
+                    
+                    // Get the file content
+                    if (item.file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const content = e.target.result;
+                            
+                            // Create markdown content container
+                            const markdownContent = document.createElement('div');
+                            markdownContent.className = 'markdown-content';
+                            
+                            // Convert markdown to HTML using marked
+                            markdownContent.innerHTML = marked.parse(content);
+                            
+                            // Clear container and add markdown content
+                            markdownContainer.innerHTML = '';
+                            markdownContainer.appendChild(markdownContent);
+                            
+                            // Apply syntax highlighting if Prism is available
+                            if (typeof Prism !== 'undefined') {
+                                Prism.highlightAll();
+                            }
+                        };
+                        reader.onerror = function(error) {
+                            console.error('[FileTree] Error reading markdown file:', error);
+                            markdownContainer.innerHTML = `<div class="pdf-error">Error reading markdown file: ${error.message}</div>`;
+                        };
+                        reader.readAsText(item.file);
+                    } else {
+                        console.error('[FileTree] No file content available');
+                        markdownContainer.innerHTML = `<div class="pdf-error">No file content available</div>`;
                     }
                 } else {
-                    console.log(`[Workspace] Item is not a PDF, fileType: ${item.fileType}`);
+                    console.log(`[FileTree] Item is not a supported file type: ${item.fileType}`);
                 }
             } else {
-                console.log(`[Workspace] Item is not a file, type: ${item.type}`);
+                console.log(`[FileTree] Item is not a file, type: ${item.type}`);
+            }
+        }
+        
+        // Helper function to show PDF errors
+        function showPdfError(message) {
+            const pdfContainer = document.getElementById('pdfPagesContainer');
+            const loadingDiv = document.querySelector('.pdf-loading');
+            
+            if (pdfContainer) {
+                pdfContainer.innerHTML = `
+                    <div class="pdf-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error loading PDF: ${message}
+                    </div>`;
+            }
+            
+            if (loadingDiv) {
+                loadingDiv.remove();
             }
         }
         
@@ -1858,29 +2647,26 @@
 
         // Function to render a single PDF page
         async function renderPage(pdf, pageNum) {
-            console.log(`[Workspace] Rendering page ${pageNum}`);
-            
             try {
                 const page = await pdf.getPage(pageNum);
-                const originalViewport = page.getViewport({ scale: 1.0 });
-                
-                // Calculate scale to fit the page width while maintaining aspect ratio
-                const containerWidth = document.getElementById('pdfContainer').clientWidth - 40; // Account for padding
-                const scale = Math.min(containerWidth / originalViewport.width, 1.0);
-                const viewport = page.getViewport({ scale });
+                const viewport = page.getViewport({ scale: 1.0 });
                 
                 // Create page container
                 const pageContainer = document.createElement('div');
                 pageContainer.className = 'pdf-page';
-                pageContainer.dataset.pageNumber = pageNum;
-                pageContainer.style.width = `${viewport.width}px`;
-                pageContainer.style.height = `${viewport.height}px`;
+                
+                // Create canvas wrapper
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.className = 'canvas-wrapper';
+                canvasWrapper.style.width = `${viewport.width}px`;
+                canvasWrapper.style.height = `${viewport.height}px`;
                 
                 // Create canvas
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
+                canvasWrapper.appendChild(canvas);
                 
                 // Create text layer div
                 const textLayerDiv = document.createElement('div');
@@ -1888,73 +2674,9 @@
                 textLayerDiv.style.width = `${viewport.width}px`;
                 textLayerDiv.style.height = `${viewport.height}px`;
                 
-                // Create wrapper for canvas and text layer
-                const wrapper = document.createElement('div');
-                wrapper.className = 'pdf-page-wrapper';
-                wrapper.style.width = `${viewport.width}px`;
-                wrapper.style.height = `${viewport.height}px`;
-                
-                // Render page content
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport,
-                    enableWebGL: true,
-                    renderInteractiveForms: true
-                };
-                
-                await page.render(renderContext).promise;
-                
-                // Get text content with improved positioning and font info
-                const textContent = await page.getTextContent({
-                    normalizeWhitespace: true,
-                    disableCombineTextItems: false,
-                    includeMarkedContent: true,
-                    includeStyles: true  // Get font size information
-                });
-                
-                // Calculate base font size from viewport
-                const baseFontSize = Math.floor(12 * scale);
-                
-                // Add font size to the text layer div
-                textLayerDiv.style.fontSize = `${baseFontSize}px`;
-                
-                // Render text layer with improved alignment and positioning
-                await pdfjsLib.renderTextLayer({
-                    textContent: textContent,
-                    container: textLayerDiv,
-                    viewport: viewport,
-                    textDivs: [],
-                    enhanceTextSelection: true,
-                    textLayerMode: 1,
-                    renderInteractiveForms: true,
-                    useCanvasWidth: false,
-                    isOffscreenCanvasSupported: true,
-                    expandTextDivs: false
-                }).promise;
-                
-                // After rendering, adjust spans based on their font size
-                const spans = textLayerDiv.querySelectorAll('span');
-                spans.forEach(span => {
-                    if (span.style.fontSize) {
-                        // Extract the original font size and calculate scale factor
-                        const originalSize = parseFloat(span.style.fontSize);
-                        const scaleFactor = originalSize / baseFontSize;
-                        
-                        // Apply scaling transform if font size differs from base size
-                        if (scaleFactor !== 1) {
-                            span.style.transform = `scale(${scaleFactor})`;
-                            span.style.transformOrigin = 'left top';
-                            
-                            // Adjust the height to match the scaled size
-                            span.style.height = (originalSize / baseFontSize * 100) + '%';
-                        }
-                    }
-                });
-                
-                // Add elements to page container
-                wrapper.appendChild(canvas);
-                wrapper.appendChild(textLayerDiv);
-                pageContainer.appendChild(wrapper);
+                // Add layers to page container
+                pageContainer.appendChild(canvasWrapper);
+                pageContainer.appendChild(textLayerDiv);
                 
                 // Add page container to PDF container
                 const pdfContainer = document.getElementById('pdfContainer');
@@ -1962,10 +2684,77 @@
                     pdfContainer.appendChild(pageContainer);
                 }
                 
-                console.log(`[Workspace] Page ${pageNum} rendered successfully with dimensions: ${viewport.width}x${viewport.height}`);
+                // Render page content
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Get text content with specific parameters for better organization
+                const textContent = await page.getTextContent({
+                    normalizeWhitespace: false,        // Keep original whitespace
+                    disableCombineTextItems: false,    // Allow combining text items
+                    includeMarkedContent: true,        // Include structural information
+                    suppressOperatorList: false        // Keep operator list for better positioning
+                });
+                
+                // Group text items by lines based on y-position
+                const lineThreshold = 2; // Pixels threshold for considering items on the same line
+                const lines = [];
+                let currentLine = [];
+                let lastY = null;
+                
+                textContent.items.forEach(item => {
+                    const y = item.transform[5]; // Y position from transform matrix
+                    
+                    // If this is a new line or first item
+                    if (lastY === null || Math.abs(y - lastY) > lineThreshold) {
+                        if (currentLine.length > 0) {
+                            lines.push(currentLine);
+                        }
+                        currentLine = [item];
+                        lastY = y;
+                    } else {
+                        currentLine.push(item);
+                    }
+                });
+                
+                // Add the last line
+                if (currentLine.length > 0) {
+                    lines.push(currentLine);
+                }
+                
+                // Create text layer content
+                lines.forEach((line, lineIndex) => {
+                    // Create line container
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'textLayer-line';
+                    
+                    // Sort items in line by x position
+                    line.sort((a, b) => a.transform[4] - b.transform[4]);
+                    
+                    // Create text content for line
+                    line.forEach((item, itemIndex) => {
+                        const tx = item.transform[4];
+                        const ty = item.transform[5];
+                        
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = item.str;
+                        textSpan.style.left = `${tx}px`;
+                        textSpan.style.top = `${ty}px`;
+                        textSpan.style.fontSize = `${Math.abs(item.transform[0])}px`;
+                        textSpan.style.fontFamily = item.fontName || 'sans-serif';
+                        
+                        lineDiv.appendChild(textSpan);
+                    });
+                    
+                    textLayerDiv.appendChild(lineDiv);
+                });
+                
             } catch (error) {
-                console.error(`[Workspace] Error rendering page ${pageNum}:`, error);
-                throw error;
+                console.error('Error rendering PDF page:', error);
             }
         }
 
@@ -2080,7 +2869,7 @@
             
             if (direction === 'next') {
                 currentResultIndex = (currentResultIndex + 1) % currentSearchResults.length;
-            } else {
+                    } else {
                 currentResultIndex = (currentResultIndex - 1 + currentSearchResults.length) % currentSearchResults.length;
             }
             
@@ -2110,6 +2899,22 @@
                 prevResult: !!prevResult,
                 nextResult: !!nextResult,
                 searchCount: !!searchCount
+            });
+
+            // Handle Ctrl+F to open search modal
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault(); // Prevent browser's default search
+                    if (searchModal && searchInput) {
+                        searchModal.style.display = 'block';
+                        searchModal.style.opacity = '1';
+                        searchModal.style.visibility = 'visible';
+                        searchModal.classList.add('active');
+                        searchInput.value = ''; // Clear previous search
+                        searchInput.focus();
+                        clearSearchHighlights();
+                    }
+                }
             });
             
             if (searchIcon && searchModal && closeSearchModal) {
@@ -2158,13 +2963,9 @@
                     }
                 });
                 
-                // Close modal when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (searchModal.style.display === 'block' && 
-                        e.target !== searchModal && 
-                        !searchModal.contains(e.target) && 
-                        e.target !== searchIcon && 
-                        !searchIcon.contains(e.target)) {
+                // Close modal only on Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && searchModal.style.display === 'block') {
                         closeModalWithAnimation();
                     }
                 });
@@ -2232,6 +3033,903 @@
                 }
             }
         }
+    </script>
+    <!-- Initialize zoom controls -->
+    <script>
+        // Initialize zoom controls
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Zoom] Initializing zoom controls');
+            
+            const zoomInBtn = document.getElementById('zoomIn');
+            const zoomOutBtn = document.getElementById('zoomOut');
+            const zoomLevel = document.getElementById('zoomLevel');
+            
+            // Get saved zoom level from localStorage or default to 100%
+            let currentZoom = parseFloat(localStorage.getItem('pdfZoom')) || 1.0;
+            
+            // Update zoom level display
+            function updateZoomDisplay() {
+                if (zoomLevel) {
+                    zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+                }
+            }
+            
+            // Function to apply zoom to all pages
+            function applyZoom(scale) {
+                const pdfContainer = document.getElementById('pdfContainer');
+                const pdfViewer = document.getElementById('pdfViewer');
+                if (!pdfContainer || !pdfViewer) return;
+
+                // Store original dimensions if not already stored
+                if (!pdfContainer.dataset.originalWidth) {
+                    pdfContainer.dataset.originalWidth = pdfContainer.offsetWidth;
+                    pdfContainer.dataset.originalHeight = pdfContainer.offsetHeight;
+                }
+
+                // Get the scroll position relative to the content before zoom
+                const scrollTop = pdfViewer.scrollTop;
+                const scrollLeft = pdfViewer.scrollLeft;
+                const viewerHeight = pdfViewer.offsetHeight;
+                const viewerWidth = pdfViewer.offsetWidth;
+                
+                // Calculate the center point of the viewport
+                const centerX = scrollLeft + (viewerWidth / 2);
+                const centerY = scrollTop + (viewerHeight / 2);
+                
+                // Calculate the relative position (0-1) of the center point
+                const relativeX = centerX / (pdfContainer.offsetWidth);
+                const relativeY = centerY / (pdfContainer.offsetHeight);
+
+                // Apply transform to the container
+                pdfContainer.style.transform = `scale(${scale})`;
+                
+                // Calculate new dimensions
+                const originalWidth = parseFloat(pdfContainer.dataset.originalWidth);
+                const originalHeight = parseFloat(pdfContainer.dataset.originalHeight);
+                const scaledWidth = originalWidth * scale;
+                const scaledHeight = originalHeight * scale;
+                
+                // Calculate margins to center the content
+                const marginX = Math.max(0, (viewerWidth - scaledWidth) / 2);
+                
+                // Update container size and centering
+                pdfContainer.style.width = `${originalWidth}px`;
+                pdfContainer.style.height = `${originalHeight}px`;
+                pdfContainer.style.minHeight = `${originalHeight}px`;
+                pdfContainer.style.marginLeft = `${marginX}px`;
+                
+                // Calculate new scroll position to maintain the same center point
+                const newScrollLeft = (relativeX * scaledWidth) - (viewerWidth / 2);
+                const newScrollTop = (relativeY * scaledHeight) - (viewerHeight / 2);
+                
+                // Apply new scroll position
+                requestAnimationFrame(() => {
+                    pdfViewer.scrollTo({
+                        left: Math.max(0, newScrollLeft),
+                        top: Math.max(0, newScrollTop),
+                        behavior: 'instant'
+                    });
+                });
+                
+                // Save zoom level to localStorage
+                localStorage.setItem('pdfZoom', scale);
+                updateZoomDisplay();
+                
+                // Ensure viewer has proper overflow
+                pdfViewer.style.overflowX = scale > 1 ? 'auto' : 'hidden';
+                pdfViewer.style.overflowY = 'auto';
+            }
+            
+            // Add click handlers for zoom buttons
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                    currentZoom = Math.min(currentZoom + 0.1, 3.0); // Max zoom of 300%
+                    applyZoom(currentZoom);
+                });
+            }
+            
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                    currentZoom = Math.max(currentZoom - 0.1, 0.2); // Min zoom of 20%
+                    applyZoom(currentZoom);
+                });
+            }
+
+            // Add mouse wheel zoom functionality to zoom level indicator
+            if (zoomLevel) {
+                zoomLevel.addEventListener('wheel', (e) => {
+                    e.preventDefault(); // Prevent page scrolling
+                    
+                    // Determine zoom direction based on wheel delta
+                    const delta = e.deltaY;
+                    const zoomStep = 0.05; // Smaller step for smoother zooming
+                    
+                    if (delta < 0) {
+                        // Scrolling up - zoom in
+                        currentZoom = Math.min(currentZoom + zoomStep, 3.0);
+                    } else {
+                        // Scrolling down - zoom out
+                        currentZoom = Math.max(currentZoom - zoomStep, 0.2);
+                    }
+                    
+                    applyZoom(currentZoom);
+                });
+            }
+            
+            // Initialize zoom display
+            updateZoomDisplay();
+            
+            // Apply saved zoom level on page load
+            applyZoom(currentZoom);
+        });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add resize handles to sidebars
+        const sidebar = document.querySelector('.sidebar');
+        const chatSection = document.querySelector('.chat-section');
+        
+        // Create and add resize handles
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'resize-handle left';
+        sidebar.appendChild(leftHandle);
+        
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'resize-handle right';
+        chatSection.appendChild(rightHandle);
+        
+        // Resize functionality
+        function initResize(handle, element, isLeft) {
+            let startX, startWidth;
+            
+            function startResizing(e) {
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(element).width, 10);
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResizing);
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            }
+            
+            function resize(e) {
+                const diff = e.clientX - startX;
+                let newWidth = isLeft ? startWidth + diff : startWidth - diff;
+                
+                // Apply min and max constraints
+                newWidth = Math.max(isLeft ? 150 : 200, Math.min(isLeft ? 500 : 600, newWidth));
+                
+                element.style.width = `${newWidth}px`;
+            }
+            
+            function stopResizing() {
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('mouseup', stopResizing);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+            
+            handle.addEventListener('mousedown', startResizing);
+        }
+        
+        // Initialize resize handlers
+        initResize(leftHandle, sidebar, true);
+        initResize(rightHandle, chatSection, false);
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const fileTreeBtn = document.getElementById('fileTreeBtn');
+        const chatBtn = document.getElementById('chatBtn');
+        const fileTreePanel = document.getElementById('fileTreePanel');
+        const chatPanel = document.getElementById('chatPanel');
+        let activeButton = fileTreeBtn;
+        let isCollapsed = false;
+        let lastWidth = 250;
+        let isResizing = false;
+
+        function togglePanel(button, panel) {
+            if (activeButton === button && !isCollapsed) {
+                lastWidth = parseInt(getComputedStyle(sidebar).width, 10);
+                sidebar.classList.add('collapsed');
+                isCollapsed = true;
+                sidebar.style.width = '48px';
+            } else {
+                sidebar.classList.remove('collapsed');
+                isCollapsed = false;
+                sidebar.style.width = `${lastWidth}px`;
+                
+                activeButton.classList.remove('active');
+                document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+                
+                button.classList.add('active');
+                panel.classList.add('active');
+                activeButton = button;
+            }
+        }
+
+        fileTreeBtn.addEventListener('click', () => togglePanel(fileTreeBtn, fileTreePanel));
+        chatBtn.addEventListener('click', () => togglePanel(chatBtn, chatPanel));
+
+        // Handle resize to collapse sidebar
+        const resizeHandle = document.querySelector('.resize-handle.left');
+        if (resizeHandle) {
+            let startX, startWidth;
+            const COLLAPSE_THRESHOLD = 160;
+
+            function preventSelection(e) {
+                e.preventDefault();
+            }
+            
+            function startResizing(e) {
+                if (e.button !== 0) return; // Only handle left mouse button
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(sidebar).width, 10);
+                
+                // Add event listeners
+                document.addEventListener('mousemove', handleResize);
+                document.addEventListener('mouseup', stopResizing, { once: true });
+                document.addEventListener('selectstart', preventSelection);
+                
+                // Set cursor and prevent text selection
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+                document.body.style.MozUserSelect = 'none';
+                
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function handleResize(e) {
+                if (!isResizing) return;
+                
+                const width = Math.max(48, Math.min(500, startWidth + (e.clientX - startX)));
+                requestAnimationFrame(() => {
+                    if (width <= COLLAPSE_THRESHOLD) {
+                        sidebar.classList.add('collapsed');
+                        isCollapsed = true;
+                        sidebar.style.width = '48px';
+                    } else {
+                        if (isCollapsed) {
+                            sidebar.classList.remove('collapsed');
+                            isCollapsed = false;
+                        }
+                        sidebar.style.width = `${width}px`;
+                        lastWidth = width;
+                    }
+                });
+            }
+            
+            function stopResizing() {
+                isResizing = false;
+                
+                // Remove event listeners
+                document.removeEventListener('mousemove', handleResize);
+                document.removeEventListener('selectstart', preventSelection);
+                
+                // Reset cursor and text selection
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+                document.body.style.MozUserSelect = '';
+            }
+            
+            resizeHandle.addEventListener('mousedown', startResizing);
+            
+            // Add touch support
+            resizeHandle.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                startResizing({ 
+                    button: 0,
+                    clientX: touch.clientX,
+                    preventDefault: () => e.preventDefault(),
+                    stopPropagation: () => e.stopPropagation()
+                });
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!isResizing) return;
+                const touch = e.touches[0];
+                handleResize({ clientX: touch.clientX });
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('touchend', () => {
+                if (isResizing) {
+                    stopResizing();
+                }
+            });
+        }
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Model selector functionality
+        const modelSelectBtn = document.getElementById('modelSelectBtn');
+        const modelDropdown = document.getElementById('modelDropdown');
+        const modelOptions = document.querySelectorAll('.model-option');
+
+        // Toggle dropdown
+        modelSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            modelDropdown.classList.remove('active');
+        });
+
+        // Handle model selection
+        modelOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // Update active state
+                modelOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Update button text
+                modelSelectBtn.innerHTML = `${option.querySelector('span').textContent} <i class="fas fa-chevron-down"></i>`;
+                
+                // Close dropdown
+                modelDropdown.classList.remove('active');
+            });
+        });
+
+        // Existing chat functionality...
+        // ... existing code ...
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners when DOM is loaded
+            console.log('Direct script loaded');
+            
+            // Add click handler to settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                console.log('Settings button found in direct script');
+                settingsBtn.onclick = function() {
+                    console.log('Settings button clicked in direct script');
+                    directOpenModal('settingsModal');
+                    // Initialize tabs when modal is opened
+                    initSettingsTabs();
+                    // Load saved settings
+                loadSettingsPreservingWorkspace();
+                    return false;
+                };
+            }
+            
+            // Add click handlers to close buttons
+            const closeButtons = document.querySelectorAll('.modal-close');
+            closeButtons.forEach(function(btn) {
+                btn.onclick = function() {
+                    const modalId = this.closest('.modal-overlay').id;
+                    directCloseModal(modalId);
+                    return false;
+                };
+            });
+            
+            // Add event listeners for settings changes
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function() {
+                    document.documentElement.setAttribute('data-theme', this.checked ? 'dark' : 'light');
+                });
+            }
+            
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                fontSize.addEventListener('change', function() {
+                    document.documentElement.style.fontSize = this.value + 'px';
+                });
+            }
+        
+        // Add workspace folder selection event listener
+        const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+        if (selectWorkspaceFolderBtn) {
+            selectWorkspaceFolderBtn.addEventListener('click', function() {
+                selectWorkspaceFolder();
+            });
+        }
+        
+        // Add save settings button event listener
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', function() {
+                saveSettings();
+            });
+        }
+            
+            // Add click handler to modal overlay for closing when clicking outside
+            const modalOverlays = document.querySelectorAll('.modal-overlay');
+            modalOverlays.forEach(function(overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        directCloseModal(this.id);
+                    }
+                });
+            });
+            
+            // Add event listeners for chat
+            const sendButton = document.getElementById('sendMessage');
+            if (sendButton) {
+                sendButton.addEventListener('click', function() {
+                    sendChatMessage();
+                });
+            }
+            
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    // Send message on Enter key (but not with Shift+Enter)
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault(); // Prevent default to avoid newline
+                        sendChatMessage();
+                    }
+                });
+            }
+            
+            // Initialize file tree
+            renderFileTree();
+            
+        // Check if we have a workspace folder, if not show empty message
+        const savedPath = localStorage.getItem('workspaceFolderPath');
+        if (!savedPath && !fileSystem.children.length) {
+                        showEmptyWorkspaceMessage();
+        }
+        
+            // Add click handlers for file tree action buttons
+            const newNoteBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(1)');
+            if (newNoteBtn) {
+                newNoteBtn.addEventListener('click', function() {
+                    directOpenModal('newNoteModal');
+                });
+            }
+            
+            const newFolderBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(2)');
+            if (newFolderBtn) {
+                newFolderBtn.addEventListener('click', function() {
+                    directOpenModal('newFolderModal');
+                });
+            }
+            
+            const sortBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(3)');
+            if (sortBtn) {
+                sortBtn.addEventListener('click', function() {
+                    const sortMenu = document.getElementById('sortMenu');
+                    if (sortMenu) {
+                        sortMenu.classList.toggle('active');
+                    }
+                });
+            }
+            
+            // Add click handler to sort menu items
+            document.querySelectorAll('.sort-menu-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const sortType = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    sortFileSystem(sortType);
+                    document.getElementById('sortMenu').classList.remove('active');
+                });
+            });
+        });
+    </script>
+    <script>
+        // Function to render the file tree
+        function renderFileTree() {
+            const fileTreeElement = document.getElementById('fileTree');
+            if (!fileTreeElement) {
+                console.error('File tree element not found');
+                return;
+            }
+            
+            try {
+            // Clear existing content
+            fileTreeElement.innerHTML = '';
+                
+                // Make sure fileSystem and expandedFolders are defined
+                if (typeof fileSystem === 'undefined') {
+                    window.fileSystem = {
+                        id: 'root',
+                        type: 'folder',
+                        children: []
+                    };
+                }
+                
+                if (typeof expandedFolders === 'undefined') {
+                    window.expandedFolders = new Set(['root']);
+                }
+            
+            // Render the root folder's children
+            renderFolder(fileTreeElement, fileSystem);
+            
+                console.log('File tree rendered successfully');
+            } catch (error) {
+                console.error('Error rendering file tree:', error);
+                // Show simple UI with error
+                fileTreeElement.innerHTML = `
+                    <div class="tree-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading files</p>
+                        <button onclick="location.reload()" class="tree-retry-btn">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Function to render a folder and its children
+        function renderFolder(parentElement, folder) {
+            try {
+            const isExpanded = expandedFolders.has(folder.id);
+            
+            if (folder.id !== 'root') {
+                // Create folder item
+                const folderElement = document.createElement('div');
+                folderElement.className = 'tree-item' + (isExpanded ? ' expanded' : '');
+                folderElement.dataset.id = folder.id;
+                
+                // Create folder content
+                const folderContent = document.createElement('div');
+                folderContent.className = 'tree-item-content' + (selectedItemId === folder.id ? ' selected' : '');
+                folderContent.innerHTML = `
+                    <span class="tree-item-toggle"><i class="fas fa-chevron-right"></i></span>
+                    <span class="tree-item-icon"><i class="fas fa-folder${isExpanded ? '-open' : ''}"></i></span>
+                    <span class="tree-item-text">${folder.name}</span>
+                `;
+                
+                // Add click event to toggle folder
+                folderContent.addEventListener('click', function(e) {
+                    // If clicking on the toggle icon or anywhere on the folder content
+                    toggleFolder(folder.id);
+                    e.stopPropagation();
+                    // No longer selecting the folder when clicked
+                });
+                
+                folderElement.appendChild(folderContent);
+                
+                // Create container for children
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'tree-item-children';
+                folderElement.appendChild(childrenContainer);
+                
+                parentElement.appendChild(folderElement);
+                
+                // If expanded, render children
+                if (isExpanded && folder.children && folder.children.length > 0) {
+                    folder.children.forEach(child => {
+                        if (child.type === 'folder') {
+                            renderFolder(childrenContainer, child);
+                        } else {
+                            renderFile(childrenContainer, child);
+                        }
+                    });
+                }
+            } else {
+                // For root folder, just render its children directly
+                if (folder.children && folder.children.length > 0) {
+                    folder.children.forEach(child => {
+                        if (child.type === 'folder') {
+                            renderFolder(parentElement, child);
+                        } else {
+                            renderFile(parentElement, child);
+                        }
+                    });
+                }
+                }
+            } catch (error) {
+                console.error('Error rendering folder:', error);
+            }
+        }
+        
+        // Function to render a file
+        function renderFile(parentElement, file) {
+            try {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'tree-item';
+            fileElement.dataset.id = file.id;
+            
+            // Create file content
+            const fileContent = document.createElement('div');
+            fileContent.className = 'tree-item-content' + (selectedItemId === file.id ? ' selected' : '');
+            
+            // Choose icon based on file type
+            let fileIcon = 'fa-file';
+            if (file.fileType === 'pdf') {
+                fileIcon = 'fa-file-pdf';
+            } else if (file.fileType === 'image') {
+                fileIcon = 'fa-file-image';
+            } else if (file.fileType === 'doc' || file.fileType === 'docx') {
+                fileIcon = 'fa-file-word';
+                } else if (file.fileType === 'md' || file.fileType === 'markdown') {
+                    fileIcon = 'fa-file-markdown';
+            }
+            
+            fileContent.innerHTML = `
+                    <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas ${fileIcon}"></i></span>
+                <span class="tree-item-text">${file.name}</span>
+            `;
+            
+            // Add click event to select file
+            fileContent.addEventListener('click', function() {
+                selectItem(file.id);
+                // Simulate opening the file
+                console.log(`Opening file: ${file.name}`);
+            });
+            
+            fileElement.appendChild(fileContent);
+            parentElement.appendChild(fileElement);
+            } catch (error) {
+                console.error('Error rendering file:', error);
+            }
+        }
+        
+        // Function to toggle folder expansion
+        function toggleFolder(folderId) {
+            try {
+            if (expandedFolders.has(folderId)) {
+                expandedFolders.delete(folderId);
+            } else {
+                expandedFolders.add(folderId);
+            }
+            
+            renderFileTree();
+            } catch (error) {
+                console.error('Error toggling folder:', error);
+            }
+        }
+        
+        // Make the functions globally accessible
+        window.renderFileTree = renderFileTree;
+        window.renderFolder = renderFolder;
+        window.renderFile = renderFile;
+        window.toggleFolder = toggleFolder;
+        window.showEmptyWorkspaceMessage = showEmptyWorkspaceMessage;
+        window.hideEmptyWorkspaceMessage = hideEmptyWorkspaceMessage;
+        window.directOpenModal = directOpenModal;
+        window.directCloseModal = directCloseModal;
+        window.initializeFileSystem = initializeFileSystem;
+        window.ensureEmptyFileTree = ensureEmptyFileTree;
+        
+        // Initialize file system
+        function initializeFileSystem() {
+            console.log('Initializing file system');
+            
+            // Always start with empty file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
+            };
+            
+            // Reset expandedFolders
+            if (window.expandedFolders) {
+                window.expandedFolders.clear();
+                window.expandedFolders.add('root');
+            }
+            
+            // Reset selected item
+            window.selectedItemId = null;
+            
+            // Render empty file tree
+            if (typeof window.renderFileTree === 'function') {
+                window.renderFileTree();
+            } else {
+                const fileTreeElement = document.getElementById('fileTree');
+                if (fileTreeElement) {
+                    fileTreeElement.innerHTML = '';
+                }
+            }
+            
+            // Check if we have a workspace folder set in localStorage
+            const savedPath = localStorage.getItem('workspaceFolderPath');
+            
+            if (!savedPath) {
+                console.log('No workspace folder set, showing empty state');
+                showEmptyWorkspaceMessage();
+            } else {
+                console.log('Workspace folder found in localStorage:', savedPath);
+                // Update the input field
+                const workspacePath = document.getElementById('workspacePath');
+                if (workspacePath) {
+                    workspacePath.value = savedPath;
+                }
+                
+                // If we have a workspace folder handle, use it
+                if (window.workspaceFolderHandle) {
+                    updateFileSystemFromLocalFolder(window.workspaceFolderHandle).catch(error => {
+                        console.error('Failed to update from folder handle:', error);
+                        showEmptyWorkspaceMessage();
+                    });
+                } else {
+                    showEmptyWorkspaceMessage();
+                }
+            }
+        }
+        
+        // Function to show empty workspace message
+        function showEmptyWorkspaceMessage() {
+            console.log('Showing empty workspace message');
+            
+            // Find or create PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) {
+                console.error('PDF viewer element not found');
+                        return;
+                    }
+                    
+            // Find or create PDF container
+            let pdfContainer = document.getElementById('pdfContainer');
+            if (!pdfContainer) {
+                console.log('Creating new PDF container');
+                pdfContainer = document.createElement('div');
+                pdfContainer.id = 'pdfContainer';
+                pdfContainer.className = 'pdf-container';
+                pdfViewer.appendChild(pdfContainer);
+            } else {
+                // Clear existing content
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Create and add empty workspace message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-workspace-message';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-folder-open"></i>
+                <h3>No Workspace Folder Selected</h3>
+                <p>Select a local folder to use as your workspace in Settings > PDF Viewer.</p>
+                <button id="selectWorkspaceFolderBtn" class="modal-btn modal-btn-primary">
+                    <i class="fas fa-folder"></i> Select Folder
+                </button>
+            `;
+            pdfContainer.appendChild(emptyMessage);
+            
+            // Add click handler to the button
+            const selectBtn = document.getElementById('selectWorkspaceFolderBtn');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', function() {
+                    // Open settings modal
+                    directOpenModal('settingsModal');
+                    
+                    // Switch to PDF viewer tab
+                    const pdfViewerTab = document.querySelector('.settings-sidebar li[data-setting="pdf-viewer"]');
+                    if (pdfViewerTab) {
+                        pdfViewerTab.click();
+                    }
+                });
+            }
+        }
+        
+        // Function to hide empty workspace message
+        function hideEmptyWorkspaceMessage() {
+            const emptyMessage = document.querySelector('.empty-workspace-message');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+        }
+        
+        // DOM loaded event handler
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM content loaded');
+            
+            // Initialize with empty file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
+            };
+            
+            // Initialize empty file tree
+            const fileTreeElement = document.getElementById('fileTree');
+            if (fileTreeElement) {
+                fileTreeElement.innerHTML = '';
+            }
+            
+            // Remove any existing event listeners
+            removeExistingEventListeners();
+            
+            // Initialize file system and check for workspace folder
+            initializeFileSystem();
+            
+            // Add UI event listeners
+            addUIEventListeners();
+            
+            // Show empty workspace message immediately if no folder is selected
+            if (!savedPath) {
+                showEmptyWorkspaceMessage();
+            }
+        });
+        
+        // Remove any existing event listeners
+        function removeExistingEventListeners() {
+            // For settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                const newSettingsBtn = settingsBtn.cloneNode(true);
+                settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
+            }
+            
+            // For workspace folder selection button
+            const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+            if (selectWorkspaceFolderBtn) {
+                const newSelectBtn = selectWorkspaceFolderBtn.cloneNode(true);
+                selectWorkspaceFolderBtn.parentNode.replaceChild(newSelectBtn, selectWorkspaceFolderBtn);
+            }
+            
+            // For save settings button
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            if (saveSettingsBtn) {
+                const newSaveBtn = saveSettingsBtn.cloneNode(true);
+                saveSettingsBtn.parentNode.replaceChild(newSaveBtn, saveSettingsBtn);
+            }
+            
+            // For close buttons
+            document.querySelectorAll('.modal-close').forEach(function(btn) {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+            });
+            
+            // For modal overlays
+            document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+                const newOverlay = overlay.cloneNode(false);
+                while (overlay.firstChild) {
+                    newOverlay.appendChild(overlay.firstChild);
+                }
+                overlay.parentNode.replaceChild(newOverlay, overlay);
+            });
+        }
+        
+        // Add UI event listeners
+        function addUIEventListeners() {
+            // Add click handler to settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', function() {
+                    console.log('Settings button clicked');
+                    directOpenModal('settingsModal');
+                });
+            }
+            
+            // Add click handlers to close buttons
+            const closeButtons = document.querySelectorAll('.modal-close');
+            closeButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const modalId = this.closest('.modal-overlay').id;
+                    directCloseModal(modalId);
+                });
+            });
+            
+            // Add workspace folder selection event listener
+            const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+            if (selectWorkspaceFolderBtn) {
+                selectWorkspaceFolderBtn.addEventListener('click', function() {
+                    selectWorkspaceFolder();
+                });
+            }
+            
+            // Add save settings button event listener
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', function() {
+                    saveSettings();
+                });
+            }
+            
+            // Add click handler to modal overlay for closing when clicking outside
+            const modalOverlays = document.querySelectorAll('.modal-overlay');
+            modalOverlays.forEach(function(overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        directCloseModal(this.id);
+                    }
+                });
+            });
+        }
+        
+        window.removeExistingEventListeners = removeExistingEventListeners;
+        window.addUIEventListeners = addUIEventListeners;
     </script>
 </body>
 </html>

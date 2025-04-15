@@ -5,73 +5,8 @@
 // Sample file structure
 const fileSystem = {
     id: 'root',
-    name: 'My Files',
     type: 'folder',
-    children: [
-        {
-            id: 'folder1',
-            name: 'Study Notes',
-            type: 'folder',
-            children: [
-                {
-                    id: 'file1',
-                    name: 'final review.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/final review.pdf'
-                },
-                {
-                    id: 'file2',
-                    name: 'HW 3-Ch1.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/HW 3-Ch1.pdf'
-                }
-            ]
-        },
-        {
-            id: 'folder2',
-            name: 'Project Research',
-            type: 'folder',
-            children: [
-                {
-                    id: 'file3',
-                    name: 'Appendix.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/Appendix.pdf'
-                },
-                {
-                    id: 'folder3',
-                    name: 'References',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file4',
-                            name: 'final review.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/final review.pdf'
-                        },
-                        {
-                            id: 'file5',
-                            name: 'HW 3-Ch1.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/HW 3-Ch1.pdf'
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 'file6',
-            name: 'Appendix.pdf',
-            type: 'file',
-            fileType: 'pdf',
-            path: '/assets/Files/Appendix.pdf'
-        }
-    ]
+    children: []
 };
 
 // Export fileSystem to window object for debugging
