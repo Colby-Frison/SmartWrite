@@ -40,6 +40,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Text layer fix -->
+    <link rel="stylesheet" href="/frontend/public/text-layer-fix.css">
+    <script src="/frontend/public/text-layer-fix.js"></script>
     <style>
         /* Ensure modal is visible when active */
         .modal-overlay.active {
@@ -91,34 +94,28 @@
         
         .pdf-page {
             position: relative;
-            margin-bottom: 20px;
+            margin: 20px auto;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             background-color: var(--pdf-bg);
             border-radius: 4px;
             overflow: visible;
-            will-change: transform;
-            flex-shrink: 0;
-            display: inline-block;
-            vertical-align: top;
-            margin-right: 0;
-            transform-origin: center top;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: fit-content;
         }
         
         .pdf-page-wrapper {
             position: relative;
-            margin: 0;
-            transform-origin: center top;
-            will-change: transform;
-            flex-shrink: 0;
-            -webkit-font-smoothing: subpixel-antialiased;
-            text-rendering: optimizeLegibility;
+            display: block;
+            overflow: visible;
+            transform-origin: 0% 0%;
         }
         
-        .pdf-page canvas {
+        .pdf-page-wrapper canvas {
+            position: relative;
+            z-index: 1;
             display: block;
-            margin: 0 auto;
-            user-select: none;
-            flex-shrink: 0; /* Prevent canvas from shrinking */
         }
         
         .page-number {
@@ -166,31 +163,6 @@
         }
 
         /* Text Layer Styles */
-        .textLayer > span {
-            color: transparent;
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: left top;
-            border: none;
-            padding: 0;
-            margin: 0;
-            pointer-events: auto;
-            user-select: text;
-            -webkit-font-smoothing: subpixel-antialiased;
-            text-rendering: optimizeLegibility;
-            /* Basic text properties */
-            font-size: normal;
-            line-height: normal;
-            /* Prevent any stretching */
-            display: inline-block;
-            width: fit-content !important;
-            height: auto !important;
-            /* Ensure proper text boundaries */
-            white-space: pre;
-            overflow: visible;
-        }
-
         .textLayer {
             position: absolute;
             left: 0;
@@ -198,58 +170,96 @@
             right: 0;
             bottom: 0;
             overflow: hidden;
-            opacity: 0.8;
+            opacity: 0.25;
             line-height: 1.0;
+            text-align: initial;
             pointer-events: auto;
             user-select: text;
-            cursor: text;
             z-index: 2;
-            /* Ensure proper text rendering */
-            mix-blend-mode: multiply;
-            transform-origin: 0 0;
+            /* No transform on the container itself */
+            transform: none !important;
         }
 
-        /* Much more visible selection styles */
+        /* Style for all text elements in the textLayer */
+        .textLayer > span,
+        .textLayer > div {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+            /* Ensure exact scale factor from image */
+            transform: scaleX(0.7);
+            margin: 0;
+            padding: 0;
+            /* Improve text selection behavior */
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+            /* Prevent overlapping selection ranges */
+            box-sizing: content-box;
+        }
+        
+        /* Special class for spans that are part of multi-span selection */
+        .textLayer > span[data-has-next-span="true"],
+        .textLayer > div[data-has-next-span="true"] {
+            /* Slightly adjust the right side to improve selection behavior */
+            padding-right: 0.1px;
+        }
+        
+        .textLayer > span[data-has-prev-span="true"],
+        .textLayer > div[data-has-prev-span="true"] {
+            /* Slightly adjust the left side to improve selection behavior */
+            padding-left: 0.1px;
+        }
+        
+        /* When selected, make text more visible with improved alignment */
         .textLayer ::selection {
-            background: rgba(73, 169, 255, 0.8) !important; /* Bright blue with high opacity */
+            background: rgba(0, 100, 255, 0.4);
             mix-blend-mode: multiply;
-            color: transparent;
+            transform-origin: 0% 0%;
+            transform: scaleX(0.7);
+            /* Improve selection appearance */
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
         }
-
+        
         .textLayer ::-moz-selection {
-            background: rgba(73, 169, 255, 0.8) !important;
+            background: rgba(0, 100, 255, 0.4);
             mix-blend-mode: multiply;
-            color: transparent;
+            transform-origin: 0% 0%;
+            transform: scaleX(0.7);
+            /* Improve selection appearance */
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
         }
 
-        .textLayer span::selection {
-            background: rgba(73, 169, 255, 0.8) !important;
-            mix-blend-mode: multiply;
-            color: transparent;
+        /* For highlighting when search is active */
+        .textLayer .highlight {
+            background-color: rgba(180, 0, 170, 0.4);
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.5);
         }
 
-        .textLayer span::-moz-selection {
-            background: rgba(73, 169, 255, 0.8) !important;
-            mix-blend-mode: multiply;
-            color: transparent;
+        .textLayer .highlight.selected {
+            background-color: rgba(0, 100, 0, 0.4);
         }
-
-        /* Add a subtle outline to selected text */
-        .textLayer span.selected {
-            box-shadow: 0 0 0 1px rgba(73, 169, 255, 0.5);
+        
+        /* Ensure the PDF page wrapper positions content properly */
+        .pdf-page-wrapper {
+            position: relative;
+            display: block;
+            overflow: visible;
+            transform-origin: 0% 0%;
         }
-
-        /* Ensure PDF background doesn't interfere with selection */
-        .pdf-page {
-            background-color: white;
-            mix-blend-mode: normal;
+        
+        .pdf-page-wrapper canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
         }
-
-        .pdf-page canvas {
-            mix-blend-mode: normal;
-        }
-
-        /* Search Highlight Styles */
+        
         .search-highlight {
             position: absolute;
             background-color: rgba(255, 255, 0, 0.3);
@@ -1080,6 +1090,31 @@
         </div>
     </div>
 
+    <!-- Search Modal - Added for PDF search functionality -->
+    <div id="searchModal" class="search-modal">
+        <div class="search-modal-header">
+            <span>Search in PDF</span>
+            <button id="closeSearchModal" class="search-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-modal-content">
+            <div class="search-input-group">
+                <i class="fas fa-search"></i>
+                <input type="text" id="pdfSearchInput" class="search-input" placeholder="Search in document...">
+            </div>
+            <div class="search-navigation">
+                <button id="prevResult" class="search-nav-btn" disabled>
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button id="nextResult" class="search-nav-btn" disabled>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <span id="searchCount" class="search-count">No results</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay">
         <div class="modal-window">
@@ -1302,8 +1337,175 @@
     <script src="/frontend/src/js/pdf.js"></script>
     <script src="/frontend/src/js/filetree.js"></script>
     <script>
+        // Make sure PDF functions are available
+        function ensurePDFFunctionsAvailable() {
+            if (typeof window.loadPDF !== 'function') {
+                console.error('[Workspace] loadPDF function not found in global scope!');
+                
+                // Add it to window if it exists in the module
+                if (typeof loadPDF === 'function') {
+                    console.log('[Workspace] Adding loadPDF function to window object');
+                    window.loadPDF = loadPDF;
+                }
+            } else {
+                console.log('[Workspace] loadPDF function is available');
+            }
+        }
+        
+        // Fallback render page function that works directly with PDF.js
+        function fallbackRenderPage(pdf, pageNum, container) {
+            console.log(`[Fallback] Rendering page ${pageNum}`);
+            
+            return pdf.getPage(pageNum).then(function(page) {
+                // Create a div for this page
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.dataset.pageNumber = pageNum;
+                
+                // Set viewport with proper scale
+                const scale = 1.0;
+                const viewport = page.getViewport({ scale });
+                
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Create wrapper for canvas and text layer
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pdf-page-wrapper';
+                wrapper.style.width = `${viewport.width}px`;
+                wrapper.style.height = `${viewport.height}px`;
+                wrapper.style.position = 'relative';
+                
+                // Render page content
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                // Chain all promises properly
+                return page.render(renderContext).promise
+                    .then(function() {
+                        // After canvas rendering is done, get text content
+                        return page.getTextContent({
+                            normalizeWhitespace: true,
+                            disableCombineTextItems: false
+                        });
+                    })
+                    .then(function(textContent) {
+                        // Create text layer container
+                        const textLayer = document.createElement('div');
+                        textLayer.className = 'textLayer';
+                        textLayer.style.width = `${viewport.width}px`;
+                        textLayer.style.height = `${viewport.height}px`;
+                        textLayer.style.left = '0';
+                        textLayer.style.top = '0';
+                        textLayer.style.position = 'absolute';
+                        
+                        // Process text content items to group them by line
+                        try {
+                            // Group text items by their vertical position (y-coordinate)
+                            const textItemsByLine = {};
+                            const items = textContent.items;
+                            
+                            // First pass: group items by their vertical position
+                            items.forEach(item => {
+                                // Round the y-coordinate to account for small variations within the same line
+                                const lineY = Math.round(item.transform[5] * 10) / 10;
+                                
+                                if (!textItemsByLine[lineY]) {
+                                    textItemsByLine[lineY] = [];
+                                }
+                                
+                                textItemsByLine[lineY].push(item);
+                            });
+                            
+                            // Second pass: sort each line's items by x-coordinate
+                            Object.keys(textItemsByLine).forEach(lineY => {
+                                textItemsByLine[lineY].sort((a, b) => a.transform[4] - b.transform[4]);
+                            });
+                            
+                            // Use the standard PDF.js text layer renderer
+                            return pdfjsLib.renderTextLayer({
+                                textContent: textContent,
+                                container: textLayer,
+                                viewport: viewport,
+                                textDivs: []
+                            }).promise.then(function() {
+                                // Apply specific styling to each text span after rendering
+                                adjustTextSpanStyles(textLayer);
+                                
+                                // Add canvas and text layer to wrapper
+                                wrapper.appendChild(canvas);
+                                wrapper.appendChild(textLayer);
+                                
+                                // Add wrapper to page div
+                                pageDiv.appendChild(wrapper);
+                                
+                                // Add page number indicator
+                                const pageNumberDiv = document.createElement('div');
+                                pageNumberDiv.className = 'page-number';
+                                pageNumberDiv.textContent = pageNum;
+                                pageDiv.appendChild(pageNumberDiv);
+                                
+                                // Add page div to container
+                                container.appendChild(pageDiv);
+                                
+                                return pageDiv;
+                            });
+                        } catch (err) {
+                            console.error('Error processing text content:', err);
+                            
+                            // Fall back to standard rendering if grouping fails
+                            return pdfjsLib.renderTextLayer({
+                                textContent: textContent,
+                                container: textLayer,
+                                viewport: viewport,
+                                textDivs: []
+                            }).promise.then(function() {
+                                adjustTextSpanStyles(textLayer);
+                                wrapper.appendChild(canvas);
+                                wrapper.appendChild(textLayer);
+                                pageDiv.appendChild(wrapper);
+                                
+                                const pageNumberDiv = document.createElement('div');
+                                pageNumberDiv.className = 'page-number';
+                                pageNumberDiv.textContent = pageNum;
+                                pageDiv.appendChild(pageNumberDiv);
+                                
+                                container.appendChild(pageDiv);
+                                return pageDiv;
+                            });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error(`[Fallback] Error rendering page ${pageNum}:`, error);
+                        
+                        // Even if text layer fails, still show the page with canvas
+                        wrapper.appendChild(canvas);
+                        pageDiv.appendChild(wrapper);
+                        
+                        // Add page number indicator even in case of error
+                        const pageNumberDiv = document.createElement('div');
+                        pageNumberDiv.className = 'page-number';
+                        pageNumberDiv.textContent = pageNum;
+                        pageDiv.appendChild(pageNumberDiv);
+                        
+                        // Add page div to container
+                        container.appendChild(pageDiv);
+                        
+                        return pageDiv;
+                    });
+            });
+        }
+
         // Initialize application
         document.addEventListener('DOMContentLoaded', function() {
+            // Ensure PDF functions are available
+            ensurePDFFunctionsAvailable();
+            
             // Initialize file tree
             renderFileTree();
             
@@ -1315,6 +1517,14 @@
                     window.initPDF();
                 }
             }
+            
+            // Automatically test the PDF rendering after a short delay
+            setTimeout(function() {
+                console.log('[Workspace] Auto-testing PDF rendering');
+                if (typeof testDirectPDFRendering === 'function') {
+                    testDirectPDFRendering();
+                }
+            }, 1000);
             
             console.log('[Workspace] Application initialized');
         });
@@ -1381,7 +1591,10 @@
     <script>
         // Direct test function for PDF rendering
         function testDirectPDFRendering() {
-            console.log('[Test] Direct PDF rendering test started');
+            console.log('[Test] Using existing pdf.js functions to render PDF');
+            
+            // First ensure the PDF functions are available
+            ensurePDFFunctionsAvailable();
             
             // Try different paths to find the correct one
             const possiblePaths = [
@@ -1389,8 +1602,7 @@
                 './assets/Files/final review.pdf',
                 '../assets/Files/final review.pdf',
                 '/frontend/public/assets/Files/final review.pdf',
-                'frontend/public/assets/Files/final review.pdf',
-                '/home/banana/projects/SmartWrite/frontend/public/assets/Files/final review.pdf'
+                'frontend/public/assets/Files/final review.pdf'
             ];
             
             let pathIndex = 0;
@@ -1414,131 +1626,83 @@
                     return;
                 }
                 
-                // Show loading indicator
-                pdfContainer.innerHTML = '';
-                
-                // Load the PDF
-                const loadingTask = pdfjsLib.getDocument(pdfUrl);
-                
-                loadingTask.promise.then(function(pdf) {
-                    console.log(`[Test] PDF loaded successfully from path: ${pdfUrl}`);
-                    console.log(`[Test] PDF has ${pdf.numPages} pages`);
-                    
-                    // Clear container
-                    pdfContainer.innerHTML = '';
-                    
-                    // Create a document fragment to hold all pages
-                    const fragment = document.createDocumentFragment();
-                    
-                    // Function to render a specific page
-                    function renderPage(pageNum) {
-                        return pdf.getPage(pageNum).then(function(page) {
-                            console.log(`[Test] Rendering page ${pageNum}`);
-                            
-                            // Create a div for this page
-                            const pageDiv = document.createElement('div');
-                            pageDiv.className = 'pdf-page';
-                            pageDiv.dataset.pageNumber = pageNum;
-                            
-                            // Create a canvas for this page
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            
-                            // Set viewport
-                            const viewport = page.getViewport({ scale: 1.0 });
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            
-                            // Render the page content on the canvas
-                            const renderContext = {
-                                canvasContext: ctx,
-                                viewport: viewport
-                            };
-                            
-                            return page.render(renderContext).promise.then(function() {
-                                console.log(`[Test] Page ${pageNum} rendered successfully`);
-                                
-                                // Add the canvas to the page div
-                                pageDiv.appendChild(canvas);
-                                
-                                // Page number indicators have been removed as requested
-                                
-                                return pageDiv;
+                // Use the existing loadPDF function from pdf.js
+                if (typeof window.loadPDF === 'function') {
+                    try {
+                        // Try to load the PDF
+                        const result = window.loadPDF(pdfUrl);
+                        
+                        // Handle both Promise and direct return cases
+                        if (result && typeof result.then === 'function') {
+                            // It's a Promise
+                            result.then(function(success) {
+                                if (success) {
+                                    console.log(`[Test] Successfully loaded PDF from path: ${pdfUrl}`);
+                                } else {
+                                    console.error(`[Test] loadPDF returned false for path ${pdfUrl}`);
+                                    pathIndex++;
+                                    tryNextPath();
+                                }
+                            }).catch(function(error) {
+                                console.error(`[Test] Error loading PDF from path ${pdfUrl}:`, error);
+                                pathIndex++;
+                                tryNextPath();
                             });
-                        });
-                    }
-                    
-                    // Create an array of promises for all pages
-                    const renderPromises = [];
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        renderPromises.push(renderPage(i));
-                    }
-                    
-                    // Wait for all pages to be rendered
-                    Promise.all(renderPromises).then(pageDivs => {
-                        console.log(`[Test] All ${pageDivs.length} pages rendered successfully`);
-                        
-                        // Add all page divs to the fragment
-                        pageDivs.forEach(pageDiv => {
-                            fragment.appendChild(pageDiv);
-                        });
-                        
-                        // Append all pages to the container
-                        pdfContainer.appendChild(fragment);
-                        console.log('[Test] All pages added to container');
-                        
-                        // Update all file paths in the file system
-                        updateFilePaths(pdfUrl);
-                    }).catch(function(error) {
-                        console.error(`[Workspace] Error rendering PDF from path ${pdfUrl}:`, error);
-                        pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error rendering PDF: ${error.message}</div>`;
+                        } else if (result === true) {
+                            // Direct true return
+                            console.log(`[Test] Successfully loaded PDF from path: ${pdfUrl}`);
+                        } else {
+                            // Failed or unknown return type
+                            console.error(`[Test] loadPDF failed for path ${pdfUrl}, returned:`, result);
+                            pathIndex++;
+                            tryNextPath();
+                        }
+                    } catch (error) {
+                        console.error(`[Test] Error calling loadPDF for path ${pdfUrl}:`, error);
                         pathIndex++;
                         tryNextPath();
-                    });
-                }).catch(function(error) {
-                    console.error(`[Workspace] Error loading PDF from path ${pdfUrl}:`, error);
-                    pdfContainer.innerHTML = `<div class="pdf-error"><i class="fas fa-exclamation-triangle"></i> Error loading PDF: ${error.message}</div>`;
-                    pathIndex++;
-                    tryNextPath();
-                });
-            }
-            
-            // Function to update all file paths in the file system
-            function updateFilePaths(successfulPath) {
-                // Extract the base path
-                const basePath = successfulPath.substring(0, successfulPath.lastIndexOf('/') + 1);
-                console.log(`[Test] Updating all file paths to use base path: ${basePath}`);
-                
-                // Update paths in the file system
-                function updatePaths(folder) {
-                    if (folder.children) {
-                        folder.children.forEach(item => {
-                            if (item.type === 'file' && item.fileType === 'pdf') {
-                                const fileName = item.path.substring(item.path.lastIndexOf('/') + 1);
-                                item.path = basePath + fileName;
-                                console.log(`[Test] Updated path for ${item.name} to ${item.path}`);
-                            } else if (item.type === 'folder') {
-                                updatePaths(item);
-                            }
-                        });
                     }
-                }
-                
-                // Get the file system from the window object
-                if (window.fileSystem) {
-                    updatePaths(window.fileSystem);
-                    console.log('[Test] All file paths updated');
                 } else {
-                    console.warn('[Test] fileSystem not found in window object');
+                    // Direct fallback - create our own basic PDF loader
+                    console.error('[Test] loadPDF function not found, using fallback');
+                    pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
+                    
+                    if (typeof pdfjsLib !== 'undefined') {
+                        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                        loadingTask.promise.then(function(pdf) {
+                            console.log(`[Test] PDF loaded successfully via fallback from path: ${pdfUrl}`);
+                            
+                            // Clear container
+                            pdfContainer.innerHTML = '';
+                            
+                            // Use our fallback renderPage function
+                            const renderPromises = [];
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                renderPromises.push(fallbackRenderPage(pdf, i, pdfContainer));
+                            }
+                            
+                            // Wait for all pages to be rendered
+                            Promise.all(renderPromises)
+                                .then(function(pageDivs) {
+                                    console.log(`[Test] All ${pageDivs.length} pages rendered via fallback`);
+                                })
+                                .catch(function(error) {
+                                    console.error('[Test] Error rendering pages via fallback:', error);
+                                });
+                        }).catch(function(error) {
+                            console.error(`[Test] Error loading PDF via fallback: ${pdfUrl}:`, error);
+                            pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                        });
+                    } else {
+                        console.error('[Test] PDF.js library not available for fallback');
+                        pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
+                    }
                 }
             }
             
             // Start trying paths
             tryNextPath();
         }
-        
-        // Commented out automatic test to allow proper file selection from the file tree
-        // setTimeout(testDirectPDFRendering, 2000);
     </script>
     
     <!-- Fallback script for direct modal control -->
@@ -2400,361 +2564,75 @@
                             const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
                             const url = URL.createObjectURL(blob);
                             
-                            // Load the PDF using PDF.js
-                            if (typeof pdfjsLib !== 'undefined') {
-                                const loadingTask = pdfjsLib.getDocument(url);
-                                loadingTask.promise.then(function(pdf) {
-                                    console.log(`[FileTree] PDF loaded successfully with ${pdf.numPages} pages`);
+                            // First ensure the PDF functions are available
+                            ensurePDFFunctionsAvailable();
+                            
+                            // Use the existing PDF.js function
+                            if (typeof window.loadPDF === 'function') {
+                                try {
+                                    // Try to load the PDF
+                                    const result = window.loadPDF(url);
                                     
-                                    // Clear container
-                                    if (pdfContainer) pdfContainer.innerHTML = '';
-                                    
-                                    // Create a document fragment to hold all pages
-                                    const fragment = document.createDocumentFragment();
-                                    
-                                    // Function to render a specific page
-                                    function renderPage(pageNum) {
-                                        return pdf.getPage(pageNum).then(function(page) {
-                                            console.log(`[FileTree] Rendering page ${pageNum}`);
-                                            
-                                            // Create a div for this page
-                                            const pageDiv = document.createElement('div');
-                                            pageDiv.className = 'pdf-page';
-                                            pageDiv.dataset.pageNumber = pageNum;
-                                            pageDiv.style.marginBottom = '20px';
-                                            
-                                            // Create a canvas for this page
-                                            const canvas = document.createElement('canvas');
-                                            const ctx = canvas.getContext('2d');
-                                            
-                                            // Set viewport
-                                            const viewport = page.getViewport({ scale: 1.0 });
-                                            canvas.height = viewport.height;
-                                            canvas.width = viewport.width;
-                                            
-                                            // Render the page content on the canvas
-                                            const renderContext = {
-                                                canvasContext: ctx,
-                                                viewport: viewport
-                                            };
-                                            
-                                            // Create text layer div
-                                            const textLayerDiv = document.createElement('div');
-                                            textLayerDiv.className = 'textLayer';
-                                            textLayerDiv.style.width = `${viewport.width}px`;
-                                            textLayerDiv.style.height = `${viewport.height}px`;
-                                            
-                                            // Add both canvas and text layer to page div
-                                            pageDiv.appendChild(canvas);
-                                            pageDiv.appendChild(textLayerDiv);
-                                            
-                                            // Render the page
-                                            return page.render(renderContext).promise.then(function() {
-                                                // Render text layer
-                                                return page.getTextContent().then(function(textContent) {
-                                                    // Render text layer
-                                                    pdfjsLib.renderTextLayer({
-                                                        textContent: textContent,
-                                                        container: textLayerDiv,
-                                                        viewport: viewport,
-                                                        textDivs: []
-                                                    });
-                                                    return pageDiv;
-                                                });
-                                            });
+                                    // Handle both Promise and direct return cases
+                                    if (result && typeof result.then === 'function') {
+                                        // It's a Promise
+                                        result.then(function(success) {
+                                            if (success) {
+                                                console.log(`[FileTree] Successfully loaded PDF from file: ${item.name}`);
+                                            }
+                                        }).catch(function(error) {
+                                            console.error('[FileTree] Error loading PDF:', error);
                                         });
+                                    } else if (result === true) {
+                                        // Direct true return
+                                        console.log(`[FileTree] Successfully loaded PDF from file: ${item.name}`);
+                                    } else {
+                                        // Failed or unknown return type
+                                        console.error(`[FileTree] loadPDF failed for file: ${item.name}, returned:`, result);
                                     }
-                                    
-                                    // Create an array of promises for rendering all pages
-                                    const renderPromises = [];
-                                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                                        renderPromises.push(renderPage(pageNum));
-                                    }
-                                    
-                                    // Wait for all pages to be rendered
-                                    Promise.all(renderPromises).then(pageDivs => {
-                                        console.log(`[FileTree] All ${pageDivs.length} pages rendered successfully`);
-                                        
-                                        // Add all page divs to the fragment
-                                        pageDivs.forEach(pageDiv => {
-                                            fragment.appendChild(pageDiv);
-                                        });
-                                        
-                                        // Append all pages to the container
-                                        pdfContainer.appendChild(fragment);
-                                        console.log('[FileTree] All pages added to container');
-                                    }).catch(function(error) {
-                                        console.error('[FileTree] Error rendering pages:', error);
-                                        pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
-                                    });
-                                }).catch(function(error) {
-                                    console.error('[FileTree] Error loading PDF:', error);
-                                    pdfContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
-                                });
+                                } catch (error) {
+                                    console.error(`[FileTree] Error calling loadPDF for file: ${item.name}:`, error);
+                                }
                             } else {
-                                console.error('[FileTree] PDF.js library not available');
-                                pdfContainer.innerHTML = `<div class="pdf-error">PDF.js library not available</div>`;
-                            }
-                        };
-                        reader.onerror = function(error) {
-                            console.error('[FileTree] Error reading PDF file:', error);
-                            if (pdfContainer) {
-                                pdfContainer.innerHTML = `<div class="pdf-error">Error reading PDF file: ${error.message}</div>`;
+                                // Direct fallback - create our own basic PDF loader
+                                console.error('[FileTree] loadPDF function not available, using fallback');
+                                pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
+                                
+                                if (typeof pdfjsLib !== 'undefined') {
+                                    const loadingTask = pdfjsLib.getDocument(url);
+                                    loadingTask.promise.then(function(pdf) {
+                                        console.log(`[FileTree] PDF loaded successfully via fallback: ${item.name} with ${pdf.numPages} pages`);
+                                        
+                                        // Clear container
+                                        pdfContainer.innerHTML = '';
+                                        
+                                        // Use our fallback renderPage function
+                                        const renderPromises = [];
+                                        for (let i = 1; i <= pdf.numPages; i++) {
+                                            renderPromises.push(fallbackRenderPage(pdf, i, pdfContainer));
+                                        }
+                                        
+                                        // Wait for all pages to be rendered
+                                        Promise.all(renderPromises)
+                                            .then(function(pageDivs) {
+                                                console.log(`[FileTree] All ${pageDivs.length} pages rendered via fallback`);
+                                            })
+                                            .catch(function(error) {
+                                                console.error('[FileTree] Error rendering pages via fallback:', error);
+                                            });
+                                    }).catch(function(error) {
+                                        console.error(`[FileTree] Error loading PDF via fallback: ${item.name}:`, error);
+                                        pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                                    });
+                                } else {
+                                    console.error('[FileTree] PDF.js library not available for fallback');
+                                    pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
+                                }
                             }
                         };
                         reader.readAsArrayBuffer(item.file);
-                    } else {
-                        console.error('[FileTree] No file content available');
-                        if (pdfContainer) {
-                            pdfContainer.innerHTML = `<div class="pdf-error">No file content available</div>`;
-                        }
                     }
-                } else if (item.fileType === 'markdown') {
-                    console.log(`[FileTree] Item is a markdown file, loading content`);
-                    
-                    // Show markdown container
-                    if (markdownContainer) {
-                        markdownContainer.style.display = 'block';
-                        markdownContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading markdown...</div>';
-                    }
-                    
-                    // Get the file content
-                    if (item.file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const content = e.target.result;
-                            
-                            // Create markdown content container
-                            const markdownContent = document.createElement('div');
-                            markdownContent.className = 'markdown-content';
-                            
-                            // Convert markdown to HTML using marked
-                            markdownContent.innerHTML = marked.parse(content);
-                            
-                            // Clear container and add markdown content
-                            markdownContainer.innerHTML = '';
-                            markdownContainer.appendChild(markdownContent);
-                            
-                            // Apply syntax highlighting if Prism is available
-                            if (typeof Prism !== 'undefined') {
-                                Prism.highlightAll();
-                            }
-                        };
-                        reader.onerror = function(error) {
-                            console.error('[FileTree] Error reading markdown file:', error);
-                            markdownContainer.innerHTML = `<div class="pdf-error">Error reading markdown file: ${error.message}</div>`;
-                        };
-                        reader.readAsText(item.file);
-                    } else {
-                        console.error('[FileTree] No file content available');
-                        markdownContainer.innerHTML = `<div class="pdf-error">No file content available</div>`;
-                    }
-                } else {
-                    console.log(`[FileTree] Item is not a supported file type: ${item.fileType}`);
                 }
-            } else {
-                console.log(`[FileTree] Item is not a file, type: ${item.type}`);
-            }
-        }
-        
-        // Helper function to show PDF errors
-        function showPdfError(message) {
-            const pdfContainer = document.getElementById('pdfPagesContainer');
-            const loadingDiv = document.querySelector('.pdf-loading');
-            
-            if (pdfContainer) {
-                pdfContainer.innerHTML = `
-                    <div class="pdf-error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Error loading PDF: ${message}
-                    </div>`;
-            }
-            
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
-        }
-        
-        // Function to create a new folder
-        function createNewFolder() {
-            const folderName = document.getElementById('folderName').value.trim();
-            if (!folderName) return;
-            
-            // Call the module function
-            window.createNewFolder(folderName);
-            
-            // Close modal
-            directCloseModal('newFolderModal');
-        }
-        
-        // Function to create a new note
-        function createNewNote() {
-            const noteName = document.getElementById('noteName').value.trim();
-            if (!noteName) return;
-            
-            // Call the module function
-            window.createNewNote(noteName);
-            
-            // Close modal
-            directCloseModal('newNoteModal');
-        }
-        
-        // Function to sort the file system
-        function sortFileSystem(sortType) {
-            console.log(`Sorting by: ${sortType}`);
-            
-            // Sort function
-            const sortFunction = (a, b) => {
-                // Folders always come before files
-                if (a.type === 'folder' && b.type === 'file') return -1;
-                if (a.type === 'file' && b.type === 'folder') return 1;
-                
-                // Sort by name
-                if (sortType === 'name') {
-                    return a.name.localeCompare(b.name);
-                }
-                
-                // For demo purposes, other sort types just use name
-                return a.name.localeCompare(b.name);
-            };
-            
-            // Sort root children
-            fileSystem.children.sort(sortFunction);
-            
-            // Sort children of all folders
-            const sortFolderChildren = (folder) => {
-                if (folder.children && folder.children.length > 0) {
-                    folder.children.sort(sortFunction);
-                    folder.children.forEach(child => {
-                        if (child.type === 'folder') {
-                            sortFolderChildren(child);
-                        }
-                    });
-                }
-            };
-            
-            sortFolderChildren(fileSystem);
-            
-            // Re-render file tree
-            renderFileTree();
-        }
-        
-        // Function to sort files
-        function sortFiles(sortType) {
-            // Call the module function
-            window.sortFiles(sortType);
-        }
-
-        // Function to render a single PDF page
-        async function renderPage(pdf, pageNum) {
-            try {
-                const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 1.0 });
-                
-                // Create page container
-                const pageContainer = document.createElement('div');
-                pageContainer.className = 'pdf-page';
-                
-                // Create canvas wrapper
-                const canvasWrapper = document.createElement('div');
-                canvasWrapper.className = 'canvas-wrapper';
-                canvasWrapper.style.width = `${viewport.width}px`;
-                canvasWrapper.style.height = `${viewport.height}px`;
-                
-                // Create canvas
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                canvasWrapper.appendChild(canvas);
-                
-                // Create text layer div
-                const textLayerDiv = document.createElement('div');
-                textLayerDiv.className = 'textLayer';
-                textLayerDiv.style.width = `${viewport.width}px`;
-                textLayerDiv.style.height = `${viewport.height}px`;
-                
-                // Add layers to page container
-                pageContainer.appendChild(canvasWrapper);
-                pageContainer.appendChild(textLayerDiv);
-                
-                // Add page container to PDF container
-                const pdfContainer = document.getElementById('pdfContainer');
-                if (pdfContainer) {
-                    pdfContainer.appendChild(pageContainer);
-                }
-                
-                // Render page content
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                
-                await page.render(renderContext).promise;
-                
-                // Get text content with specific parameters for better organization
-                const textContent = await page.getTextContent({
-                    normalizeWhitespace: false,        // Keep original whitespace
-                    disableCombineTextItems: false,    // Allow combining text items
-                    includeMarkedContent: true,        // Include structural information
-                    suppressOperatorList: false        // Keep operator list for better positioning
-                });
-                
-                // Group text items by lines based on y-position
-                const lineThreshold = 2; // Pixels threshold for considering items on the same line
-                const lines = [];
-                let currentLine = [];
-                let lastY = null;
-                
-                textContent.items.forEach(item => {
-                    const y = item.transform[5]; // Y position from transform matrix
-                    
-                    // If this is a new line or first item
-                    if (lastY === null || Math.abs(y - lastY) > lineThreshold) {
-                        if (currentLine.length > 0) {
-                            lines.push(currentLine);
-                        }
-                        currentLine = [item];
-                        lastY = y;
-                    } else {
-                        currentLine.push(item);
-                    }
-                });
-                
-                // Add the last line
-                if (currentLine.length > 0) {
-                    lines.push(currentLine);
-                }
-                
-                // Create text layer content
-                lines.forEach((line, lineIndex) => {
-                    // Create line container
-                    const lineDiv = document.createElement('div');
-                    lineDiv.className = 'textLayer-line';
-                    
-                    // Sort items in line by x position
-                    line.sort((a, b) => a.transform[4] - b.transform[4]);
-                    
-                    // Create text content for line
-                    line.forEach((item, itemIndex) => {
-                        const tx = item.transform[4];
-                        const ty = item.transform[5];
-                        
-                        const textSpan = document.createElement('span');
-                        textSpan.textContent = item.str;
-                        textSpan.style.left = `${tx}px`;
-                        textSpan.style.top = `${ty}px`;
-                        textSpan.style.fontSize = `${Math.abs(item.transform[0])}px`;
-                        textSpan.style.fontFamily = item.fontName || 'sans-serif';
-                        
-                        lineDiv.appendChild(textSpan);
-                    });
-                    
-                    textLayerDiv.appendChild(lineDiv);
-                });
-                
-            } catch (error) {
-                console.error('Error rendering PDF page:', error);
             }
         }
 
@@ -3930,6 +3808,220 @@
         
         window.removeExistingEventListeners = removeExistingEventListeners;
         window.addUIEventListeners = addUIEventListeners;
+    </script>
+    <!-- Helper function to fine-tune text layer alignment after rendering -->
+    <script>
+        function finetuneTextLayerAlignment(textLayer, viewport) {
+            // We're using a different approach now, focusing on individual text spans
+            // The previous implementation is no longer needed
+            return;
+        }
+        
+        // Helper function to adjust text span styles for proper alignment
+        function adjustTextSpanStyles(textLayer) {
+            const textSpans = textLayer.querySelectorAll('span');
+            
+            if (textSpans.length === 0) {
+                const divElements = textLayer.querySelectorAll('div');
+                if (divElements.length > 0) {
+                    console.log('[Adjust] Found div elements instead of spans, adjusting those');
+                    applyStyleAdjustments(divElements);
+                } else {
+                    console.log('[Adjust] No text elements found to adjust');
+                }
+            } else {
+                console.log(`[Adjust] Adjusting ${textSpans.length} text spans`);
+                applyStyleAdjustments(textSpans);
+            }
+            
+            function applyStyleAdjustments(elements) {
+                // First, identify lines by grouping elements with similar y-positions
+                const lineGroups = {};
+                const tolerance = 2; // Pixels of tolerance for considering elements on the same line
+                
+                elements.forEach(element => {
+                    const rect = element.getBoundingClientRect();
+                    const top = Math.round(rect.top);
+                    
+                    // Find the closest line group
+                    let foundGroup = false;
+                    for (const lineY in lineGroups) {
+                        if (Math.abs(top - parseInt(lineY)) <= tolerance) {
+                            lineGroups[lineY].push(element);
+                            foundGroup = true;
+                            break;
+                        }
+                    }
+                    
+                    // Create a new line group if not found
+                    if (!foundGroup) {
+                        lineGroups[top] = [element];
+                    }
+                });
+                
+                // Process each line group
+                Object.values(lineGroups).forEach(lineElements => {
+                    // Sort elements by their left position
+                    lineElements.sort((a, b) => {
+                        return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+                    });
+                    
+                    // For adjacent spans, ensure spacing is precise
+                    for (let i = 0; i < lineElements.length - 1; i++) {
+                        const currentElement = lineElements[i];
+                        const nextElement = lineElements[i + 1];
+                        
+                        // Set explicit data attributes to help with selection
+                        currentElement.dataset.lineIndex = i;
+                        currentElement.dataset.lineTotal = lineElements.length;
+                        
+                        // Mark adjacent spans
+                        if (i < lineElements.length - 1) {
+                            currentElement.dataset.hasNextSpan = 'true';
+                            nextElement.dataset.hasPrevSpan = 'true';
+                        }
+                    }
+                    
+                    // Apply styling to each element in the line
+                    lineElements.forEach((element, index) => {
+                        // Preserve original positioning
+                        const originalStyle = element.getAttribute('style') || '';
+                        
+                        // Extract positioning styles
+                        const leftMatch = originalStyle.match(/left:\s*([^;]+)/);
+                        const topMatch = originalStyle.match(/top:\s*([^;]+)/);
+                        const fontSizeMatch = originalStyle.match(/font-size:\s*([^;]+)/);
+                        const fontFamilyMatch = originalStyle.match(/font-family:\s*([^;]+)/);
+                        
+                        // Create a new style string preserving original positioning
+                        let newStyle = '';
+                        
+                        if (leftMatch) newStyle += `left: ${leftMatch[1]}; `;
+                        if (topMatch) newStyle += `top: ${topMatch[1]}; `;
+                        if (fontSizeMatch) newStyle += `font-size: ${fontSizeMatch[1]}; `;
+                        if (fontFamilyMatch) newStyle += `font-family: ${fontFamilyMatch[1]}; `;
+                        
+                        // Add the exact scale transform from the image
+                        newStyle += 'transform: scaleX(0.7); transform-origin: 0% 0%;';
+                        
+                        // Make selection more precise with slight padding adjustments
+                        newStyle += 'padding: 0px; margin: 0px; ';
+                        
+                        // Apply the new style
+                        element.setAttribute('style', newStyle);
+                        
+                        // Make sure the element has correct role and properties
+                        element.setAttribute('role', 'presentation');
+                        
+                        // Add data attributes to help with selection
+                        element.dataset.index = index;
+                    });
+                });
+                
+                // Add selection improvement listener
+                addSelectionImprovementListener(textLayer);
+                
+                console.log(`[Adjust] Adjusted ${elements.length} elements across ${Object.keys(lineGroups).length} lines`);
+            }
+            
+            // Function to improve selection across spans
+            function addSelectionImprovementListener(textLayer) {
+                // We only need to add this listener once per text layer
+                if (textLayer.dataset.selectionListenerAdded) return;
+                
+                textLayer.addEventListener('mouseup', function(e) {
+                    // Get the current selection
+                    const selection = window.getSelection();
+                    if (!selection.rangeCount) return;
+                    
+                    // Check if we have a selection that spans multiple elements
+                    if (selection.anchorNode !== selection.focusNode) {
+                        // Get all text spans between the anchor and focus nodes
+                        const allSpans = Array.from(textLayer.querySelectorAll('span'));
+                        
+                        // Find the spans containing the anchor and focus nodes
+                        let anchorSpan = null;
+                        let focusSpan = null;
+                        
+                        for (const span of allSpans) {
+                            if (span.contains(selection.anchorNode)) {
+                                anchorSpan = span;
+                            }
+                            if (span.contains(selection.focusNode)) {
+                                focusSpan = span;
+                            }
+                        }
+                        
+                        // No need to continue if we couldn't find both spans
+                        if (!anchorSpan || !focusSpan) return;
+                        
+                        // Get indices of spans in the array
+                        const anchorIndex = allSpans.indexOf(anchorSpan);
+                        const focusIndex = allSpans.indexOf(focusSpan);
+                        
+                        // No need to continue if both spans are the same
+                        if (anchorIndex === focusIndex) return;
+                        
+                        // Make sure anchorIndex is the smaller one
+                        const startIndex = Math.min(anchorIndex, focusIndex);
+                        const endIndex = Math.max(anchorIndex, focusIndex);
+                        
+                        // Ensure we're selecting full spans for any spans between start and end
+                        for (let i = startIndex + 1; i < endIndex; i++) {
+                            const intermediateSpan = allSpans[i];
+                            if (intermediateSpan) {
+                                // Check if this span is already fully selected
+                                if (!isSpanFullySelected(intermediateSpan, selection)) {
+                                    // If not fully selected, we need to ensure it's added to the selection
+                                    extendSelectionToIncludeSpan(selection, intermediateSpan);
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Mark that we've added the listener
+                textLayer.dataset.selectionListenerAdded = 'true';
+            }
+            
+            // Helper function to check if a span is fully selected
+            function isSpanFullySelected(span, selection) {
+                if (!selection.rangeCount) return false;
+                
+                const range = selection.getRangeAt(0);
+                
+                // If the range contains the span's start and end, it's fully selected
+                return range.intersectsNode(span) && 
+                       range.comparePoint(span, 0) <= 0 && 
+                       range.comparePoint(span, span.childNodes.length) >= 0;
+            }
+            
+            // Helper function to extend selection to include a span
+            function extendSelectionToIncludeSpan(selection, span) {
+                if (!selection.rangeCount) return;
+                
+                const range = selection.getRangeAt(0);
+                
+                // Create a new range that includes the current range plus the span
+                const newRange = range.cloneRange();
+                
+                // Extend the range to include the span if needed
+                if (range.comparePoint(span, 0) > 0) {
+                    newRange.setStartBefore(span);
+                }
+                
+                if (range.comparePoint(span, span.childNodes.length) < 0) {
+                    newRange.setEndAfter(span);
+                }
+                
+                // Replace the selection with our extended range
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
+        }
+        
+        // Export the function to window so it can be called from pdf.js
+        window.adjustTextSpanStyles = adjustTextSpanStyles;
     </script>
 </body>
 </html>

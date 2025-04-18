@@ -67,14 +67,11 @@ async function renderPage(pageNum) {
         textLayer.className = 'textLayer';
         textLayer.style.width = `${viewport.width}px`;
         textLayer.style.height = `${viewport.height}px`;
+        textLayer.style.left = '0';
+        textLayer.style.top = '0';
+        textLayer.style.position = 'absolute';
         
-        // Ensure consistent text positioning
-        const transform = `scale(${viewport.scale})`;
-        textLayer.style.transform = transform;
-        textLayer.style.transformOrigin = '0% 0%';
-        textLayer.style.webkitTransformOrigin = '0% 0%';
-        textLayer.style.mozTransformOrigin = '0% 0%';
-        textLayer.style.msTransformOrigin = '0% 0%';
+        // Don't apply transform to the container, only to individual spans
         
         // Create wrapper for canvas and text layer
         const wrapper = document.createElement('div');
@@ -113,6 +110,14 @@ async function renderPage(pageNum) {
             useCanvasWidth: true
         }).promise;
         
+        // Apply the same text styling approach used by search highlighting
+        // If the function is available in the workspace.html, use that version first
+        if (typeof window.adjustTextSpanStyles === 'function') {
+            window.adjustTextSpanStyles(textLayer);
+        } else if (typeof adjustTextSpanStyles === 'function') {
+            adjustTextSpanStyles(textLayer);
+        }
+        
         // Add elements to page container
         wrapper.appendChild(canvas);
         wrapper.appendChild(textLayer);
@@ -129,6 +134,73 @@ async function renderPage(pageNum) {
         console.error(`[PDF.js] Error rendering page ${pageNum}:`, error);
         throw error;
     }
+}
+
+// Function to adjust text span styles to match search highlighting
+function adjustTextSpanStyles(textLayer) {
+    const textSpans = textLayer.querySelectorAll('span');
+    console.log(`[PDF.js] Adjusting ${textSpans.length} text spans in text layer`);
+    
+    // Group text spans by their vertical position to identify lines
+    const lineGroups = {};
+    const tolerance = 2; // Pixels of tolerance for considering elements on the same line
+    
+    textSpans.forEach(span => {
+        const rect = span.getBoundingClientRect();
+        const top = Math.round(rect.top);
+        
+        // Find the closest line group
+        let foundGroup = false;
+        for (const lineY in lineGroups) {
+            if (Math.abs(top - parseInt(lineY)) <= tolerance) {
+                lineGroups[lineY].push(span);
+                foundGroup = true;
+                break;
+            }
+        }
+        
+        // Create a new line group if not found
+        if (!foundGroup) {
+            lineGroups[top] = [span];
+        }
+    });
+    
+    // Process each line group
+    Object.values(lineGroups).forEach(lineElements => {
+        // Sort elements by their left position
+        lineElements.sort((a, b) => {
+            return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+        });
+        
+        // Apply styling to each element in the line
+        lineElements.forEach(span => {
+            // Preserve original positioning
+            const originalStyle = span.getAttribute('style') || '';
+            
+            // Extract positioning styles
+            const leftMatch = originalStyle.match(/left:\s*([^;]+)/);
+            const topMatch = originalStyle.match(/top:\s*([^;]+)/);
+            const fontSizeMatch = originalStyle.match(/font-size:\s*([^;]+)/);
+            const fontFamilyMatch = originalStyle.match(/font-family:\s*([^;]+)/);
+            
+            // Create a new style string preserving original positioning
+            let newStyle = '';
+            
+            if (leftMatch) newStyle += `left: ${leftMatch[1]}; `;
+            if (topMatch) newStyle += `top: ${topMatch[1]}; `;
+            if (fontSizeMatch) newStyle += `font-size: ${fontSizeMatch[1]}; `;
+            if (fontFamilyMatch) newStyle += `font-family: ${fontFamilyMatch[1]}; `;
+            
+            // Add the exact scale transform from the image
+            newStyle += 'transform: scaleX(0.7); transform-origin: 0% 0%;';
+            
+            // Apply the new style
+            span.setAttribute('style', newStyle);
+            span.setAttribute('role', 'presentation');
+        });
+    });
+    
+    console.log(`[PDF.js] Adjusted text spans across ${Object.keys(lineGroups).length} lines`);
 }
 
 // Load a PDF from a URL
@@ -359,6 +431,7 @@ window.prevSearchResult = prevSearchResult;
 window.goToPage = goToPage;
 window.setZoomLevel = setZoomLevel;
 window.initPDF = initPDF;
+window.adjustTextSpanStyles = adjustTextSpanStyles;
 
 // Export for module usage
 export { 

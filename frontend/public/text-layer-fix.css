@@ -1,0 +1,50 @@
+/* Text Layer Styles */
+.textLayer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.25;
+    line-height: 1.0;
+    text-align: initial;
+    pointer-events: auto;
+    user-select: text;
+    z-index: 2;
+    /* No transform on the container itself */
+    transform: none !important;
+}
+
+/* Style for all text elements in the textLayer */
+.textLayer > span,
+.textLayer > div {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    /* Ensure exact scale factor from image */
+    transform: scaleX(0.7) !important;
+}
+
+/* When selected, make text more visible */
+.textLayer ::selection {
+    background: rgba(0, 100, 255, 0.4);
+    mix-blend-mode: multiply;
+}
+
+.textLayer ::-moz-selection {
+    background: rgba(0, 100, 255, 0.4);
+    mix-blend-mode: multiply;
+}
+
+/* For highlighting when search is active */
+.textLayer .highlight {
+    background-color: rgba(180, 0, 170, 0.4);
+    border-radius: 1px;
+}
+
+.textLayer .highlight.selected {
+    background-color: rgba(0, 100, 0, 0.4);
+} 

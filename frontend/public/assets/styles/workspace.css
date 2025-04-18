@@ -325,7 +325,7 @@
     background-color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
-    display: inline-block;
+    overflow: hidden;
 }
 
 .canvas-wrapper {
@@ -342,38 +342,44 @@
 }
 
 .textLayer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    overflow: hidden !important;
     opacity: 0.2;
-    line-height: 1.0;
-    pointer-events: none;
+    line-height: 1.0 !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
 }
 
-.textLayer-line {
-    position: absolute;
-    width: 100%;
-    white-space: nowrap;
-    overflow: visible;
-    pointer-events: auto;
+.textLayer > span {
+    color: transparent !important;
+    position: absolute !important;
+    white-space: pre !important;
+    cursor: text !important;
+    transform-origin: 0% 0% !important;
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: none !important;
 }
 
-.textLayer-line span {
-    position: absolute;
-    color: transparent;
-    white-space: pre;
-    cursor: text;
-    transform-origin: 0% 0%;
-    pointer-events: auto;
-    user-select: text;
-    -webkit-user-select: text;
+.textLayer > span::selection {
+    background: rgba(0, 0, 255, 0.3) !important;
+    color: transparent !important;
 }
 
-.textLayer ::selection {
-    background: rgba(0, 0, 255, 0.3);
+.pdf-page canvas {
+    display: block;
 }
 
 /* Ensure PDF pages are centered */
@@ -393,10 +399,6 @@
     background-color: var(--accent-primary);
     color: white;
     font-weight: bold;
-}
-
-.pdf-page canvas {
-    display: block;
 }
 
 .page-number {
@@ -1771,40 +1773,55 @@ textarea.form-input {
 
 /* Text Layer Styles */
 .textLayer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    overflow: hidden !important;
     opacity: 0.2;
-    line-height: 1.0;
-    user-select: text;
-    transform-origin: 0 0;
+    line-height: 1.0 !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    -webkit-transform: none !important;
 }
 
 .textLayer > span {
-    color: transparent;
-    position: absolute;
-    white-space: pre;
-    cursor: text;
-    transform-origin: 0% 0%;
+    color: transparent !important;
+    position: absolute !important;
+    white-space: pre !important;
+    cursor: text !important;
+    transform-origin: 0% 0% !important;
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: none !important;
 }
 
-.textLayer ::selection {
-    background: rgba(0, 0, 255, 0.3);
+.textLayer > span::selection {
+    background: rgba(0, 0, 255, 0.3) !important;
+    color: transparent !important;
 }
 
 /* PDF container styles */
 .pdf-container {
     width: 100%;
     height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
     overflow-y: auto;
+    background: var(--bg-primary);
     padding: 20px;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 .pdf-container .pdf-page {
@@ -1824,4 +1841,99 @@ textarea.form-input {
 .pdf-pages-container.active,
 .markdown-container.active {
     display: block;
+}
+
+/* PDF Container */
+.pdf-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Page Container */
+.pdf-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+/* Page Wrapper */
+.pdf-page {
+    position: relative;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Canvas Wrapper */
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Canvas */
+.pdf-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Text Layer */
+.text-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2;
+    line-height: 1.0;
+    user-select: text;
+    pointer-events: none;
+}
+
+/* Text Layer Spans */
+.text-layer span {
+    position: absolute;
+    color: transparent;
+    white-space: pre;
+    cursor: text;
+    pointer-events: all;
+}
+
+/* Text Selection */
+.text-layer span::selection {
+    background: rgba(0, 0, 255, 0.3);
+}
+
+/* Ensure proper stacking */
+.canvas-wrapper {
+    z-index: 1;
+}
+
+.text-layer {
+    z-index: 2;
+}
+
+/* Remove any transforms */
+.text-layer,
+.text-layer span {
+    transform: none !important;
+    -webkit-transform: none !important;
+}
+
+/* Ensure proper text rendering */
+.text-layer span {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
 } 
