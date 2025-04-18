@@ -2,374 +2,445 @@
  * pdf.js - Handles all PDF-related functionality
  */
 
-import { setCurrentPDF, getCurrentZoom, setCurrentZoom } from './state.js';
-
 // Global variables
 let currentPage = 1;
 let pdfDoc = null;
 let totalPages = 0;
 let renderedPages = new Set();
+let searchResults = [];
+let currentSearchResultIndex = -1;
+let currentZoom = 1.0;
 
-// Set zoom level for PDF
+// Set up PDF.js worker
+if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// Set zoom level
 function setZoomLevel(zoom) {
-    setCurrentZoom(zoom);
+    console.log(`[PDF.js] Setting zoom level to ${zoom}`);
+    
+    // Limit zoom range
+    zoom = Math.max(0.5, Math.min(2.0, zoom));
+    currentZoom = zoom;
     
     // Update zoom level display
-    const zoomLevelElement = document.getElementById('zoomLevel');
-    if (zoomLevelElement) {
-        zoomLevelElement.textContent = `${Math.round(zoom * 100)}%`;
+    const zoomLevelDisplay = document.getElementById('zoomLevel');
+    if (zoomLevelDisplay) {
+        zoomLevelDisplay.textContent = `${Math.round(zoom * 100)}%`;
     }
     
-    // Apply zoom to all rendered pages
-    const pagesContainer = document.getElementById('pdfPagesContainer');
-    if (pagesContainer) {
-        pagesContainer.style.transform = `scale(${zoom})`;
-        pagesContainer.style.transformOrigin = 'top center';
+    // Re-render all pages with new zoom level
+    if (pdfDoc) {
+        const pdfContainer = document.getElementById('pdfContainer');
+        if (pdfContainer) {
+            pdfContainer.innerHTML = '';
+        }
+        
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            renderPage(pageNum);
+        }
     }
 }
 
-// Render all pages of the PDF
-function renderAllPages() {
-    console.log('[PDF] renderAllPages called');
+// Render a single page
+async function renderPage(pageNum) {
+    console.log(`[PDF.js] Rendering page ${pageNum}`);
     
-    if (!pdfDoc) {
-        console.error('[PDF] No PDF document loaded');
-        return;
-    }
-    
-    const pagesContainer = document.getElementById('pdfPagesContainer');
-    if (!pagesContainer) {
-        console.error('[PDF] pdfPagesContainer not found in the DOM');
-        return;
-    }
-    
-    console.log('[PDF] Clearing existing content and rendered pages');
-    // Clear existing content
-    pagesContainer.innerHTML = '';
-    renderedPages.clear();
-    
-    // Create a fragment to append all pages at once
-    const fragment = document.createDocumentFragment();
-    console.log(`[PDF] Creating document fragment for ${pdfDoc.numPages} pages`);
-    
-    // Function to render a specific page
-    const renderPage = (pageNum) => {
-        console.log(`[PDF] Starting to render page ${pageNum}`);
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: currentZoom });
         
-        return pdfDoc.getPage(pageNum).then(function(page) {
-            console.log(`[PDF] Got page ${pageNum} from PDF document`);
+        // Create page container
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'pdf-page';
+        pageContainer.dataset.pageNumber = pageNum;
+        
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // Create text layer with proper positioning
+        const textLayer = document.createElement('div');
+        textLayer.className = 'textLayer';
+        textLayer.style.width = `${viewport.width}px`;
+        textLayer.style.height = `${viewport.height}px`;
+        textLayer.style.left = '0';
+        textLayer.style.top = '0';
+        textLayer.style.position = 'absolute';
+        
+        // Don't apply transform to the container, only to individual spans
+        
+        // Create wrapper for canvas and text layer
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pdf-page-wrapper';
+        wrapper.style.width = `${viewport.width}px`;
+        wrapper.style.height = `${viewport.height}px`;
+        wrapper.style.position = 'relative';
+        
+        // Render page content with improved text rendering
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+            textLayerMode: 2,
+            renderInteractiveForms: true,
+            enhanceTextSelection: true
+        };
+        
+        await page.render(renderContext).promise;
+        
+        // Get text content with improved positioning
+        const textContent = await page.getTextContent({
+            normalizeWhitespace: true,
+            disableCombineTextItems: false,
+            includeMarkedContent: true
+        });
+        
+        // Render text layer with improved alignment
+        await pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayer,
+            viewport: viewport,
+            textDivs: [],
+            enhanceTextSelection: true,
+            textLayerMode: 2,
+            renderInteractiveForms: true,
+            useCanvasWidth: true
+        }).promise;
+        
+        // Apply the same text styling approach used by search highlighting
+        // If the function is available in the workspace.html, use that version first
+        if (typeof window.adjustTextSpanStyles === 'function') {
+            window.adjustTextSpanStyles(textLayer);
+        } else if (typeof adjustTextSpanStyles === 'function') {
+            adjustTextSpanStyles(textLayer);
+        }
+        
+        // Add elements to page container
+        wrapper.appendChild(canvas);
+        wrapper.appendChild(textLayer);
+        pageContainer.appendChild(wrapper);
+        
+        // Add page container to PDF container
+        const pdfContainer = document.getElementById('pdfContainer');
+        if (pdfContainer) {
+            pdfContainer.appendChild(pageContainer);
+        }
+        
+        console.log(`[PDF.js] Page ${pageNum} rendered successfully`);
+    } catch (error) {
+        console.error(`[PDF.js] Error rendering page ${pageNum}:`, error);
+        throw error;
+    }
+}
+
+// Function to adjust text span styles to match search highlighting
+function adjustTextSpanStyles(textLayer) {
+    const textSpans = textLayer.querySelectorAll('span');
+    console.log(`[PDF.js] Adjusting ${textSpans.length} text spans in text layer`);
+    
+    // Group text spans by their vertical position to identify lines
+    const lineGroups = {};
+    const tolerance = 2; // Pixels of tolerance for considering elements on the same line
+    
+    textSpans.forEach(span => {
+        const rect = span.getBoundingClientRect();
+        const top = Math.round(rect.top);
+        
+        // Find the closest line group
+        let foundGroup = false;
+        for (const lineY in lineGroups) {
+            if (Math.abs(top - parseInt(lineY)) <= tolerance) {
+                lineGroups[lineY].push(span);
+                foundGroup = true;
+                break;
+            }
+        }
+        
+        // Create a new line group if not found
+        if (!foundGroup) {
+            lineGroups[top] = [span];
+        }
+    });
+    
+    // Process each line group
+    Object.values(lineGroups).forEach(lineElements => {
+        // Sort elements by their left position
+        lineElements.sort((a, b) => {
+            return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+        });
+        
+        // Apply styling to each element in the line
+        lineElements.forEach(span => {
+            // Preserve original positioning
+            const originalStyle = span.getAttribute('style') || '';
             
-            // Create a div for this page
-            const pageDiv = document.createElement('div');
-            pageDiv.className = 'pdf-page';
-            pageDiv.dataset.pageNumber = pageNum;
+            // Extract positioning styles
+            const leftMatch = originalStyle.match(/left:\s*([^;]+)/);
+            const topMatch = originalStyle.match(/top:\s*([^;]+)/);
+            const fontSizeMatch = originalStyle.match(/font-size:\s*([^;]+)/);
+            const fontFamilyMatch = originalStyle.match(/font-family:\s*([^;]+)/);
             
-            // Create a canvas for this page
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            // Create a new style string preserving original positioning
+            let newStyle = '';
             
-            // Set viewport based on zoom level
-            const viewport = page.getViewport({ scale: 1.0 }); // Base scale is 1.0, we'll use CSS transform for zoom
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+            if (leftMatch) newStyle += `left: ${leftMatch[1]}; `;
+            if (topMatch) newStyle += `top: ${topMatch[1]}; `;
+            if (fontSizeMatch) newStyle += `font-size: ${fontSizeMatch[1]}; `;
+            if (fontFamilyMatch) newStyle += `font-family: ${fontFamilyMatch[1]}; `;
             
-            console.log(`[PDF] Page ${pageNum} viewport size: ${viewport.width}x${viewport.height}`);
+            // Add the exact scale transform from the image
+            newStyle += 'transform: scaleX(0.7); transform-origin: 0% 0%;';
             
-            // Render the page content on the canvas
-            const renderContext = {
-                canvasContext: ctx,
-                viewport: viewport
-            };
+            // Apply the new style
+            span.setAttribute('style', newStyle);
+            span.setAttribute('role', 'presentation');
+        });
+    });
+    
+    console.log(`[PDF.js] Adjusted text spans across ${Object.keys(lineGroups).length} lines`);
+}
+
+// Load a PDF from a URL
+function loadPDF(url) {
+    console.log(`[PDF.js] Loading PDF from URL: ${url}`);
+    
+    try {
+        // Show loading state
+        const pdfViewer = document.getElementById('pdfViewer');
+        if (pdfViewer) {
+            pdfViewer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+        }
+        
+        // Load the PDF document
+        const loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(function(pdf) {
+            pdfDoc = pdf;
+            totalPages = pdf.numPages;
             
-            console.log(`[PDF] Rendering page ${pageNum} to canvas`);
-            return page.render(renderContext).promise.then(function() {
-                console.log(`[PDF] Page ${pageNum} rendered successfully`);
-                renderedPages.add(pageNum);
-                
-                // Add the canvas to the page div
-                pageDiv.appendChild(canvas);
-                
-                // Add page number indicator
-                const pageNumberDiv = document.createElement('div');
-                pageNumberDiv.className = 'page-number';
-                pageNumberDiv.textContent = pageNum;
-                pageDiv.appendChild(pageNumberDiv);
-                
-                // If this is the current page, mark it for scrolling later
-                if (pageNum === currentPage) {
-                    console.log(`[PDF] Marking current page ${pageNum} for scrolling`);
-                    pageDiv.dataset.isCurrent = 'true';
-                }
-                
-                return pageDiv;
-            }).catch(function(error) {
-                console.error(`[PDF] Error rendering page ${pageNum}:`, error);
-                throw error;
-            });
+            console.log(`[PDF.js] PDF loaded successfully with ${totalPages} pages`);
+            
+            // Clear the container
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (pdfContainer) {
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Render all pages
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                renderPage(pageNum);
+            }
+            
+            // Hide loading state
+            if (pdfViewer) {
+                pdfViewer.innerHTML = '';
+                pdfViewer.appendChild(pdfContainer);
+            }
         }).catch(function(error) {
-            console.error(`[PDF] Error getting page ${pageNum}:`, error);
+            console.error('[PDF.js] Error loading PDF:', error);
             throw error;
         });
-    };
+        
+        return true;
+    } catch (error) {
+        console.error('[PDF.js] Error loading PDF:', error);
+        throw error;
+    }
+}
+
+// Search for text in the PDF
+function searchPDF(searchText) {
+    console.log(`[PDF.js] Searching for text: "${searchText}"`);
     
-    // Create an array of promises for all pages
-    console.log(`[PDF] Creating render promises for ${pdfDoc.numPages} pages`);
-    const renderPromises = [];
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-        renderPromises.push(renderPage(i));
+    if (!searchText || searchText.trim() === '') {
+        return;
     }
     
-    // Wait for all pages to be rendered
-    Promise.all(renderPromises).then(pageDivs => {
-        console.log(`[PDF] All ${pageDivs.length} pages rendered successfully`);
-        
-        // Add all page divs to the fragment
-        pageDivs.forEach(pageDiv => {
-            fragment.appendChild(pageDiv);
-        });
-        
-        // Append all pages to the container
-        console.log('[PDF] Appending all pages to container');
-        pagesContainer.appendChild(fragment);
-        
-        // Scroll to current page if needed
-        setTimeout(() => {
-            const currentPageDiv = pagesContainer.querySelector('.pdf-page[data-is-current="true"]');
-            if (currentPageDiv) {
-                console.log(`[PDF] Scrolling to current page ${currentPage}`);
-                currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }, 100);
-        
-        // Update total pages
-        totalPages = pdfDoc.numPages;
-        console.log(`[PDF] Total pages set to ${totalPages}`);
-        
-        // Update page count display
-        const pageCountElement = document.getElementById('pageCount');
-        if (pageCountElement) {
-            pageCountElement.textContent = totalPages;
-            console.log(`[PDF] Updated page count display to ${totalPages}`);
-        } else {
-            console.warn('[PDF] pageCount element not found');
+    // Use browser's built-in PDF search
+    const pdfContainer = document.getElementById('pdfContainer');
+    if (pdfContainer) {
+        const objectElement = pdfContainer.querySelector('object');
+        if (objectElement) {
+            // Focus the PDF viewer
+            objectElement.focus();
+            // Use browser's find functionality
+            window.find(searchText);
         }
+    }
+}
+
+// Clear search results
+function clearSearchResults() {
+    const highlights = document.querySelectorAll('.search-highlight');
+    highlights.forEach(highlight => highlight.remove());
+    
+    searchResults = [];
+    currentSearchResultIndex = -1;
+    
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    if (searchResultsCount) {
+        searchResultsCount.textContent = '0/0';
+    }
+    
+    const prevSearchBtn = document.getElementById('prevSearchResult');
+    const nextSearchBtn = document.getElementById('nextSearchResult');
+    if (prevSearchBtn) prevSearchBtn.disabled = true;
+    if (nextSearchBtn) nextSearchBtn.disabled = true;
+}
+
+// Highlight search results
+function highlightSearchResults() {
+    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+    if (!pdfPagesContainer) return;
+    
+    searchResults.forEach((result, index) => {
+        const pageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${result.pageIndex}"]`);
+        if (!pageDiv) return;
         
-        // Update current page display
-        const currentPageElement = document.getElementById('currentPage');
-        if (currentPageElement) {
-            currentPageElement.textContent = currentPage;
-            console.log(`[PDF] Updated current page display to ${currentPage}`);
-        } else {
-            console.warn('[PDF] currentPage element not found');
-        }
+        const highlight = document.createElement('div');
+        highlight.className = 'search-highlight';
+        highlight.dataset.resultIndex = index;
         
-        // Enable/disable navigation buttons
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
+        highlight.style.left = `${result.left}px`;
+        highlight.style.top = `${result.top}px`;
+        highlight.style.width = `${result.right - result.left}px`;
+        highlight.style.height = `${result.bottom - result.top}px`;
         
-        if (prevPageBtn) {
-            prevPageBtn.disabled = currentPage <= 1;
-            console.log(`[PDF] prevPage button ${prevPageBtn.disabled ? 'disabled' : 'enabled'}`);
-        } else {
-            console.warn('[PDF] prevPage button not found');
-        }
+        highlight.addEventListener('click', () => navigateToSearchResult(index));
         
-        if (nextPageBtn) {
-            nextPageBtn.disabled = currentPage >= totalPages;
-            console.log(`[PDF] nextPage button ${nextPageBtn.disabled ? 'disabled' : 'enabled'}`);
-        } else {
-            console.warn('[PDF] nextPage button not found');
-        }
-        
-        // Apply current zoom level
-        console.log('[PDF] Applying current zoom level');
-        setZoomLevel(getCurrentZoom());
-    }).catch(function(error) {
-        console.error('[PDF] Error in renderAllPages:', error);
-        pagesContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
+        pageDiv.appendChild(highlight);
     });
+}
+
+// Navigate to a search result
+function navigateToSearchResult(resultIndex) {
+    if (resultIndex < 0 || resultIndex >= searchResults.length) return;
+    
+    const result = searchResults[resultIndex];
+    currentSearchResultIndex = resultIndex;
+    
+    // Update UI
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    if (searchResultsCount) {
+        searchResultsCount.textContent = `${resultIndex + 1}/${searchResults.length}`;
+    }
+    
+    // Go to page
+    goToPage(result.pageIndex);
+    
+    // Highlight current result
+    const currentHighlight = document.querySelector('.search-highlight.current');
+    if (currentHighlight) currentHighlight.classList.remove('current');
+    
+    const highlight = document.querySelector(`.search-highlight[data-result-index="${resultIndex}"]`);
+    if (highlight) {
+        highlight.classList.add('current');
+        setTimeout(() => highlight.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+}
+
+// Navigate to next/previous search result
+function nextSearchResult() {
+    if (searchResults.length === 0) return;
+    const nextIndex = (currentSearchResultIndex + 1) % searchResults.length;
+    navigateToSearchResult(nextIndex);
+}
+
+function prevSearchResult() {
+    if (searchResults.length === 0) return;
+    const prevIndex = (currentSearchResultIndex - 1 + searchResults.length) % searchResults.length;
+    navigateToSearchResult(prevIndex);
 }
 
 // Go to a specific page
 function goToPage(pageNum) {
-    if (!pdfDoc || pageNum < 1 || pageNum > totalPages) return;
+    if (!pdfDoc || pageNum < 1 || pageNum > pdfDoc.numPages) return;
     
     currentPage = pageNum;
     
-    // Update current page display
-    const currentPageElement = document.getElementById('currentPage');
-    if (currentPageElement) {
-        currentPageElement.textContent = currentPage;
-    }
+    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+    if (!pdfPagesContainer) return;
     
-    // Enable/disable navigation buttons
-    document.getElementById('prevPage').disabled = currentPage <= 1;
-    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+    // Update current page class
+    const allPages = pdfPagesContainer.querySelectorAll('.pdf-page');
+    allPages.forEach(page => page.classList.remove('current-page'));
     
-    // Scroll to the page
-    const pageDiv = document.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
-    if (pageDiv) {
-        pageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-// Go to the previous page
-function prevPage() {
-    if (currentPage <= 1) return;
-    goToPage(currentPage - 1);
-}
-
-// Go to the next page
-function nextPage() {
-    if (!pdfDoc || currentPage >= totalPages) return;
-    goToPage(currentPage + 1);
-}
-
-// Load a PDF file
-function loadPDF(url) {
-    console.log(`[PDF] Attempting to load PDF from URL: ${url}`);
-    
-    try {
-        // Show loading indicator
-        const pagesContainer = document.getElementById('pdfPagesContainer');
-        if (pagesContainer) {
-            console.log('[PDF] Found pdfPagesContainer, showing loading indicator');
-            pagesContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
-        } else {
-            console.error('[PDF] pdfPagesContainer not found in the DOM');
-        }
-        
-        // Check if URL is valid
-        if (!url || url === '#') {
-            console.error('[PDF] Invalid URL provided:', url);
-            if (pagesContainer) {
-                pagesContainer.innerHTML = `<div class="pdf-error">Error: Invalid PDF URL provided</div>`;
-            }
-            return;
-        }
-        
-        console.log('[PDF] Creating PDF.js loading task for URL:', url);
-        const loadingTask = pdfjsLib.getDocument(url);
-        
-        loadingTask.promise.then(function(pdf) {
-            console.log(`[PDF] PDF loaded successfully with ${pdf.numPages} pages`);
-            pdfDoc = pdf;
-            
-            // Update state with current PDF
-            setCurrentPDF(url);
-            
-            // Reset current page
-            currentPage = 1;
-            
-            // Render all pages
-            console.log('[PDF] Calling renderAllPages()');
-            renderAllPages();
-            
-            // Show PDF controls
-            const pdfControls = document.querySelector('.pdf-controls');
-            if (pdfControls) {
-                pdfControls.classList.remove('hidden');
-                console.log('[PDF] PDF controls displayed');
-            } else {
-                console.warn('[PDF] PDF controls element not found');
-            }
-        }).catch(function(error) {
-            console.error('[PDF] Error loading PDF:', error);
-            
-            // Show error message
-            if (pagesContainer) {
-                pagesContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
-            }
-        });
-    } catch (error) {
-        console.error('[PDF] Exception in loadPDF function:', error);
-        const pagesContainer = document.getElementById('pdfPagesContainer');
-        if (pagesContainer) {
-            pagesContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
-        }
+    const currentPageDiv = pdfPagesContainer.querySelector(`.pdf-page[data-page-number="${pageNum}"]`);
+    if (currentPageDiv) {
+        currentPageDiv.classList.add('current-page');
+        currentPageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
 // Initialize PDF functionality
 function initPDF() {
-    console.log('[PDF] initPDF function called');
+    console.log('[PDF.js] Initializing PDF functionality');
     
-    // Check if PDF.js is available
-    if (typeof pdfjsLib === 'undefined') {
-        console.error('[PDF] PDF.js library not loaded');
-        return;
-    } else {
-        console.log('[PDF] PDF.js library detected, version:', pdfjsLib.version);
-    }
-    
-    // Check if worker is set up correctly
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        console.warn('[PDF] PDF.js worker source not set');
-    } else {
-        console.log('[PDF] PDF.js worker source:', pdfjsLib.GlobalWorkerOptions.workerSrc);
-    }
-    
-    // Set up navigation buttons
-    const prevPageBtn = document.getElementById('prevPage');
-    if (prevPageBtn) {
-        console.log('[PDF] Adding click event to prevPage button');
-        prevPageBtn.addEventListener('click', prevPage);
-    } else {
-        console.error('[PDF] prevPage button not found');
-    }
-    
-    const nextPageBtn = document.getElementById('nextPage');
-    if (nextPageBtn) {
-        console.log('[PDF] Adding click event to nextPage button');
-        nextPageBtn.addEventListener('click', nextPage);
-    } else {
-        console.error('[PDF] nextPage button not found');
-    }
-    
-    // Set up zoom buttons
+    // Set up zoom controls
     const zoomInBtn = document.getElementById('zoomIn');
-    if (zoomInBtn) {
-        console.log('[PDF] Adding click event to zoomIn button');
-        zoomInBtn.addEventListener('click', function() {
-            let currentZoom = getCurrentZoom();
-            currentZoom += 0.25;
-            if (currentZoom > 3) currentZoom = 3;
-            setZoomLevel(currentZoom);
-        });
-    } else {
-        console.error('[PDF] zoomIn button not found');
-    }
-    
     const zoomOutBtn = document.getElementById('zoomOut');
+    
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => setZoomLevel(currentZoom + 0.25));
+    }
+    
     if (zoomOutBtn) {
-        console.log('[PDF] Adding click event to zoomOut button');
-        zoomOutBtn.addEventListener('click', function() {
-            let currentZoom = getCurrentZoom();
-            currentZoom -= 0.25;
-            if (currentZoom < 0.5) currentZoom = 0.5;
-            setZoomLevel(currentZoom);
-        });
-    } else {
-        console.error('[PDF] zoomOut button not found');
+        zoomOutBtn.addEventListener('click', () => setZoomLevel(currentZoom - 0.25));
     }
     
-    const zoomResetBtn = document.getElementById('zoomReset');
-    if (zoomResetBtn) {
-        console.log('[PDF] Adding click event to zoomReset button');
-        zoomResetBtn.addEventListener('click', function() {
-            setZoomLevel(1.0);
+    // Set up search functionality
+    const searchInput = document.getElementById('pdfSearchInput');
+    const searchBtn = document.getElementById('pdfSearchBtn');
+    
+    if (searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                searchPDF(searchInput.value);
+            }
         });
-    } else {
-        console.error('[PDF] zoomReset button not found');
     }
     
-    console.log('[PDF] PDF viewer initialization complete');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            if (searchInput) searchPDF(searchInput.value);
+        });
+    }
+    
+    // Add keyboard shortcut for search
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                if (searchInput.value.trim() !== '') {
+                    searchInput.select();
+                }
+            }
+        }
+    });
 }
 
-export { initPDF, loadPDF, setZoomLevel, prevPage, nextPage, goToPage }; 
-
-// Export functions to window object for direct access
+// Export functions to window object
 window.loadPDF = loadPDF;
-window.prevPage = prevPage;
-window.nextPage = nextPage;
-window.goToPage = goToPage; 
+window.searchPDF = searchPDF;
+window.clearSearchResults = clearSearchResults;
+window.nextSearchResult = nextSearchResult;
+window.prevSearchResult = prevSearchResult;
+window.goToPage = goToPage;
+window.setZoomLevel = setZoomLevel;
+window.initPDF = initPDF;
+window.adjustTextSpanStyles = adjustTextSpanStyles;
+
+// Export for module usage
+export { 
+    initPDF, 
+    loadPDF, 
+    setZoomLevel,
+    searchPDF,
+    clearSearchResults,
+    nextSearchResult,
+    prevSearchResult,
+    goToPage
+}; 

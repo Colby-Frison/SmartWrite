@@ -1,0 +1,9 @@
+The quick brown fox jumps over the lazy dog. This is a sample text file for testing PDF search functionality. 
+We need to ensure that our search function can find words at the beginning, middle, and end of the document.
+It should also handle cases where the search term is not found in the document.
+Additionally, we want to test searching for multiple words or phrases to ensure context-based searching works correctly.
+The search functionality should be case-insensitive and should highlight all occurrences of the search term.
+When a search term is found, the user should be able to navigate between different occurrences.
+This sample text provides various words and phrases that can be used for testing different scenarios.
+Some special words like PDF, search, functionality, and SmartWrite can be used as test cases.
+The last word in this document is final. 

@@ -5,73 +5,8 @@
 // Sample file structure
 const fileSystem = {
     id: 'root',
-    name: 'My Files',
     type: 'folder',
-    children: [
-        {
-            id: 'folder1',
-            name: 'Study Notes',
-            type: 'folder',
-            children: [
-                {
-                    id: 'file1',
-                    name: 'final review.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/final review.pdf'
-                },
-                {
-                    id: 'file2',
-                    name: 'HW 3-Ch1.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/HW 3-Ch1.pdf'
-                }
-            ]
-        },
-        {
-            id: 'folder2',
-            name: 'Project Research',
-            type: 'folder',
-            children: [
-                {
-                    id: 'file3',
-                    name: 'Appendix.pdf',
-                    type: 'file',
-                    fileType: 'pdf',
-                    path: '/assets/Files/Appendix.pdf'
-                },
-                {
-                    id: 'folder3',
-                    name: 'References',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file4',
-                            name: 'final review.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/final review.pdf'
-                        },
-                        {
-                            id: 'file5',
-                            name: 'HW 3-Ch1.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/HW 3-Ch1.pdf'
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 'file6',
-            name: 'Appendix.pdf',
-            type: 'file',
-            fileType: 'pdf',
-            path: '/assets/Files/Appendix.pdf'
-        }
-    ]
+    children: []
 };
 
 // Export fileSystem to window object for debugging
@@ -283,7 +218,7 @@ function selectItem(itemId) {
                     
                     const pdfContainer = document.getElementById('pdfPagesContainer');
                     if (pdfContainer) {
-                        pdfContainer.innerHTML = '<div class="pdf-loading">Loading PDF...</div>';
+                        pdfContainer.innerHTML = '';
                         
                         const loadingTask = pdfjsLib.getDocument(item.path);
                         loadingTask.promise.then(function(pdf) {
@@ -327,11 +262,7 @@ function selectItem(itemId) {
                                         // Add the canvas to the page div
                                         pageDiv.appendChild(canvas);
                                         
-                                        // Add page number indicator
-                                        const pageNumberDiv = document.createElement('div');
-                                        pageNumberDiv.className = 'page-number';
-                                        pageNumberDiv.textContent = pageNum;
-                                        pageDiv.appendChild(pageNumberDiv);
+                                        // Page number indicators have been removed as requested
                                         
                                         return pageDiv;
                                     });
@@ -357,17 +288,8 @@ function selectItem(itemId) {
                                 pdfContainer.appendChild(fragment);
                                 console.log('[FileTree] All pages added to container');
                                 
-                                // Update page count display
-                                const pageCountElement = document.getElementById('pageCount');
-                                if (pageCountElement) {
-                                    pageCountElement.textContent = pdf.numPages;
-                                }
+                                // Page counter updates have been removed
                                 
-                                // Update current page display
-                                const currentPageElement = document.getElementById('currentPage');
-                                if (currentPageElement) {
-                                    currentPageElement.textContent = 1;
-                                }
                             }).catch(function(error) {
                                 console.error('[FileTree] Error rendering pages:', error);
                                 pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;

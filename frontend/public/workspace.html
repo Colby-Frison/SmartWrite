@@ -9,10 +9,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
     <script>
         // Set up PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('[PDF.js] Worker initialized');
+        } else {
+            console.error('[PDF.js] PDF.js library not loaded');
+        }
         
         // Add error handler for PDF.js
         window.addEventListener('error', function(event) {
@@ -24,6 +30,19 @@
         // Test PDF.js availability
         console.log('[PDF.js] Library loaded, version:', pdfjsLib ? pdfjsLib.version : 'not available');
     </script>
+    
+    <!-- Marked library for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Prism.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Text layer fix -->
+    <link rel="stylesheet" href="/frontend/public/text-layer-fix.css">
+    <script src="/frontend/public/text-layer-fix.js"></script>
     <style>
         /* Ensure modal is visible when active */
         .modal-overlay.active {
@@ -31,43 +50,104 @@
         }
         
         /* PDF Viewer Styles */
+        .pdf-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            left: 0;
+        }
+
+        .pdf-viewer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: auto;
+            min-height: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            left: 0;
+            background-color: var(--bg-primary);
+        }
+
+        .pdf-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 48px;
+            min-height: 100%;
+            width: 100%;
+            position: relative;
+            background-color: var(--bg-primary);
+            transform-origin: center top;
+            margin: 0;
+            box-sizing: border-box;
+            left: 0;
+        }
+        
         .pdf-page {
             position: relative;
-            margin-bottom: 15px;
+            margin: 20px auto;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             background-color: var(--pdf-bg);
             border-radius: 4px;
-            overflow: hidden;
+            overflow: visible;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: fit-content;
         }
         
-        .pdf-page canvas {
+        .pdf-page-wrapper {
+            position: relative;
             display: block;
-            margin: 0 auto;
+            overflow: visible;
+            transform-origin: 0% 0%;
+        }
+        
+        .pdf-page-wrapper canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
         }
         
         .page-number {
             position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 10px;
+            right: 10px;
             background-color: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
             color: var(--text-primary);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
         }
         
-        .pdf-loading, .pdf-error {
-            padding: 20px;
-            text-align: center;
-            background-color: var(--bg-secondary);
-            border-radius: 5px;
-            margin: 20px;
-            color: var(--text-primary);
+        .page-number:hover {
+            transform: scale(1.05);
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        
+        .page-number:active {
+            transform: scale(0.95);
         }
         
         .pdf-error {
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
             background-color: rgba(211, 47, 47, 0.1);
             color: #d32f2f;
             border-left: 4px solid #d32f2f;
@@ -81,23 +161,831 @@
             width: 100%;
             box-sizing: border-box;
         }
+
+        /* Text Layer Styles */
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.25;
+            line-height: 1.0;
+            text-align: initial;
+            pointer-events: auto;
+            user-select: text;
+            z-index: 2;
+            /* No transform on the container itself */
+            transform: none !important;
+        }
+
+        /* Style for all text elements in the textLayer */
+        .textLayer > span,
+        .textLayer > div {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+            /* Ensure exact scale factor from image */
+            transform: scaleX(0.7);
+            margin: 0;
+            padding: 0;
+            /* Improve text selection behavior */
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+            /* Prevent overlapping selection ranges */
+            box-sizing: content-box;
+        }
         
-        .pdf-viewer {
-            overflow-y: auto;
-            height: 100%;
-            width: 100%;
+        /* Special class for spans that are part of multi-span selection */
+        .textLayer > span[data-has-next-span="true"],
+        .textLayer > div[data-has-next-span="true"] {
+            /* Slightly adjust the right side to improve selection behavior */
+            padding-right: 0.1px;
+        }
+        
+        .textLayer > span[data-has-prev-span="true"],
+        .textLayer > div[data-has-prev-span="true"] {
+            /* Slightly adjust the left side to improve selection behavior */
+            padding-left: 0.1px;
+        }
+        
+        /* When selected, make text more visible with improved alignment */
+        .textLayer ::selection {
+            background: rgba(0, 100, 255, 0.4);
+            mix-blend-mode: multiply;
+            transform-origin: 0% 0%;
+            transform: scaleX(0.7);
+            /* Improve selection appearance */
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .textLayer ::-moz-selection {
+            background: rgba(0, 100, 255, 0.4);
+            mix-blend-mode: multiply;
+            transform-origin: 0% 0%;
+            transform: scaleX(0.7);
+            /* Improve selection appearance */
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* For highlighting when search is active */
+        .textLayer .highlight {
+            background-color: rgba(180, 0, 170, 0.4);
+            border-radius: 1px;
+            box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.5);
+        }
+
+        .textLayer .highlight.selected {
+            background-color: rgba(0, 100, 0, 0.4);
+        }
+        
+        /* Ensure the PDF page wrapper positions content properly */
+        .pdf-page-wrapper {
+            position: relative;
+            display: block;
+            overflow: visible;
+            transform-origin: 0% 0%;
+        }
+        
+        .pdf-page-wrapper canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
+        }
+        
+        .search-highlight {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.3);
+            border: 1px solid rgba(255, 255, 0, 0.5);
+            pointer-events: none;
+            z-index: 3;
+            mix-blend-mode: multiply;
+        }
+
+        .search-highlight:hover {
+            background-color: rgba(255, 255, 0, 0.5);
+        }
+
+        .search-highlight.current {
+            background-color: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.8);
+            box-shadow: 0 0 3px rgba(76, 175, 80, 0.5);
+        }
+
+        /* Loading and Error States */
+        .pdf-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* PDF Controls */
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 6px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            height: 32px;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .zoom-btn {
+            padding: 3px 8px;
+            border: none;
             background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 12px;
+        }
+
+        .zoom-btn:hover {
+            background-color: var(--accent-primary);
+        }
+
+        .zoom-level {
+            min-width: 50px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Search Controls - Updated */
+        .search-icon {
+            padding: 2px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .search-icon:hover {
+            color: var(--accent-primary);
+        }
+
+        .search-modal {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            display: none;
+            z-index: 9999;
+            width: 70%;
+            max-width: 700px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translateX(-50%) translateY(-20px);
+        }
+
+        .search-modal.active {
+            display: block !important;
+            opacity: 0.9 !important;
+            visibility: visible !important;
+            transform: translateX(-50%) translateY(0);
+            animation: bounceDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes bounceDown {
+            0% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            70% {
+                transform: translateX(-50%) translateY(5px);
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .search-modal:not(.active) {
+            animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideUp {
+            0% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 0.9;
+            }
+            20% {
+                transform: translateX(-50%) translateY(10px);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        .search-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-modal-header span {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .search-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 2px;
+            font-size: 12px;
+            transition: color 0.2s ease;
+            margin-left: 4px;
+        }
+
+        .search-modal-close:hover {
+            color: var(--accent-primary);
+        }
+
+        .search-modal-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 3px 6px;
+            min-height: 32px;
+        }
+
+        .search-input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            min-height: 24px;
+            opacity: 0.95;
+            margin-top: 2px;
+        }
+
+        .search-input-group i {
+            font-size: 12px;
+            opacity: 1;
+            color: var(--text-secondary);
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            background: none;
+            color: var(--text-primary);
+            padding: 2px 4px;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+            line-height: 1.2;
+        }
+
+        .search-navigation {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            border-left: 1px solid var(--border-color);
+            padding-left: 4px;
+        }
+
+        .search-count {
+            color: var(--text-secondary);
+            font-size: 12px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .search-nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 1px 4px;
+            font-size: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .search-nav-btn:hover:not(:disabled) {
+            color: var(--accent-primary);
+        }
+
+        .search-nav-btn:disabled {
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        /* Current Page Indicator */
+        .pdf-page.current-page {
+            border: 2px solid var(--accent-primary);
+        }
+
+        /* Add resize handles */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            cursor: col-resize;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
+            z-index: 100;
+            padding: 0 12px;
+            margin: 0 -12px;
+        }
+
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 12px;
+            width: 2px;
+            height: 100%;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover::after {
+            background-color: var(--accent-primary);
+        }
+
+        .resize-handle.left {
+            right: -1px;
+        }
+
+        .resize-handle.right {
+            left: -1px;
+        }
+
+        /* Update sidebar styles */
+        .sidebar {
+            position: relative;
+            width: 250px;
+            min-width: 48px;
+            max-width: 500px;
+            height: 100vh;
+            background-color: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: row;
+            flex-shrink: 0;
+            z-index: 10;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar.collapsed {
+            width: 48px;
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+
+        .sidebar-nav {
+            width: 48px;
+            height: 100%;
+            background-color: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            flex-shrink: 0;
+        }
+
+        .nav-button {
+            width: 100%;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-hover);
+        }
+
+        .nav-button.active {
+            color: var(--accent-primary);
+            background-color: var(--bg-hover);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.2s ease;
+        }
+
+        .sidebar-panel {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            position: relative;
+        }
+
+        .sidebar-panel.active {
+            display: flex;
+            background-color: var(--bg-primary);
+        }
+
+        /* Update the chat section to be inside the sidebar */
+        .chat-section {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-primary);
+            border: none;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px; /* Add padding to prevent messages from being hidden behind input */
+            background-color: var(--bg-primary);
+            margin: 0;
+            min-height: 0;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            max-width: 85%;
+        }
+
+        .message.assistant {
+            margin-right: auto;
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message-content {
+            padding: 8px 12px;
+            border-radius: 12px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Chat input styles */
+        .chat-input-container {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            padding: 12px;
+            background-color: var(--bg-tertiary);
+            border: 0px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 48px;
+            max-height: 200px;
+            height: auto;
+            z-index: 2;
+        }
+
+        .chat-input-blocker {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 90px;
+            background-color: var(--bg-primary);
+            z-index: 1;
+        }
+
+        .chat-input-container textarea {
+            width: 100%;
+            flex: 1;
+            min-height: 24px;
+            max-height: 150px;
+            padding: 8px;
+            border: 0px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .chat-input-controls {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px;
+            padding-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .model-select {
+            position: relative;
+            display: inline-block;
+            margin-right: auto;
+            align-items: left;
+        }
+
+        .model-select-button {
+            padding: 4px 8px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .model-select-button:hover {
+            color: var(--text-primary);
+        }
+
+        .model-select-button i {
+            font-size: 10px;
+        }
+
+        .model-dropdown {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            min-width: 150px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .model-dropdown.active {
+            display: block;
+        }
+
+        .model-option {
+            padding: 6px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .model-option:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .model-option.active {
+            color: var(--accent-primary);
+        }
+
+        .model-option i {
+            font-size: 12px;
+            opacity: 0;
+        }
+
+        .model-option.active i {
+            opacity: 1;
+        }
+
+        .chat-input-container button {
+            padding: 4px;
+            font-size: 10px;
+            gap: 4px;
+            line-height: 1;
+            margin: auto 0;
+        }
+
+        .chat-input-container button:hover {
+            color: var(--accent-primary);
+            background-color: var(--bg-hover);
+        }
+
+        /* Remove the old chat section styles */
+        .chat-section {
+            position: relative;
+            border: none;
+            width: auto;
+            min-width: 0;
+            max-width: none;
+            height: 100%;
+        }
+
+        /* Override styles for proper PDF positioning */
+        .workspace {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-content {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+            margin: 0;
+            padding-left: 10px;
+            left: 0;
+        }
+
+        .file-tree {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+        }
+
+        .file-tree-header {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+        }
+
+        .file-tree-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            background-color: var(--bg-primary);
+        }
+
+        /* Folder selection styles */
+        .folder-select-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .folder-select-container .form-input {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .folder-select-container .modal-btn {
+            padding: 6px 12px;
+            white-space: nowrap;
+        }
+        
+        /* Empty workspace message */
+        .empty-workspace-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-workspace-message i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+        
+        .empty-workspace-message h3 {
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .empty-workspace-message p {
+            margin-bottom: 16px;
+            font-size: 14px;
+            max-width: 300px;
+        }
+        
+        /* Tree error styles */
+        .tree-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .tree-error i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #e74c3c;
+        }
+        
+        .tree-error p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .tree-retry-btn {
+            padding: 4px 12px;
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .tree-retry-btn:hover {
+            background-color: var(--accent-hover);
         }
     </style>
 </head>
 <body class="workspace">
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <button class="settings-button" id="sidebarSettingsBtn" onclick="directOpenModal('settingsModal')">
+        <div class="sidebar-nav">
+            <div class="sidebar-nav-top">
+                <button class="nav-button active" id="fileTreeBtn" title="Files">
+                    <i class="fas fa-folder"></i>
+                </button>
+                <button class="nav-button" id="chatBtn" title="Chat">
+                    <i class="fas fa-comments"></i>
+                </button>
+            </div>
+            <div class="sidebar-nav-bottom">
+                <button class="nav-button" id="sidebarSettingsBtn" title="Settings">
                 <i class="fas fa-cog"></i>
             </button>
         </div>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-panel active" id="fileTreePanel">
         <div class="file-tree">
             <div class="file-tree-header">
                 <div class="file-tree-actions">
@@ -113,21 +1001,57 @@
                 </div>
             </div>
             <div class="file-tree-content" id="fileTree">
-                <!-- File tree will be dynamically populated here -->
+                        <!-- File tree content -->
             </div>
-            <!-- Sort menu dropdown -->
-            <div class="sort-menu" id="sortMenu">
-                <div class="sort-menu-item" onclick="sortFiles('name')">
-                    <i class="fas fa-sort-alpha-down"></i>
-                    <span>Sort by name</span>
                 </div>
-                <div class="sort-menu-item" onclick="sortFiles('modified')">
-                    <i class="fas fa-clock"></i>
-                    <span>Sort by modified</span>
                 </div>
-                <div class="sort-menu-item" onclick="sortFiles('created')">
-                    <i class="fas fa-calendar"></i>
-                    <span>Sort by created</span>
+            <div class="sidebar-panel" id="chatPanel">
+                <div class="chat-section">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-content">
+                                Hello! I'm here to help you analyze your documents. What would you like to know?
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-blocker"></div>
+                    <div class="chat-input-container">
+                        <textarea 
+                            id="chatInput" 
+                            placeholder="Type your message here..."
+                            rows="1"
+                            oninput="if (this.scrollHeight > this.clientHeight) {
+                                this.style.height = 'auto';
+                                const newHeight = Math.min(this.scrollHeight, 150);
+                                this.style.height = newHeight + 'px';
+                                this.parentElement.style.height = Math.min(newHeight + 60, 200) + 'px';
+                            }"
+                        ></textarea>
+                        <div class="chat-input-controls">
+                            <div class="model-select">
+                                <button class="model-select-button" id="modelSelectBtn">
+                                    GPT-4 <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="model-dropdown" id="modelDropdown">
+                                    <div class="model-option active">
+                                        <span>GPT-4</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="model-option">
+                                        <span>GPT-3.5</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="model-option">
+                                        <span>Claude 3</span>
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="sendMessage">
+                                Send 
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,7 +1061,7 @@
     <div class="main-content">
         <!-- PDF Viewer Section -->
         <div class="pdf-section">
-            <!-- PDF Controls -->
+            <!-- PDF Controls - Updated -->
             <div class="pdf-controls">
                 <div class="zoom-control">
                     <button class="zoom-btn" id="zoomOut">
@@ -148,23 +1072,15 @@
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
-                <div class="page-control">
-                    <button class="page-btn" id="prevPage" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="page-info">
-                        Page <span id="currentPage">1</span> of <span id="pageCount">1</span>
-                    </span>
-                    <button class="page-btn" id="nextPage" disabled>
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <button class="page-btn" id="zoomReset" title="Reset zoom">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
+                <button class="search-icon" id="searchIcon">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+            <div class="pdf-viewer">
+                <div id="pdfContainer" class="pdf-container">
+                    <div id="pdfPagesContainer" class="pdf-pages-container"></div>
+                    <div id="markdownContainer" class="markdown-container"></div>
                 </div>
-            </div>
-            <div class="pdf-viewer" id="pdfViewer">
-                <div id="pdfPagesContainer"></div>
             </div>
             <div class="pdf-file-bar">
                 <div class="pdf-files" id="pdfFiles">
@@ -174,26 +1090,28 @@
         </div>
     </div>
 
-    <!-- Chat Section -->
-    <div class="chat-section">
-        <div class="chat-messages" id="chatMessages">
-            <div class="message assistant">
-                <div class="message-content">
-                    Hello! I'm here to help you analyze your documents. What would you like to know?
-                </div>
-            </div>
-        </div>
-        <div class="chat-input-container">
-            <textarea 
-                id="chatInput" 
-                placeholder="Type your message here..."
-                rows="1"
-                oninput="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
-                onkeyup="this.style.height='0px'; this.style.height = Math.max(42, Math.min(this.scrollHeight, 150)) + 'px';"
-            ></textarea>
-            <button id="sendMessage">
-                <i class="fas fa-paper-plane"></i>
+    <!-- Search Modal - Added for PDF search functionality -->
+    <div id="searchModal" class="search-modal">
+        <div class="search-modal-header">
+            <span>Search in PDF</span>
+            <button id="closeSearchModal" class="search-modal-close">
+                <i class="fas fa-times"></i>
             </button>
+        </div>
+        <div class="search-modal-content">
+            <div class="search-input-group">
+                <i class="fas fa-search"></i>
+                <input type="text" id="pdfSearchInput" class="search-input" placeholder="Search in document...">
+            </div>
+            <div class="search-navigation">
+                <button id="prevResult" class="search-nav-btn" disabled>
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <button id="nextResult" class="search-nav-btn" disabled>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <span id="searchCount" class="search-count">No results</span>
+            </div>
         </div>
     </div>
 
@@ -312,6 +1230,16 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-item-label">Local Workspace Folder</div>
+                                    <div class="settings-item-description">Select a local folder to use as your workspace</div>
+                                </div>
+                                <div class="folder-select-container">
+                                    <input type="text" id="workspacePath" class="form-input" readonly placeholder="No folder selected">
+                                    <button id="selectWorkspaceFolder" class="modal-btn modal-btn-primary">Select Folder</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- About Panel -->
@@ -404,15 +1332,269 @@
             </div>
         </div>
     </div>
+    
+    <!-- Load our scripts -->
+    <script src="/frontend/src/js/pdf.js"></script>
+    <script src="/frontend/src/js/filetree.js"></script>
+    <script>
+        // Make sure PDF functions are available
+        function ensurePDFFunctionsAvailable() {
+            if (typeof window.loadPDF !== 'function') {
+                console.error('[Workspace] loadPDF function not found in global scope!');
+                
+                // Add it to window if it exists in the module
+                if (typeof loadPDF === 'function') {
+                    console.log('[Workspace] Adding loadPDF function to window object');
+                    window.loadPDF = loadPDF;
+                }
+            } else {
+                console.log('[Workspace] loadPDF function is available');
+            }
+        }
+        
+        // Fallback render page function that works directly with PDF.js
+        function fallbackRenderPage(pdf, pageNum, container) {
+            console.log(`[Fallback] Rendering page ${pageNum}`);
+            
+            return pdf.getPage(pageNum).then(function(page) {
+                // Create a div for this page
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.dataset.pageNumber = pageNum;
+                
+                // Set viewport with proper scale
+                const scale = 1.0;
+                const viewport = page.getViewport({ scale });
+                
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Create wrapper for canvas and text layer
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pdf-page-wrapper';
+                wrapper.style.width = `${viewport.width}px`;
+                wrapper.style.height = `${viewport.height}px`;
+                wrapper.style.position = 'relative';
+                
+                // Render page content
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                // Chain all promises properly
+                return page.render(renderContext).promise
+                    .then(function() {
+                        // After canvas rendering is done, get text content
+                        return page.getTextContent({
+                            normalizeWhitespace: true,
+                            disableCombineTextItems: false
+                        });
+                    })
+                    .then(function(textContent) {
+                        // Create text layer container
+                        const textLayer = document.createElement('div');
+                        textLayer.className = 'textLayer';
+                        textLayer.style.width = `${viewport.width}px`;
+                        textLayer.style.height = `${viewport.height}px`;
+                        textLayer.style.left = '0';
+                        textLayer.style.top = '0';
+                        textLayer.style.position = 'absolute';
+                        
+                        // Process text content items to group them by line
+                        try {
+                            // Group text items by their vertical position (y-coordinate)
+                            const textItemsByLine = {};
+                            const items = textContent.items;
+                            
+                            // First pass: group items by their vertical position
+                            items.forEach(item => {
+                                // Round the y-coordinate to account for small variations within the same line
+                                const lineY = Math.round(item.transform[5] * 10) / 10;
+                                
+                                if (!textItemsByLine[lineY]) {
+                                    textItemsByLine[lineY] = [];
+                                }
+                                
+                                textItemsByLine[lineY].push(item);
+                            });
+                            
+                            // Second pass: sort each line's items by x-coordinate
+                            Object.keys(textItemsByLine).forEach(lineY => {
+                                textItemsByLine[lineY].sort((a, b) => a.transform[4] - b.transform[4]);
+                            });
+                            
+                            // Use the standard PDF.js text layer renderer
+                            return pdfjsLib.renderTextLayer({
+                                textContent: textContent,
+                                container: textLayer,
+                                viewport: viewport,
+                                textDivs: []
+                            }).promise.then(function() {
+                                // Apply specific styling to each text span after rendering
+                                adjustTextSpanStyles(textLayer);
+                                
+                                // Add canvas and text layer to wrapper
+                                wrapper.appendChild(canvas);
+                                wrapper.appendChild(textLayer);
+                                
+                                // Add wrapper to page div
+                                pageDiv.appendChild(wrapper);
+                                
+                                // Add page number indicator
+                                const pageNumberDiv = document.createElement('div');
+                                pageNumberDiv.className = 'page-number';
+                                pageNumberDiv.textContent = pageNum;
+                                pageDiv.appendChild(pageNumberDiv);
+                                
+                                // Add page div to container
+                                container.appendChild(pageDiv);
+                                
+                                return pageDiv;
+                            });
+                        } catch (err) {
+                            console.error('Error processing text content:', err);
+                            
+                            // Fall back to standard rendering if grouping fails
+                            return pdfjsLib.renderTextLayer({
+                                textContent: textContent,
+                                container: textLayer,
+                                viewport: viewport,
+                                textDivs: []
+                            }).promise.then(function() {
+                                adjustTextSpanStyles(textLayer);
+                                wrapper.appendChild(canvas);
+                                wrapper.appendChild(textLayer);
+                                pageDiv.appendChild(wrapper);
+                                
+                                const pageNumberDiv = document.createElement('div');
+                                pageNumberDiv.className = 'page-number';
+                                pageNumberDiv.textContent = pageNum;
+                                pageDiv.appendChild(pageNumberDiv);
+                                
+                                container.appendChild(pageDiv);
+                                return pageDiv;
+                            });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error(`[Fallback] Error rendering page ${pageNum}:`, error);
+                        
+                        // Even if text layer fails, still show the page with canvas
+                        wrapper.appendChild(canvas);
+                        pageDiv.appendChild(wrapper);
+                        
+                        // Add page number indicator even in case of error
+                        const pageNumberDiv = document.createElement('div');
+                        pageNumberDiv.className = 'page-number';
+                        pageNumberDiv.textContent = pageNum;
+                        pageDiv.appendChild(pageNumberDiv);
+                        
+                        // Add page div to container
+                        container.appendChild(pageDiv);
+                        
+                        return pageDiv;
+                    });
+            });
+        }
 
-    <!-- Use type="module" to enable ES6 module imports -->
-    <script type="module" src="/frontend/src/js/main.js"></script>
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure PDF functions are available
+            ensurePDFFunctionsAvailable();
+            
+            // Initialize file tree
+            renderFileTree();
+            
+            // Initialize PDF viewer
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (pdfContainer) {
+                console.log('[Workspace] PDF container found, initializing PDF viewer');
+                if (typeof window.initPDF === 'function') {
+                    window.initPDF();
+                }
+            }
+            
+            // Automatically test the PDF rendering after a short delay
+            setTimeout(function() {
+                console.log('[Workspace] Auto-testing PDF rendering');
+                if (typeof testDirectPDFRendering === 'function') {
+                    testDirectPDFRendering();
+                }
+            }, 1000);
+            
+            console.log('[Workspace] Application initialized');
+        });
+        
+        // Add error handler for script loading
+        window.addEventListener('error', function(event) {
+            if (event.filename && event.filename.includes('pdf.js')) {
+                console.error('[PDF.js Error]', event.message);
+            }
+        });
+    </script>
+    
+    <!-- Direct script for skeleton handling -->
+    <script>
+        // Function to hide the skeleton screen
+        function hideSkeletonScreen() {
+            console.log('[Workspace] Hiding skeleton screen directly');
+            const skeleton = document.getElementById('pdfInitialSkeleton');
+            if (skeleton) {
+                skeleton.classList.add('hidden');
+                skeleton.style.display = 'none';
+                console.log('[Workspace] Skeleton screen hidden');
+            }
+        }
+        
+        // Function to show the skeleton screen
+        function showSkeletonScreen() {
+            console.log('[Workspace] Showing skeleton screen directly');
+            const skeleton = document.getElementById('pdfInitialSkeleton');
+            if (skeleton) {
+                skeleton.classList.remove('hidden');
+                skeleton.style.display = 'flex';
+                console.log('[Workspace] Skeleton screen shown');
+            }
+        }
+        
+        // Add a mutation observer to detect when PDF pages are added
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+            if (pdfPagesContainer) {
+                console.log('[Workspace] Setting up mutation observer for PDF pages container');
+                
+                // Create a mutation observer to watch for changes
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            // Check if any PDF pages were added
+                            const pdfPages = pdfPagesContainer.querySelectorAll('.pdf-page');
+                            if (pdfPages.length > 0) {
+                                console.log('[Workspace] PDF pages detected, hiding skeleton screen');
+                                hideSkeletonScreen();
+                            }
+                        }
+                    });
+                });
+                
+                // Start observing the container for changes
+                observer.observe(pdfPagesContainer, { childList: true, subtree: true });
+            }
+        });
+    </script>
     
     <!-- Test function for direct PDF rendering -->
     <script>
         // Direct test function for PDF rendering
         function testDirectPDFRendering() {
-            console.log('[Test] Direct PDF rendering test started');
+            console.log('[Test] Using existing pdf.js functions to render PDF');
+            
+            // First ensure the PDF functions are available
+            ensurePDFFunctionsAvailable();
             
             // Try different paths to find the correct one
             const possiblePaths = [
@@ -420,8 +1602,7 @@
                 './assets/Files/final review.pdf',
                 '../assets/Files/final review.pdf',
                 '/frontend/public/assets/Files/final review.pdf',
-                'frontend/public/assets/Files/final review.pdf',
-                '/home/banana/projects/SmartWrite/frontend/public/assets/Files/final review.pdf'
+                'frontend/public/assets/Files/final review.pdf'
             ];
             
             let pathIndex = 0;
@@ -445,205 +1626,135 @@
                     return;
                 }
                 
-                // Show loading indicator
-                pdfContainer.innerHTML = `<div class="pdf-loading">Loading PDF from path: ${pdfUrl}</div>`;
-                
-                // Load the PDF
-                const loadingTask = pdfjsLib.getDocument(pdfUrl);
-                
-                loadingTask.promise.then(function(pdf) {
-                    console.log(`[Test] PDF loaded successfully from path: ${pdfUrl}`);
-                    console.log(`[Test] PDF has ${pdf.numPages} pages`);
-                    
-                    // Clear container
-                    pdfContainer.innerHTML = '';
-                    
-                    // Create a document fragment to hold all pages
-                    const fragment = document.createDocumentFragment();
-                    
-                    // Function to render a specific page
-                    function renderPage(pageNum) {
-                        return pdf.getPage(pageNum).then(function(page) {
-                            console.log(`[Test] Rendering page ${pageNum}`);
-                            
-                            // Create a div for this page
-                            const pageDiv = document.createElement('div');
-                            pageDiv.className = 'pdf-page';
-                            pageDiv.dataset.pageNumber = pageNum;
-                            
-                            // Create a canvas for this page
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            
-                            // Set viewport
-                            const viewport = page.getViewport({ scale: 1.0 });
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-                            
-                            // Render the page content on the canvas
-                            const renderContext = {
-                                canvasContext: ctx,
-                                viewport: viewport
-                            };
-                            
-                            return page.render(renderContext).promise.then(function() {
-                                console.log(`[Test] Page ${pageNum} rendered successfully`);
-                                
-                                // Add the canvas to the page div
-                                pageDiv.appendChild(canvas);
-                                
-                                // Add page number indicator
-                                const pageNumberDiv = document.createElement('div');
-                                pageNumberDiv.className = 'page-number';
-                                pageNumberDiv.textContent = pageNum;
-                                pageDiv.appendChild(pageNumberDiv);
-                                
-                                return pageDiv;
+                // Use the existing loadPDF function from pdf.js
+                if (typeof window.loadPDF === 'function') {
+                    try {
+                        // Try to load the PDF
+                        const result = window.loadPDF(pdfUrl);
+                        
+                        // Handle both Promise and direct return cases
+                        if (result && typeof result.then === 'function') {
+                            // It's a Promise
+                            result.then(function(success) {
+                                if (success) {
+                                    console.log(`[Test] Successfully loaded PDF from path: ${pdfUrl}`);
+                                } else {
+                                    console.error(`[Test] loadPDF returned false for path ${pdfUrl}`);
+                                    pathIndex++;
+                                    tryNextPath();
+                                }
+                            }).catch(function(error) {
+                                console.error(`[Test] Error loading PDF from path ${pdfUrl}:`, error);
+                                pathIndex++;
+                                tryNextPath();
                             });
-                        });
-                    }
-                    
-                    // Create an array of promises for all pages
-                    const renderPromises = [];
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        renderPromises.push(renderPage(i));
-                    }
-                    
-                    // Wait for all pages to be rendered
-                    Promise.all(renderPromises).then(pageDivs => {
-                        console.log(`[Test] All ${pageDivs.length} pages rendered successfully`);
-                        
-                        // Add all page divs to the fragment
-                        pageDivs.forEach(pageDiv => {
-                            fragment.appendChild(pageDiv);
-                        });
-                        
-                        // Append all pages to the container
-                        pdfContainer.appendChild(fragment);
-                        console.log('[Test] All pages added to container');
-                        
-                        // Update all file paths in the file system
-                        updateFilePaths(pdfUrl);
-                    }).catch(function(error) {
-                        console.error('[Test] Error rendering pages:', error);
+                        } else if (result === true) {
+                            // Direct true return
+                            console.log(`[Test] Successfully loaded PDF from path: ${pdfUrl}`);
+                        } else {
+                            // Failed or unknown return type
+                            console.error(`[Test] loadPDF failed for path ${pdfUrl}, returned:`, result);
+                            pathIndex++;
+                            tryNextPath();
+                        }
+                    } catch (error) {
+                        console.error(`[Test] Error calling loadPDF for path ${pdfUrl}:`, error);
                         pathIndex++;
                         tryNextPath();
-                    });
-                }).catch(function(error) {
-                    console.error(`[Test] Error loading PDF from path ${pdfUrl}:`, error);
-                    pathIndex++;
-                    tryNextPath();
-                });
-            }
-            
-            // Function to update all file paths in the file system
-            function updateFilePaths(successfulPath) {
-                // Extract the base path
-                const basePath = successfulPath.substring(0, successfulPath.lastIndexOf('/') + 1);
-                console.log(`[Test] Updating all file paths to use base path: ${basePath}`);
-                
-                // Update paths in the file system
-                function updatePaths(folder) {
-                    if (folder.children) {
-                        folder.children.forEach(item => {
-                            if (item.type === 'file' && item.fileType === 'pdf') {
-                                const fileName = item.path.substring(item.path.lastIndexOf('/') + 1);
-                                item.path = basePath + fileName;
-                                console.log(`[Test] Updated path for ${item.name} to ${item.path}`);
-                            } else if (item.type === 'folder') {
-                                updatePaths(item);
-                            }
-                        });
                     }
-                }
-                
-                // Get the file system from the window object
-                if (window.fileSystem) {
-                    updatePaths(window.fileSystem);
-                    console.log('[Test] All file paths updated');
                 } else {
-                    console.warn('[Test] fileSystem not found in window object');
+                    // Direct fallback - create our own basic PDF loader
+                    console.error('[Test] loadPDF function not found, using fallback');
+                    pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
+                    
+                    if (typeof pdfjsLib !== 'undefined') {
+                        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                        loadingTask.promise.then(function(pdf) {
+                            console.log(`[Test] PDF loaded successfully via fallback from path: ${pdfUrl}`);
+                            
+                            // Clear container
+                            pdfContainer.innerHTML = '';
+                            
+                            // Use our fallback renderPage function
+                            const renderPromises = [];
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                renderPromises.push(fallbackRenderPage(pdf, i, pdfContainer));
+                            }
+                            
+                            // Wait for all pages to be rendered
+                            Promise.all(renderPromises)
+                                .then(function(pageDivs) {
+                                    console.log(`[Test] All ${pageDivs.length} pages rendered via fallback`);
+                                })
+                                .catch(function(error) {
+                                    console.error('[Test] Error rendering pages via fallback:', error);
+                                });
+                        }).catch(function(error) {
+                            console.error(`[Test] Error loading PDF via fallback: ${pdfUrl}:`, error);
+                            pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                        });
+                    } else {
+                        console.error('[Test] PDF.js library not available for fallback');
+                        pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
+                    }
                 }
             }
             
             // Start trying paths
             tryNextPath();
         }
-        
-        // Run the test after a delay to ensure everything is loaded
-        setTimeout(testDirectPDFRendering, 2000);
     </script>
     
     <!-- Fallback script for direct modal control -->
     <script>
         // Direct modal control functions
         function directOpenModal(modalId) {
-            console.log('Direct open modal called for: ' + modalId);
+            console.log('Opening modal:', modalId);
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                modal.classList.add('active');
+                
+                // If it's the settings modal, initialize tabs and load settings
+                if (modalId === 'settingsModal') {
+                    initSettingsTabs();
+                    loadSettingsPreservingWorkspace();
+                }
+                
+                console.log('Modal opened:', modalId);
             } else {
-                console.error('Modal not found: ' + modalId);
+                console.error('Modal not found:', modalId);
             }
         }
         
+        // Function to close a modal directly
         function directCloseModal(modalId) {
+            console.log('Closing modal:', modalId);
             const modal = document.getElementById(modalId);
             if (modal) {
-                // If closing the settings modal, save all settings
-                if (modalId === 'settingsModal') {
-                    saveAllSettings(false); // Pass false to not close the modal again (would cause infinite loop)
-                }
-                
+                // Simply hide the modal
                 modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+                modal.classList.remove('active');
+                
+                // Force body to be scrollable again if it was locked
                 document.body.style.overflow = '';
+                
+                console.log('Modal closed:', modalId);
+            } else {
+                console.error('Modal not found:', modalId);
             }
         }
         
         // File tree functionality
-        // Sample file structure
+        // Initialize with empty file system
         const fileSystem = {
             id: 'root',
-            name: 'My Files',
             type: 'folder',
-            children: [
-                {
-                    id: 'folder1',
-                    name: 'Study Notes',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file1',
-                            name: 'final review.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/final review.pdf'
-                        },
-                        {
-                            id: 'file2',
-                            name: 'HW 3-Ch1.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/HW 3-Ch1.pdf'
-                        }
-                    ]
-                },
-                {
-                    id: 'folder2',
-                    name: 'Project Research',
-                    type: 'folder',
-                    children: [
-                        {
-                            id: 'file3',
-                            name: 'Appendix.pdf',
-                            type: 'file',
-                            fileType: 'pdf',
-                            path: '/assets/Files/Appendix.pdf'
-                        }
-                    ]
-                }
-            ]
+            children: []
         };
         
         // Export fileSystem to window object for debugging
@@ -669,6 +1780,7 @@
         function sendChatMessage() {
             const chatInput = document.getElementById('chatInput');
             const chatMessages = document.getElementById('chatMessages');
+            const chatInputContainer = document.querySelector('.chat-input-container');
             
             // Check if input is not empty
             if (chatInput && chatInput.value.trim() !== '') {
@@ -695,9 +1807,10 @@
                 `;
                 chatMessages.appendChild(userMessageElement);
                 
-                // Clear input
+                // Clear input and reset heights
                 chatInput.value = '';
                 chatInput.style.height = 'auto';
+                chatInputContainer.style.height = '100px';
                 
                 // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -815,108 +1928,1342 @@
         }
         
         // Load saved settings
-        function loadSettings() {
-            console.log('Loading saved settings');
+        function loadSettingsPreservingWorkspace() {
+            // Remember current workspace path
+            const workspacePath = document.getElementById('workspacePath');
+            const currentPath = workspacePath ? workspacePath.value : '';
             
-            // Load theme setting
-            const savedTheme = localStorage.getItem('darkMode');
+            // Load other settings
             const themeToggle = document.getElementById('themeToggle');
-            if (savedTheme !== null && themeToggle) {
-                themeToggle.checked = savedTheme === 'true';
-                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+            if (themeToggle) {
+                const theme = localStorage.getItem('theme') || 'dark';
+                themeToggle.checked = theme === 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
             }
             
-            // Load zoom setting
-            const savedZoom = localStorage.getItem('defaultZoom');
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                const savedFontSize = localStorage.getItem('fontSize') || '16';
+                fontSize.value = savedFontSize;
+                document.documentElement.style.fontSize = savedFontSize + 'px';
+            }
+            
             const defaultZoom = document.getElementById('defaultZoom');
-            if (savedZoom !== null && defaultZoom) {
+            if (defaultZoom) {
+                const savedZoom = localStorage.getItem('defaultZoom') || '1';
                 defaultZoom.value = savedZoom;
             }
             
-            // Load other settings
-            const savedAutoSave = localStorage.getItem('autoSave');
-            const autoSave = document.getElementById('autoSave');
-            if (savedAutoSave !== null && autoSave) {
-                autoSave.checked = savedAutoSave === 'true';
-            }
-            
-            const savedSpellCheck = localStorage.getItem('spellCheck');
-            const spellCheck = document.getElementById('spellCheck');
-            if (savedSpellCheck !== null && spellCheck) {
-                spellCheck.checked = savedSpellCheck === 'true';
-            }
-            
-            const savedDisablePopups = localStorage.getItem('disablePopups');
-            const disablePopups = document.getElementById('disablePopups');
-            if (savedDisablePopups !== null && disablePopups) {
-                disablePopups.checked = savedDisablePopups === 'true';
-            }
-            
-            const savedSmoothScroll = localStorage.getItem('smoothScroll');
             const smoothScroll = document.getElementById('smoothScroll');
-            if (savedSmoothScroll !== null && smoothScroll) {
+            if (smoothScroll) {
+                const savedSmoothScroll = localStorage.getItem('smoothScroll');
                 smoothScroll.checked = savedSmoothScroll === 'true';
             }
             
-            const savedFontSize = localStorage.getItem('fontSize');
-            const fontSize = document.getElementById('fontSize');
-            if (savedFontSize !== null && fontSize) {
-                fontSize.value = savedFontSize;
+            // Restore workspace path
+            if (workspacePath && currentPath) {
+                workspacePath.value = currentPath;
             }
         }
         
-        // Save settings
-        function saveAllSettings(shouldCloseModal = true) {
-            console.log('Saving all settings');
+        // Function to save settings
+        function saveSettings() {
+            console.log('Saving settings');
             
             // Save theme setting
             const themeToggle = document.getElementById('themeToggle');
             if (themeToggle) {
-                localStorage.setItem('darkMode', themeToggle.checked);
-                document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
+                localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
             }
             
-            // Save zoom setting
+            // Save font size setting
+            const fontSize = document.getElementById('fontSize');
+            if (fontSize) {
+                localStorage.setItem('fontSize', fontSize.value);
+            }
+            
+            // Save default zoom setting
             const defaultZoom = document.getElementById('defaultZoom');
             if (defaultZoom) {
                 localStorage.setItem('defaultZoom', defaultZoom.value);
             }
             
-            // Save other settings
-            const autoSave = document.getElementById('autoSave');
-            if (autoSave) {
-                localStorage.setItem('autoSave', autoSave.checked);
-            }
-            
-            const spellCheck = document.getElementById('spellCheck');
-            if (spellCheck) {
-                localStorage.setItem('spellCheck', spellCheck.checked);
-            }
-            
-            const disablePopups = document.getElementById('disablePopups');
-            if (disablePopups) {
-                localStorage.setItem('disablePopups', disablePopups.checked);
-            }
-            
+            // Save smooth scroll setting
             const smoothScroll = document.getElementById('smoothScroll');
             if (smoothScroll) {
                 localStorage.setItem('smoothScroll', smoothScroll.checked);
             }
             
-            const fontSize = document.getElementById('fontSize');
-            if (fontSize) {
-                localStorage.setItem('fontSize', fontSize.value);
-                document.documentElement.style.fontSize = fontSize.value + 'px';
+            // Check workspace folder path
+            const workspacePath = document.getElementById('workspacePath');
+            if (workspacePath && !workspacePath.value.trim()) {
+                // Clear the saved path if input is empty
+                localStorage.removeItem('workspaceFolderPath');
+                // Reset file system and show empty state
+                if (typeof initializeFileSystem === 'function') {
+                    initializeFileSystem();
+                }
             }
             
-            // Close the modal if requested
-            if (shouldCloseModal) {
+            // Close the modal with enhanced close function
+                directCloseModal('settingsModal');
+        }
+
+        // Local file workspace functionality
+        
+        // Function to handle folder selection with cross-browser support
+        async function selectWorkspaceFolder() {
+            try {
+                // Try modern File System Access API first (Chrome, Edge, etc.)
+                if (typeof window.showDirectoryPicker === 'function') {
+                    try {
+                        // Show directory picker
+                        const directoryHandle = await window.showDirectoryPicker();
+                        
+                        // Save folder path
+                        const workspacePath = document.getElementById('workspacePath');
+                        if (workspacePath) {
+                            workspacePath.value = directoryHandle.name;
+                            localStorage.setItem('workspaceFolderPath', directoryHandle.name);
+                            
+                            // Store handle for current session
+                            window.workspaceFolderHandle = directoryHandle;
+                            
+                            // Update file system with files from this folder
+                            await updateFileSystemFromLocalFolder(directoryHandle);
+                        }
+                    } catch (error) {
+                        console.error('Error with directory picker:', error);
+                        if (error.name === 'AbortError') {
+                            console.log('User cancelled folder selection');
+                            // Only clear if no path is already set
+                            const savedPath = localStorage.getItem('workspaceFolderPath');
+                            if (!savedPath) {
+                                // Keep showing empty state
+                                ensureEmptyFileTree();
+                            }
+                        } else {
+                            // If error is not user cancellation, try fallback
+                            useFallbackFolderSelection();
+                        }
+                    }
+                } else {
+                    // Browser doesn't support File System Access API (Firefox, Safari, etc.)
+                    console.log('Browser does not support File System Access API, using fallback method');
+                    useFallbackFolderSelection();
+                }
+            } catch (error) {
+                console.error('Error in folder selection:', error);
+                useFallbackFolderSelection();
+            }
+        }
+        
+        // Helper function to ensure file tree is empty
+        function ensureEmptyFileTree() {
+            console.log('Ensuring file tree is empty');
+            
+            // Reset file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
+            };
+            
+            // Reset expandedFolders
+            if (window.expandedFolders) {
+                window.expandedFolders.clear();
+                window.expandedFolders.add('root');
+            }
+            
+            // Reset selected item
+            window.selectedItemId = null;
+            
+            // Render empty file tree
+            if (typeof window.renderFileTree === 'function') {
+                window.renderFileTree();
+            } else {
+                // If renderFileTree isn't available yet, empty the file tree element directly
+                const fileTreeElement = document.getElementById('fileTree');
+                if (fileTreeElement) {
+                    fileTreeElement.innerHTML = '';
+                }
+            }
+            
+            // Show empty workspace message
+            showEmptyWorkspaceMessage();
+        }
+        
+        // Fallback folder selection for Firefox, Safari, and other browsers
+        function useFallbackFolderSelection() {
+            // Create a hidden file input element
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            // Try different directory attributes for maximum compatibility
+            fileInput.setAttribute('webkitdirectory', '');
+            fileInput.setAttribute('directory', '');
+            fileInput.setAttribute('mozdirectory', '');
+            fileInput.setAttribute('multiple', '');
+            
+            // Handle file selection
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    // Get the folder name from the first file's path
+                    const firstFile = this.files[0];
+                    let folderName = 'Unknown Folder';
+                    
+                    // Different browsers provide different path information
+                    if (firstFile.webkitRelativePath) {
+                        folderName = firstFile.webkitRelativePath.split('/')[0];
+                    } else if (firstFile.name) {
+                        // Try to extract folder name from file path if available
+                        const pathMatch = firstFile.name.match(/([^\/\\]+)[\\/][^\/\\]+$/);
+                        if (pathMatch) {
+                            folderName = pathMatch[1];
+                        }
+                    }
+                    
+                    // Update UI with folder name
+                    const workspacePath = document.getElementById('workspacePath');
+                    if (workspacePath) {
+                        workspacePath.value = folderName;
+                        localStorage.setItem('workspaceFolderPath', folderName);
+                    }
+                    
+                    // Process all selected files
+                    processFilesFromInput(this.files);
+                }
+            });
+            
+            // Trigger the file input dialog
+            fileInput.click();
+        }
+        
+        // Process files from the file input element (fallback method)
+        function processFilesFromInput(files) {
+            try {
+                if (!files || files.length === 0) {
+                    console.log('No files selected, showing empty state');
+                    // Clear file system
+                    window.fileSystem = {
+                        id: 'root',
+                        type: 'folder',
+                        children: []
+                    };
+                    
+                    // Render empty file tree
+            renderFileTree();
+            
+                    // Show empty workspace message
+                    showEmptyWorkspaceMessage();
+                    return;
+                }
+                
+                // Create new file system structure
+                const newFileSystem = {
+                    id: 'root',
+                    type: 'folder',
+                    children: []
+                };
+                
+                // Create a map to track folders
+                const folderMap = new Map();
+                folderMap.set('root', newFileSystem);
+                
+                // Process each file
+                Array.from(files).forEach(file => {
+                    // Get the path parts
+                    const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : ['root', file.name];
+                    
+                    // Skip the first part (base folder name)
+                    let currentPath = '';
+                    let parentFolderId = 'root';
+                    
+                    // Create folder structure
+                    for (let i = 0; i < pathParts.length - 1; i++) {
+                        const folderName = pathParts[i];
+                        currentPath += '/' + folderName;
+                        
+                        // Skip root folder (already exists)
+                        if (i === 0) continue;
+                        
+                        // Create folder if it doesn't exist
+                        if (!folderMap.has(currentPath)) {
+                            const folderId = generateUniqueId();
+                            const newFolder = {
+                                id: folderId,
+                                name: folderName,
+                                type: 'folder',
+                                children: []
+                            };
+                            
+                            // Add to parent folder
+                            const parentFolder = folderMap.get(parentFolderId);
+                            parentFolder.children.push(newFolder);
+                            
+                            // Add to folder map
+                            folderMap.set(currentPath, newFolder);
+                        }
+                        
+                        parentFolderId = currentPath;
+                    }
+                    
+                    // Process file
+                    const fileName = pathParts[pathParts.length - 1];
+                    
+                    // Determine file type
+                    let fileType = 'unknown';
+                    if (fileName.toLowerCase().endsWith('.pdf')) {
+                        fileType = 'pdf';
+                    } else if (/\.(jpe?g|png|gif|bmp|webp)$/i.test(fileName)) {
+                        fileType = 'image';
+                    } else if (/\.(md|markdown)$/i.test(fileName)) {
+                        fileType = 'markdown';
+                    } else if (/\.(docx?|xlsx?|pptx?|txt|json|csv)$/i.test(fileName)) {
+                        fileType = 'doc';
+                    }
+                    
+                    // Create file object
+                    const fileObj = {
+                        id: generateUniqueId(),
+                        name: fileName,
+                        type: 'file',
+                        fileType: fileType,
+                        file: file,
+                        lastModified: file.lastModified,
+                        size: file.size
+                    };
+                    
+                    // Add to parent folder
+                    const parentFolder = folderMap.get(parentFolderId);
+                    parentFolder.children.push(fileObj);
+                });
+                
+                // Update the global file system
+                fileSystem.children = newFileSystem.children;
+                
+                // Clear selected item
+                selectedItemId = null;
+                
+                // Re-render the file tree - make sure to use the properly scoped function
+                if (typeof window.renderFileTree === 'function') {
+                    window.renderFileTree();
+                } else if (typeof renderFileTree === 'function') {
+                    renderFileTree();
+                } else {
+                    console.error('renderFileTree function not found');
+                    // Fallback to reloading the page
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+                
+                // Hide any empty workspace message
+                hideEmptyWorkspaceMessage();
+                
+                console.log('File system updated from input files:', fileSystem);
+            } catch (error) {
+                console.error('Error processing files from input:', error);
+                alert('Error reading workspace folder: ' + error.message);
+                
+                // Close settings modal in case of error
                 directCloseModal('settingsModal');
             }
         }
         
-        // Add event listeners when DOM is loaded
+        // Function to get file content for display (supports both modern and fallback methods)
+        async function getFileContent(fileItem) {
+            if (!fileItem) {
+                console.error('Invalid file item');
+                return null;
+            }
+            
+            try {
+                let file = null;
+                
+                // Modern API method (using fileHandle)
+                if (fileItem.fileHandle) {
+                    file = await fileItem.fileHandle.getFile();
+                } 
+                // Fallback method (using direct file reference)
+                else if (fileItem.file) {
+                    file = fileItem.file;
+                } else {
+                    console.error('File item has no file reference');
+                    return null;
+                }
+                
+                // For PDFs, create a blob URL
+                if (fileItem.fileType === 'pdf') {
+                    const blobURL = URL.createObjectURL(file);
+                    return { url: blobURL, type: 'pdf' };
+                }
+                
+                // For other file types, return appropriate data
+                return { file, type: fileItem.fileType };
+            } catch (error) {
+                console.error('Error getting file content:', error);
+                return null;
+            }
+        }
+
+        // Function to update file system from local folder (using File System Access API)
+        async function updateFileSystemFromLocalFolder(directoryHandle) {
+            try {
+                // If directoryHandle is a string (from localStorage), try to recover the actual handle
+                if (typeof directoryHandle === 'string') {
+                    if (window.workspaceFolderHandle) {
+                        directoryHandle = window.workspaceFolderHandle;
+            } else {
+                        // We don't have a valid handle, show the empty state
+                        fileSystem.children = [];
+                        
+                        // Make sure to use the properly scoped function
+                        if (typeof window.renderFileTree === 'function') {
+                            window.renderFileTree();
+                        } else if (typeof renderFileTree === 'function') {
+                            renderFileTree();
+                        } else {
+                            console.error('renderFileTree function not found');
+                            // Fallback to reloading the page
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        }
+                        
+                        showEmptyWorkspaceMessage();
+                        return;
+                    }
+                }
+                
+                // Clear the existing file system
+                const newFileSystem = {
+                    id: 'root',
+                    type: 'folder',
+                    children: []
+                };
+                
+                // Process the directory recursively
+                await processDirectory(directoryHandle, newFileSystem.children);
+                
+                // Update the global file system
+                fileSystem.children = newFileSystem.children;
+                
+                // Clear selected item
+                selectedItemId = null;
+                
+                // Re-render the file tree - make sure to use the properly scoped function
+                if (typeof window.renderFileTree === 'function') {
+                    window.renderFileTree();
+                } else if (typeof renderFileTree === 'function') {
+                    renderFileTree();
+                } else {
+                    console.error('renderFileTree function not found');
+                    // Fallback to reloading the page
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+                
+                // Hide any empty workspace message
+                hideEmptyWorkspaceMessage();
+                
+                console.log('File system updated from local folder:', fileSystem);
+            } catch (error) {
+                console.error('Error updating file system:', error);
+                alert('Error reading workspace folder: ' + error.message);
+                
+                // Close settings modal in case of error
+                directCloseModal('settingsModal');
+            }
+        }
+        
+        // Function to process a directory recursively
+        async function processDirectory(directoryHandle, children) {
+            // Process files and subfolders
+            for await (const entry of directoryHandle.values()) {
+                if (entry.kind === 'file') {
+                    // Process file
+                    const file = await entry.getFile();
+                    
+                    // Determine file type
+                    let fileType = 'unknown';
+                    if (file.name.toLowerCase().endsWith('.pdf')) {
+                        fileType = 'pdf';
+                    } else if (/\.(jpe?g|png|gif|bmp|webp)$/i.test(file.name)) {
+                        fileType = 'image';
+                    } else if (/\.(md|markdown)$/i.test(file.name)) {
+                        fileType = 'markdown';
+                    } else if (/\.(docx?|xlsx?|pptx?|txt|json|csv)$/i.test(file.name)) {
+                        fileType = 'doc';
+                    }
+                    
+                    // Add file to children
+                    children.push({
+                        id: generateUniqueId(),
+                        name: file.name,
+                        type: 'file',
+                        fileType: fileType,
+                        fileHandle: entry,
+                        lastModified: file.lastModified,
+                        size: file.size
+                    });
+                } else if (entry.kind === 'directory') {
+                    // Process subfolder
+                    const subfolderChildren = [];
+                    const subfolderId = generateUniqueId();
+                    
+                    // Add subfolder to children first
+                    children.push({
+                        id: subfolderId,
+                        name: entry.name,
+                        type: 'folder',
+                        children: subfolderChildren,
+                        folderHandle: entry
+                    });
+                    
+                    // Recursively process subfolder
+                    await processDirectory(entry, subfolderChildren);
+                }
+            }
+        }
+        
+        // Generate a unique ID for files and folders
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+        
+        // Function to show empty workspace message
+        function showEmptyWorkspaceMessage() {
+            console.log('Showing empty workspace message');
+            
+            // Find or create PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) {
+                console.error('PDF viewer element not found');
+                return;
+            }
+            
+            // Find or create PDF container
+            let pdfContainer = document.getElementById('pdfContainer');
+            if (!pdfContainer) {
+                console.log('Creating new PDF container');
+                pdfContainer = document.createElement('div');
+                pdfContainer.id = 'pdfContainer';
+                pdfContainer.className = 'pdf-container';
+                pdfViewer.appendChild(pdfContainer);
+            } else {
+                // Clear existing content
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Create and add empty workspace message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-workspace-message';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-folder-open"></i>
+                <h3>No Workspace Folder Selected</h3>
+                <p>Select a local folder to use as your workspace in Settings > PDF Viewer.</p>
+                <button id="selectWorkspaceFolderBtn" class="modal-btn modal-btn-primary">
+                    <i class="fas fa-folder"></i> Select Folder
+                </button>
+            `;
+            pdfContainer.appendChild(emptyMessage);
+            
+            // Add click handler to the button
+            const selectBtn = document.getElementById('selectWorkspaceFolderBtn');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', function() {
+                    // Open settings modal
+                    directOpenModal('settingsModal');
+                    
+                    // Switch to PDF viewer tab
+                    const pdfViewerTab = document.querySelector('.settings-sidebar li[data-setting="pdf-viewer"]');
+                    if (pdfViewerTab) {
+                        pdfViewerTab.click();
+                    }
+                });
+            }
+        }
+        
+        // Function to hide empty workspace message
+        function hideEmptyWorkspaceMessage() {
+            const emptyMessage = document.querySelector('.empty-workspace-message');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+        }
+        
+        // Function to select an item in the file tree
+        function selectItem(itemId) {
+            console.log(`[FileTree] selectItem called with itemId: ${itemId}`);
+            
+            // Find the item in the file system
+            const findItem = (folder) => {
+                if (folder.id === itemId) {
+                    return folder;
+                }
+                
+                if (folder.children) {
+                    for (const child of folder.children) {
+                        const found = findItem(child);
+                        if (found) return found;
+                    }
+                }
+                
+                return null;
+            };
+            
+            const item = findItem(fileSystem);
+            
+            if (!item) {
+                console.error(`[FileTree] Item with id ${itemId} not found in file system`);
+                return;
+            }
+            
+            console.log(`[FileTree] Found item:`, item);
+            
+            // Only select the item if it's a file
+            if (item && item.type === 'file') {
+                selectedItemId = itemId;
+                console.log(`[FileTree] Selected item ID set to: ${selectedItemId}`);
+                
+                // Remove selected class from all items
+                document.querySelectorAll('.tree-item-content').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                // Add selected class to selected item
+                const selectedItem = document.querySelector(`.tree-item[data-id="${itemId}"] > .tree-item-content`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+                
+                console.log(`[FileTree] Selected item: ${itemId}`);
+                
+                // Hide both containers initially
+                const pdfContainer = document.getElementById('pdfPagesContainer');
+                const markdownContainer = document.getElementById('markdownContainer');
+                if (pdfContainer) pdfContainer.style.display = 'none';
+                if (markdownContainer) markdownContainer.style.display = 'none';
+                
+                // Load the file based on its type
+                if (item.fileType === 'pdf') {
+                    console.log(`[FileTree] Item is a PDF file, loading content`);
+                    
+                    // Show PDF container
+                    if (pdfContainer) {
+                        pdfContainer.style.display = 'block';
+                        pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF...</div>';
+                    }
+                    
+                    // Get the file content
+                    if (item.file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const arrayBuffer = e.target.result;
+                            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+                            const url = URL.createObjectURL(blob);
+                            
+                            // First ensure the PDF functions are available
+                            ensurePDFFunctionsAvailable();
+                            
+                            // Use the existing PDF.js function
+                            if (typeof window.loadPDF === 'function') {
+                                try {
+                                    // Try to load the PDF
+                                    const result = window.loadPDF(url);
+                                    
+                                    // Handle both Promise and direct return cases
+                                    if (result && typeof result.then === 'function') {
+                                        // It's a Promise
+                                        result.then(function(success) {
+                                            if (success) {
+                                                console.log(`[FileTree] Successfully loaded PDF from file: ${item.name}`);
+                                            }
+                                        }).catch(function(error) {
+                                            console.error('[FileTree] Error loading PDF:', error);
+                                        });
+                                    } else if (result === true) {
+                                        // Direct true return
+                                        console.log(`[FileTree] Successfully loaded PDF from file: ${item.name}`);
+                                    } else {
+                                        // Failed or unknown return type
+                                        console.error(`[FileTree] loadPDF failed for file: ${item.name}, returned:`, result);
+                                    }
+                                } catch (error) {
+                                    console.error(`[FileTree] Error calling loadPDF for file: ${item.name}:`, error);
+                                }
+                            } else {
+                                // Direct fallback - create our own basic PDF loader
+                                console.error('[FileTree] loadPDF function not available, using fallback');
+                                pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
+                                
+                                if (typeof pdfjsLib !== 'undefined') {
+                                    const loadingTask = pdfjsLib.getDocument(url);
+                                    loadingTask.promise.then(function(pdf) {
+                                        console.log(`[FileTree] PDF loaded successfully via fallback: ${item.name} with ${pdf.numPages} pages`);
+                                        
+                                        // Clear container
+                                        pdfContainer.innerHTML = '';
+                                        
+                                        // Use our fallback renderPage function
+                                        const renderPromises = [];
+                                        for (let i = 1; i <= pdf.numPages; i++) {
+                                            renderPromises.push(fallbackRenderPage(pdf, i, pdfContainer));
+                                        }
+                                        
+                                        // Wait for all pages to be rendered
+                                        Promise.all(renderPromises)
+                                            .then(function(pageDivs) {
+                                                console.log(`[FileTree] All ${pageDivs.length} pages rendered via fallback`);
+                                            })
+                                            .catch(function(error) {
+                                                console.error('[FileTree] Error rendering pages via fallback:', error);
+                                            });
+                                    }).catch(function(error) {
+                                        console.error(`[FileTree] Error loading PDF via fallback: ${item.name}:`, error);
+                                        pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                                    });
+                                } else {
+                                    console.error('[FileTree] PDF.js library not available for fallback');
+                                    pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
+                                }
+                            }
+                        };
+                        reader.readAsArrayBuffer(item.file);
+                    }
+                }
+            }
+        }
+
+        // Global search variables
+        let currentSearchResults = [];
+        let currentResultIndex = -1;
+
+        function clearSearchHighlights() {
+            document.querySelectorAll('.search-highlight').forEach(highlight => highlight.remove());
+            currentSearchResults = [];
+            currentResultIndex = -1;
+        }
+
+        function highlightSearchResults(searchTerm) {
+            if (!searchTerm) return;
+            
+            clearSearchHighlights();
+            
+            const textLayers = document.querySelectorAll('.textLayer');
+            const searchRegex = new RegExp(searchTerm, 'gi');
+            let totalMatches = 0;
+            
+            textLayers.forEach(textLayer => {
+                const textElements = textLayer.querySelectorAll('span');
+                const textLayerRect = textLayer.getBoundingClientRect();
+                
+                textElements.forEach(span => {
+                    const text = span.textContent;
+                    let match;
+                    
+                    // Get the span's computed style for accurate measurements
+                    const spanStyle = window.getComputedStyle(span);
+                    const spanRect = span.getBoundingClientRect();
+                    
+                    while ((match = searchRegex.exec(text)) !== null) {
+                        const highlight = document.createElement('div');
+                        highlight.className = 'search-highlight';
+                        
+                        // Calculate the position of the match within the span
+                        const preMatchText = text.substring(0, match.index);
+                        const matchText = match[0];
+                        
+                        // Create temporary span for measurements
+                        const tempSpan = document.createElement('span');
+                        Object.assign(tempSpan.style, {
+                            font: spanStyle.font,
+                            fontSize: spanStyle.fontSize,
+                            letterSpacing: spanStyle.letterSpacing,
+                            position: 'absolute',
+                            visibility: 'hidden',
+                            whiteSpace: 'pre',
+                            display: 'inline-block',
+                            transform: 'none'
+                        });
+                        
+                        // Measure pre-match width
+                        tempSpan.textContent = preMatchText;
+                        document.body.appendChild(tempSpan);
+                        const preMatchWidth = tempSpan.getBoundingClientRect().width;
+                        
+                        // Measure match width
+                        tempSpan.textContent = matchText;
+                        const matchWidth = tempSpan.getBoundingClientRect().width;
+                        tempSpan.remove();
+                        
+                        // Get the transform matrix from the span
+                        const transform = spanStyle.transform;
+                        const matrix = new DOMMatrix(transform);
+                        const scale = matrix.a; // Horizontal scale factor
+                        
+                        // Calculate position relative to text layer, accounting for transform
+                        const scaledPreMatchWidth = preMatchWidth * scale;
+                        const scaledMatchWidth = matchWidth * scale;
+                        const left = spanRect.left - textLayerRect.left + scaledPreMatchWidth;
+                        const top = spanRect.top - textLayerRect.top;
+                        
+                        // Position and size the highlight
+                        highlight.style.left = `${left}px`;
+                        highlight.style.top = `${top}px`;
+                        highlight.style.width = `${scaledMatchWidth}px`;
+                        highlight.style.height = `${spanRect.height}px`;
+                        
+                        // Apply the same transform as the text span
+                        highlight.style.transform = transform;
+                        highlight.style.transformOrigin = 'left top';
+                        
+                        textLayer.appendChild(highlight);
+                        currentSearchResults.push({
+                            element: highlight,
+                            page: textLayer.closest('.pdf-page')
+                        });
+                        totalMatches++;
+                    }
+                });
+            });
+            
+            if (currentSearchResults.length > 0) {
+                currentResultIndex = 0;
+                const current = currentSearchResults[0];
+                current.element.classList.add('current');
+                current.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                updateSearchCount();
+            }
+            
+            console.log(`Found ${totalMatches} matches for "${searchTerm}"`);
+        }
+
+        function navigateSearchResults(direction) {
+            if (currentSearchResults.length === 0) return;
+            
+            currentSearchResults[currentResultIndex].element.classList.remove('current');
+            
+            if (direction === 'next') {
+                currentResultIndex = (currentResultIndex + 1) % currentSearchResults.length;
+                    } else {
+                currentResultIndex = (currentResultIndex - 1 + currentSearchResults.length) % currentSearchResults.length;
+            }
+            
+            const current = currentSearchResults[currentResultIndex];
+            current.element.classList.add('current');
+            current.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            updateSearchCount();
+        }
+
+        // Initialize search controls - Updated
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Search] Initializing search controls');
+            
+            const searchIcon = document.getElementById('searchIcon');
+            const searchModal = document.getElementById('searchModal');
+            const closeSearchModal = document.getElementById('closeSearchModal');
+            const searchInput = document.getElementById('pdfSearchInput');
+            const prevResult = document.getElementById('prevResult');
+            const nextResult = document.getElementById('nextResult');
+            const searchCount = document.getElementById('searchCount');
+            
+            console.log('[Search] Elements found:', {
+                searchIcon: !!searchIcon,
+                searchModal: !!searchModal,
+                closeSearchModal: !!closeSearchModal,
+                searchInput: !!searchInput,
+                prevResult: !!prevResult,
+                nextResult: !!nextResult,
+                searchCount: !!searchCount
+            });
+
+            // Handle Ctrl+F to open search modal
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault(); // Prevent browser's default search
+                    if (searchModal && searchInput) {
+                        searchModal.style.display = 'block';
+                        searchModal.style.opacity = '1';
+                        searchModal.style.visibility = 'visible';
+                        searchModal.classList.add('active');
+                        searchInput.value = ''; // Clear previous search
+                        searchInput.focus();
+                        clearSearchHighlights();
+                    }
+                }
+            });
+            
+            if (searchIcon && searchModal && closeSearchModal) {
+                // Toggle search modal
+                searchIcon.addEventListener('click', (e) => {
+                    console.log('[Search] Search icon clicked');
+                    e.stopPropagation(); // Prevent event from bubbling up
+                    searchModal.style.display = 'block';
+                    searchModal.style.opacity = '1';
+                    searchModal.style.visibility = 'visible';
+                    searchModal.classList.add('active');
+                    console.log('[Search] Search modal display:', searchModal.style.display);
+                    console.log('[Search] Search modal classes:', searchModal.className);
+                    
+                    if (searchInput) {
+                        searchInput.value = ''; // Clear previous search
+                        searchInput.focus();
+                        clearSearchHighlights();
+                    }
+                });
+                
+                // Function to close the modal with animation
+                function closeModalWithAnimation() {
+                    searchModal.classList.remove('active');
+                    // Wait for animation to complete before hiding
+                    setTimeout(() => {
+                        searchModal.style.display = 'none';
+                        searchModal.style.opacity = '0';
+                        searchModal.style.visibility = 'hidden';
+                        clearSearchHighlights();
+                    }, 500); // Match the animation duration
+                }
+                
+                // Updated close button behavior
+                closeSearchModal.addEventListener('click', (e) => {
+                    console.log('[Search] Close button clicked');
+                    e.stopPropagation(); // Prevent event from bubbling up
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        // If there's text, clear it
+                        searchInput.value = '';
+                        clearSearchHighlights();
+                        updateSearchCount();
+                    } else {
+                        // If no text, close the modal with animation
+                        closeModalWithAnimation();
+                    }
+                });
+                
+                // Close modal only on Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && searchModal.style.display === 'block') {
+                        closeModalWithAnimation();
+                    }
+                });
+            }
+            
+            if (searchInput) {
+                // Search input events
+                let debounceTimeout;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounceTimeout);
+                    debounceTimeout = setTimeout(() => {
+                        const searchTerm = searchInput.value.trim();
+                        if (searchTerm) {
+                            highlightSearchResults(searchTerm);
+                            updateSearchCount();
+                        } else {
+                            clearSearchHighlights();
+                            updateSearchCount();
+                        }
+                    }, 300); // Debounce search for better performance
+                });
+                
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            navigateSearchResults('prev');
+                        } else {
+                            navigateSearchResults('next');
+                        }
+                    } else if (e.key === 'Escape') {
+                        closeModalWithAnimation();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        navigateSearchResults('prev');
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        navigateSearchResults('next');
+                    }
+                });
+            }
+            
+            // Navigation buttons
+            if (prevResult && nextResult) {
+                prevResult.addEventListener('click', () => navigateSearchResults('prev'));
+                nextResult.addEventListener('click', () => navigateSearchResults('next'));
+            }
+        });
+
+        // Update search count display
+        function updateSearchCount() {
+            const searchCount = document.getElementById('searchCount');
+            const prevResult = document.getElementById('prevResult');
+            const nextResult = document.getElementById('nextResult');
+            
+            if (searchCount) {
+                if (currentSearchResults.length === 0) {
+                    searchCount.textContent = 'No results';
+                    prevResult.disabled = true;
+                    nextResult.disabled = true;
+                } else {
+                    searchCount.textContent = `${currentResultIndex + 1} of ${currentSearchResults.length}`;
+                    prevResult.disabled = false;
+                    nextResult.disabled = false;
+                }
+            }
+        }
+    </script>
+    <!-- Initialize zoom controls -->
+    <script>
+        // Initialize zoom controls
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Zoom] Initializing zoom controls');
+            
+            const zoomInBtn = document.getElementById('zoomIn');
+            const zoomOutBtn = document.getElementById('zoomOut');
+            const zoomLevel = document.getElementById('zoomLevel');
+            
+            // Get saved zoom level from localStorage or default to 100%
+            let currentZoom = parseFloat(localStorage.getItem('pdfZoom')) || 1.0;
+            
+            // Update zoom level display
+            function updateZoomDisplay() {
+                if (zoomLevel) {
+                    zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+                }
+            }
+            
+            // Function to apply zoom to all pages
+            function applyZoom(scale) {
+                const pdfContainer = document.getElementById('pdfContainer');
+                const pdfViewer = document.getElementById('pdfViewer');
+                if (!pdfContainer || !pdfViewer) return;
+
+                // Store original dimensions if not already stored
+                if (!pdfContainer.dataset.originalWidth) {
+                    pdfContainer.dataset.originalWidth = pdfContainer.offsetWidth;
+                    pdfContainer.dataset.originalHeight = pdfContainer.offsetHeight;
+                }
+
+                // Get the scroll position relative to the content before zoom
+                const scrollTop = pdfViewer.scrollTop;
+                const scrollLeft = pdfViewer.scrollLeft;
+                const viewerHeight = pdfViewer.offsetHeight;
+                const viewerWidth = pdfViewer.offsetWidth;
+                
+                // Calculate the center point of the viewport
+                const centerX = scrollLeft + (viewerWidth / 2);
+                const centerY = scrollTop + (viewerHeight / 2);
+                
+                // Calculate the relative position (0-1) of the center point
+                const relativeX = centerX / (pdfContainer.offsetWidth);
+                const relativeY = centerY / (pdfContainer.offsetHeight);
+
+                // Apply transform to the container
+                pdfContainer.style.transform = `scale(${scale})`;
+                
+                // Calculate new dimensions
+                const originalWidth = parseFloat(pdfContainer.dataset.originalWidth);
+                const originalHeight = parseFloat(pdfContainer.dataset.originalHeight);
+                const scaledWidth = originalWidth * scale;
+                const scaledHeight = originalHeight * scale;
+                
+                // Calculate margins to center the content
+                const marginX = Math.max(0, (viewerWidth - scaledWidth) / 2);
+                
+                // Update container size and centering
+                pdfContainer.style.width = `${originalWidth}px`;
+                pdfContainer.style.height = `${originalHeight}px`;
+                pdfContainer.style.minHeight = `${originalHeight}px`;
+                pdfContainer.style.marginLeft = `${marginX}px`;
+                
+                // Calculate new scroll position to maintain the same center point
+                const newScrollLeft = (relativeX * scaledWidth) - (viewerWidth / 2);
+                const newScrollTop = (relativeY * scaledHeight) - (viewerHeight / 2);
+                
+                // Apply new scroll position
+                requestAnimationFrame(() => {
+                    pdfViewer.scrollTo({
+                        left: Math.max(0, newScrollLeft),
+                        top: Math.max(0, newScrollTop),
+                        behavior: 'instant'
+                    });
+                });
+                
+                // Save zoom level to localStorage
+                localStorage.setItem('pdfZoom', scale);
+                updateZoomDisplay();
+                
+                // Ensure viewer has proper overflow
+                pdfViewer.style.overflowX = scale > 1 ? 'auto' : 'hidden';
+                pdfViewer.style.overflowY = 'auto';
+            }
+            
+            // Add click handlers for zoom buttons
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                    currentZoom = Math.min(currentZoom + 0.1, 3.0); // Max zoom of 300%
+                    applyZoom(currentZoom);
+                });
+            }
+            
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                    currentZoom = Math.max(currentZoom - 0.1, 0.2); // Min zoom of 20%
+                    applyZoom(currentZoom);
+                });
+            }
+
+            // Add mouse wheel zoom functionality to zoom level indicator
+            if (zoomLevel) {
+                zoomLevel.addEventListener('wheel', (e) => {
+                    e.preventDefault(); // Prevent page scrolling
+                    
+                    // Determine zoom direction based on wheel delta
+                    const delta = e.deltaY;
+                    const zoomStep = 0.05; // Smaller step for smoother zooming
+                    
+                    if (delta < 0) {
+                        // Scrolling up - zoom in
+                        currentZoom = Math.min(currentZoom + zoomStep, 3.0);
+                    } else {
+                        // Scrolling down - zoom out
+                        currentZoom = Math.max(currentZoom - zoomStep, 0.2);
+                    }
+                    
+                    applyZoom(currentZoom);
+                });
+            }
+            
+            // Initialize zoom display
+            updateZoomDisplay();
+            
+            // Apply saved zoom level on page load
+            applyZoom(currentZoom);
+        });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add resize handles to sidebars
+        const sidebar = document.querySelector('.sidebar');
+        const chatSection = document.querySelector('.chat-section');
+        
+        // Create and add resize handles
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'resize-handle left';
+        sidebar.appendChild(leftHandle);
+        
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'resize-handle right';
+        chatSection.appendChild(rightHandle);
+        
+        // Resize functionality
+        function initResize(handle, element, isLeft) {
+            let startX, startWidth;
+            
+            function startResizing(e) {
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(element).width, 10);
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResizing);
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            }
+            
+            function resize(e) {
+                const diff = e.clientX - startX;
+                let newWidth = isLeft ? startWidth + diff : startWidth - diff;
+                
+                // Apply min and max constraints
+                newWidth = Math.max(isLeft ? 150 : 200, Math.min(isLeft ? 500 : 600, newWidth));
+                
+                element.style.width = `${newWidth}px`;
+            }
+            
+            function stopResizing() {
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('mouseup', stopResizing);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+            
+            handle.addEventListener('mousedown', startResizing);
+        }
+        
+        // Initialize resize handlers
+        initResize(leftHandle, sidebar, true);
+        initResize(rightHandle, chatSection, false);
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const fileTreeBtn = document.getElementById('fileTreeBtn');
+        const chatBtn = document.getElementById('chatBtn');
+        const fileTreePanel = document.getElementById('fileTreePanel');
+        const chatPanel = document.getElementById('chatPanel');
+        let activeButton = fileTreeBtn;
+        let isCollapsed = false;
+        let lastWidth = 250;
+        let isResizing = false;
+
+        function togglePanel(button, panel) {
+            if (activeButton === button && !isCollapsed) {
+                lastWidth = parseInt(getComputedStyle(sidebar).width, 10);
+                sidebar.classList.add('collapsed');
+                isCollapsed = true;
+                sidebar.style.width = '48px';
+            } else {
+                sidebar.classList.remove('collapsed');
+                isCollapsed = false;
+                sidebar.style.width = `${lastWidth}px`;
+                
+                activeButton.classList.remove('active');
+                document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+                
+                button.classList.add('active');
+                panel.classList.add('active');
+                activeButton = button;
+            }
+        }
+
+        fileTreeBtn.addEventListener('click', () => togglePanel(fileTreeBtn, fileTreePanel));
+        chatBtn.addEventListener('click', () => togglePanel(chatBtn, chatPanel));
+
+        // Handle resize to collapse sidebar
+        const resizeHandle = document.querySelector('.resize-handle.left');
+        if (resizeHandle) {
+            let startX, startWidth;
+            const COLLAPSE_THRESHOLD = 160;
+
+            function preventSelection(e) {
+                e.preventDefault();
+            }
+            
+            function startResizing(e) {
+                if (e.button !== 0) return; // Only handle left mouse button
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(getComputedStyle(sidebar).width, 10);
+                
+                // Add event listeners
+                document.addEventListener('mousemove', handleResize);
+                document.addEventListener('mouseup', stopResizing, { once: true });
+                document.addEventListener('selectstart', preventSelection);
+                
+                // Set cursor and prevent text selection
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+                document.body.style.MozUserSelect = 'none';
+                
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function handleResize(e) {
+                if (!isResizing) return;
+                
+                const width = Math.max(48, Math.min(500, startWidth + (e.clientX - startX)));
+                requestAnimationFrame(() => {
+                    if (width <= COLLAPSE_THRESHOLD) {
+                        sidebar.classList.add('collapsed');
+                        isCollapsed = true;
+                        sidebar.style.width = '48px';
+                    } else {
+                        if (isCollapsed) {
+                            sidebar.classList.remove('collapsed');
+                            isCollapsed = false;
+                        }
+                        sidebar.style.width = `${width}px`;
+                        lastWidth = width;
+                    }
+                });
+            }
+            
+            function stopResizing() {
+                isResizing = false;
+                
+                // Remove event listeners
+                document.removeEventListener('mousemove', handleResize);
+                document.removeEventListener('selectstart', preventSelection);
+                
+                // Reset cursor and text selection
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+                document.body.style.MozUserSelect = '';
+            }
+            
+            resizeHandle.addEventListener('mousedown', startResizing);
+            
+            // Add touch support
+            resizeHandle.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                startResizing({ 
+                    button: 0,
+                    clientX: touch.clientX,
+                    preventDefault: () => e.preventDefault(),
+                    stopPropagation: () => e.stopPropagation()
+                });
+            }, { passive: false });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!isResizing) return;
+                const touch = e.touches[0];
+                handleResize({ clientX: touch.clientX });
+                e.preventDefault();
+            }, { passive: false });
+            
+            document.addEventListener('touchend', () => {
+                if (isResizing) {
+                    stopResizing();
+                }
+            });
+        }
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Model selector functionality
+        const modelSelectBtn = document.getElementById('modelSelectBtn');
+        const modelDropdown = document.getElementById('modelDropdown');
+        const modelOptions = document.querySelectorAll('.model-option');
+
+        // Toggle dropdown
+        modelSelectBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            modelDropdown.classList.remove('active');
+        });
+
+        // Handle model selection
+        modelOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // Update active state
+                modelOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Update button text
+                modelSelectBtn.innerHTML = `${option.querySelector('span').textContent} <i class="fas fa-chevron-down"></i>`;
+                
+                // Close dropdown
+                modelDropdown.classList.remove('active');
+            });
+        });
+
+        // Existing chat functionality...
+        // ... existing code ...
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners when DOM is loaded
             console.log('Direct script loaded');
             
             // Add click handler to settings button
@@ -929,7 +3276,7 @@
                     // Initialize tabs when modal is opened
                     initSettingsTabs();
                     // Load saved settings
-                    loadSettings();
+                loadSettingsPreservingWorkspace();
                     return false;
                 };
             }
@@ -958,6 +3305,22 @@
                     document.documentElement.style.fontSize = this.value + 'px';
                 });
             }
+        
+        // Add workspace folder selection event listener
+        const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+        if (selectWorkspaceFolderBtn) {
+            selectWorkspaceFolderBtn.addEventListener('click', function() {
+                selectWorkspaceFolder();
+            });
+        }
+        
+        // Add save settings button event listener
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', function() {
+                saveSettings();
+            });
+        }
             
             // Add click handler to modal overlay for closing when clicking outside
             const modalOverlays = document.querySelectorAll('.modal-overlay');
@@ -991,6 +3354,12 @@
             // Initialize file tree
             renderFileTree();
             
+        // Check if we have a workspace folder, if not show empty message
+        const savedPath = localStorage.getItem('workspaceFolderPath');
+        if (!savedPath && !fileSystem.children.length) {
+                        showEmptyWorkspaceMessage();
+        }
+        
             // Add click handlers for file tree action buttons
             const newNoteBtn = document.querySelector('.file-tree-actions .action-btn:nth-child(1)');
             if (newNoteBtn) {
@@ -1025,23 +3394,53 @@
                 });
             });
         });
-        
+    </script>
+    <script>
         // Function to render the file tree
         function renderFileTree() {
             const fileTreeElement = document.getElementById('fileTree');
-            if (!fileTreeElement) return;
+            if (!fileTreeElement) {
+                console.error('File tree element not found');
+                return;
+            }
             
+            try {
             // Clear existing content
             fileTreeElement.innerHTML = '';
+                
+                // Make sure fileSystem and expandedFolders are defined
+                if (typeof fileSystem === 'undefined') {
+                    window.fileSystem = {
+                        id: 'root',
+                        type: 'folder',
+                        children: []
+                    };
+                }
+                
+                if (typeof expandedFolders === 'undefined') {
+                    window.expandedFolders = new Set(['root']);
+                }
             
             // Render the root folder's children
             renderFolder(fileTreeElement, fileSystem);
             
-            console.log('File tree rendered');
+                console.log('File tree rendered successfully');
+            } catch (error) {
+                console.error('Error rendering file tree:', error);
+                // Show simple UI with error
+                fileTreeElement.innerHTML = `
+                    <div class="tree-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading files</p>
+                        <button onclick="location.reload()" class="tree-retry-btn">Retry</button>
+                    </div>
+                `;
+            }
         }
         
         // Function to render a folder and its children
         function renderFolder(parentElement, folder) {
+            try {
             const isExpanded = expandedFolders.has(folder.id);
             
             if (folder.id !== 'root') {
@@ -1097,11 +3496,15 @@
                         }
                     });
                 }
+                }
+            } catch (error) {
+                console.error('Error rendering folder:', error);
             }
         }
         
         // Function to render a file
         function renderFile(parentElement, file) {
+            try {
             const fileElement = document.createElement('div');
             fileElement.className = 'tree-item';
             fileElement.dataset.id = file.id;
@@ -1118,11 +3521,12 @@
                 fileIcon = 'fa-file-image';
             } else if (file.fileType === 'doc' || file.fileType === 'docx') {
                 fileIcon = 'fa-file-word';
+                } else if (file.fileType === 'md' || file.fileType === 'markdown') {
+                    fileIcon = 'fa-file-markdown';
             }
             
             fileContent.innerHTML = `
-                <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas fa-chevron-right"></i></span>
-                <span class="tree-item-icon"><i class="fas ${fileIcon}"></i></span>
+                    <span class="tree-item-toggle" style="visibility: hidden;"><i class="fas ${fileIcon}"></i></span>
                 <span class="tree-item-text">${file.name}</span>
             `;
             
@@ -1135,10 +3539,14 @@
             
             fileElement.appendChild(fileContent);
             parentElement.appendChild(fileElement);
+            } catch (error) {
+                console.error('Error rendering file:', error);
+            }
         }
         
         // Function to toggle folder expansion
         function toggleFolder(folderId) {
+            try {
             if (expandedFolders.has(folderId)) {
                 expandedFolders.delete(folderId);
             } else {
@@ -1146,116 +3554,474 @@
             }
             
             renderFileTree();
-        }
-        
-        // Function to select an item
-        function selectItem(itemId) {
-            // Find the item in the file system
-            const findItem = (folder) => {
-                if (folder.id === itemId) {
-                    return folder;
-                }
-                
-                if (folder.children) {
-                    for (const child of folder.children) {
-                        const found = findItem(child);
-                        if (found) return found;
-                    }
-                }
-                
-                return null;
-            };
-            
-            const item = findItem(fileSystem);
-            
-            // Only select the item if it's a file
-            if (item && item.type === 'file') {
-                selectedItemId = itemId;
-                
-                // Remove selected class from all items
-                document.querySelectorAll('.tree-item-content').forEach(item => {
-                    item.classList.remove('selected');
-                });
-                
-                // Add selected class to selected item
-                const selectedItem = document.querySelector(`.tree-item[data-id="${itemId}"] > .tree-item-content`);
-                if (selectedItem) {
-                    selectedItem.classList.add('selected');
-                }
-                
-                console.log(`Selected item: ${itemId}`);
+            } catch (error) {
+                console.error('Error toggling folder:', error);
             }
         }
         
-        // Function to create a new folder
-        function createNewFolder() {
-            const folderName = document.getElementById('folderName').value.trim();
-            if (!folderName) return;
-            
-            // Call the module function
-            window.createNewFolder(folderName);
-            
-            // Close modal
-            directCloseModal('newFolderModal');
-        }
+        // Make the functions globally accessible
+        window.renderFileTree = renderFileTree;
+        window.renderFolder = renderFolder;
+        window.renderFile = renderFile;
+        window.toggleFolder = toggleFolder;
+        window.showEmptyWorkspaceMessage = showEmptyWorkspaceMessage;
+        window.hideEmptyWorkspaceMessage = hideEmptyWorkspaceMessage;
+        window.directOpenModal = directOpenModal;
+        window.directCloseModal = directCloseModal;
+        window.initializeFileSystem = initializeFileSystem;
+        window.ensureEmptyFileTree = ensureEmptyFileTree;
         
-        // Function to create a new note
-        function createNewNote() {
-            const noteName = document.getElementById('noteName').value.trim();
-            if (!noteName) return;
+        // Initialize file system
+        function initializeFileSystem() {
+            console.log('Initializing file system');
             
-            // Call the module function
-            window.createNewNote(noteName);
-            
-            // Close modal
-            directCloseModal('newNoteModal');
-        }
-        
-        // Function to sort the file system
-        function sortFileSystem(sortType) {
-            console.log(`Sorting by: ${sortType}`);
-            
-            // Sort function
-            const sortFunction = (a, b) => {
-                // Folders always come before files
-                if (a.type === 'folder' && b.type === 'file') return -1;
-                if (a.type === 'file' && b.type === 'folder') return 1;
-                
-                // Sort by name
-                if (sortType === 'name') {
-                    return a.name.localeCompare(b.name);
-                }
-                
-                // For demo purposes, other sort types just use name
-                return a.name.localeCompare(b.name);
+            // Always start with empty file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
             };
             
-            // Sort root children
-            fileSystem.children.sort(sortFunction);
+            // Reset expandedFolders
+            if (window.expandedFolders) {
+                window.expandedFolders.clear();
+                window.expandedFolders.add('root');
+            }
             
-            // Sort children of all folders
-            const sortFolderChildren = (folder) => {
-                if (folder.children && folder.children.length > 0) {
-                    folder.children.sort(sortFunction);
-                    folder.children.forEach(child => {
-                        if (child.type === 'folder') {
-                            sortFolderChildren(child);
-                        }
+            // Reset selected item
+            window.selectedItemId = null;
+            
+            // Render empty file tree
+            if (typeof window.renderFileTree === 'function') {
+                window.renderFileTree();
+            } else {
+                const fileTreeElement = document.getElementById('fileTree');
+                if (fileTreeElement) {
+                    fileTreeElement.innerHTML = '';
+                }
+            }
+            
+            // Check if we have a workspace folder set in localStorage
+            const savedPath = localStorage.getItem('workspaceFolderPath');
+            
+            if (!savedPath) {
+                console.log('No workspace folder set, showing empty state');
+                showEmptyWorkspaceMessage();
+            } else {
+                console.log('Workspace folder found in localStorage:', savedPath);
+                // Update the input field
+                const workspacePath = document.getElementById('workspacePath');
+                if (workspacePath) {
+                    workspacePath.value = savedPath;
+                }
+                
+                // If we have a workspace folder handle, use it
+                if (window.workspaceFolderHandle) {
+                    updateFileSystemFromLocalFolder(window.workspaceFolderHandle).catch(error => {
+                        console.error('Failed to update from folder handle:', error);
+                        showEmptyWorkspaceMessage();
                     });
+                } else {
+                    showEmptyWorkspaceMessage();
                 }
-            };
-            
-            sortFolderChildren(fileSystem);
-            
-            // Re-render file tree
-            renderFileTree();
+            }
         }
         
-        // Function to sort files
-        function sortFiles(sortType) {
-            // Call the module function
-            window.sortFiles(sortType);
+        // Function to show empty workspace message
+        function showEmptyWorkspaceMessage() {
+            console.log('Showing empty workspace message');
+            
+            // Find or create PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (!pdfViewer) {
+                console.error('PDF viewer element not found');
+                        return;
+                    }
+                    
+            // Find or create PDF container
+            let pdfContainer = document.getElementById('pdfContainer');
+            if (!pdfContainer) {
+                console.log('Creating new PDF container');
+                pdfContainer = document.createElement('div');
+                pdfContainer.id = 'pdfContainer';
+                pdfContainer.className = 'pdf-container';
+                pdfViewer.appendChild(pdfContainer);
+            } else {
+                // Clear existing content
+                pdfContainer.innerHTML = '';
+            }
+            
+            // Create and add empty workspace message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-workspace-message';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-folder-open"></i>
+                <h3>No Workspace Folder Selected</h3>
+                <p>Select a local folder to use as your workspace in Settings > PDF Viewer.</p>
+                <button id="selectWorkspaceFolderBtn" class="modal-btn modal-btn-primary">
+                    <i class="fas fa-folder"></i> Select Folder
+                </button>
+            `;
+            pdfContainer.appendChild(emptyMessage);
+            
+            // Add click handler to the button
+            const selectBtn = document.getElementById('selectWorkspaceFolderBtn');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', function() {
+                    // Open settings modal
+                    directOpenModal('settingsModal');
+                    
+                    // Switch to PDF viewer tab
+                    const pdfViewerTab = document.querySelector('.settings-sidebar li[data-setting="pdf-viewer"]');
+                    if (pdfViewerTab) {
+                        pdfViewerTab.click();
+                    }
+                });
+            }
         }
+        
+        // Function to hide empty workspace message
+        function hideEmptyWorkspaceMessage() {
+            const emptyMessage = document.querySelector('.empty-workspace-message');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+        }
+        
+        // DOM loaded event handler
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM content loaded');
+            
+            // Initialize with empty file system
+            window.fileSystem = {
+                id: 'root',
+                type: 'folder',
+                children: []
+            };
+            
+            // Initialize empty file tree
+            const fileTreeElement = document.getElementById('fileTree');
+            if (fileTreeElement) {
+                fileTreeElement.innerHTML = '';
+            }
+            
+            // Remove any existing event listeners
+            removeExistingEventListeners();
+            
+            // Initialize file system and check for workspace folder
+            initializeFileSystem();
+            
+            // Add UI event listeners
+            addUIEventListeners();
+            
+            // Show empty workspace message immediately if no folder is selected
+            if (!savedPath) {
+                showEmptyWorkspaceMessage();
+            }
+        });
+        
+        // Remove any existing event listeners
+        function removeExistingEventListeners() {
+            // For settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                const newSettingsBtn = settingsBtn.cloneNode(true);
+                settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
+            }
+            
+            // For workspace folder selection button
+            const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+            if (selectWorkspaceFolderBtn) {
+                const newSelectBtn = selectWorkspaceFolderBtn.cloneNode(true);
+                selectWorkspaceFolderBtn.parentNode.replaceChild(newSelectBtn, selectWorkspaceFolderBtn);
+            }
+            
+            // For save settings button
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            if (saveSettingsBtn) {
+                const newSaveBtn = saveSettingsBtn.cloneNode(true);
+                saveSettingsBtn.parentNode.replaceChild(newSaveBtn, saveSettingsBtn);
+            }
+            
+            // For close buttons
+            document.querySelectorAll('.modal-close').forEach(function(btn) {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+            });
+            
+            // For modal overlays
+            document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+                const newOverlay = overlay.cloneNode(false);
+                while (overlay.firstChild) {
+                    newOverlay.appendChild(overlay.firstChild);
+                }
+                overlay.parentNode.replaceChild(newOverlay, overlay);
+            });
+        }
+        
+        // Add UI event listeners
+        function addUIEventListeners() {
+            // Add click handler to settings button
+            const settingsBtn = document.getElementById('sidebarSettingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', function() {
+                    console.log('Settings button clicked');
+                    directOpenModal('settingsModal');
+                });
+            }
+            
+            // Add click handlers to close buttons
+            const closeButtons = document.querySelectorAll('.modal-close');
+            closeButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const modalId = this.closest('.modal-overlay').id;
+                    directCloseModal(modalId);
+                });
+            });
+            
+            // Add workspace folder selection event listener
+            const selectWorkspaceFolderBtn = document.getElementById('selectWorkspaceFolder');
+            if (selectWorkspaceFolderBtn) {
+                selectWorkspaceFolderBtn.addEventListener('click', function() {
+                    selectWorkspaceFolder();
+                });
+            }
+            
+            // Add save settings button event listener
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', function() {
+                    saveSettings();
+                });
+            }
+            
+            // Add click handler to modal overlay for closing when clicking outside
+            const modalOverlays = document.querySelectorAll('.modal-overlay');
+            modalOverlays.forEach(function(overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        directCloseModal(this.id);
+                    }
+                });
+            });
+        }
+        
+        window.removeExistingEventListeners = removeExistingEventListeners;
+        window.addUIEventListeners = addUIEventListeners;
+    </script>
+    <!-- Helper function to fine-tune text layer alignment after rendering -->
+    <script>
+        function finetuneTextLayerAlignment(textLayer, viewport) {
+            // We're using a different approach now, focusing on individual text spans
+            // The previous implementation is no longer needed
+            return;
+        }
+        
+        // Helper function to adjust text span styles for proper alignment
+        function adjustTextSpanStyles(textLayer) {
+            const textSpans = textLayer.querySelectorAll('span');
+            
+            if (textSpans.length === 0) {
+                const divElements = textLayer.querySelectorAll('div');
+                if (divElements.length > 0) {
+                    console.log('[Adjust] Found div elements instead of spans, adjusting those');
+                    applyStyleAdjustments(divElements);
+                } else {
+                    console.log('[Adjust] No text elements found to adjust');
+                }
+            } else {
+                console.log(`[Adjust] Adjusting ${textSpans.length} text spans`);
+                applyStyleAdjustments(textSpans);
+            }
+            
+            function applyStyleAdjustments(elements) {
+                // First, identify lines by grouping elements with similar y-positions
+                const lineGroups = {};
+                const tolerance = 2; // Pixels of tolerance for considering elements on the same line
+                
+                elements.forEach(element => {
+                    const rect = element.getBoundingClientRect();
+                    const top = Math.round(rect.top);
+                    
+                    // Find the closest line group
+                    let foundGroup = false;
+                    for (const lineY in lineGroups) {
+                        if (Math.abs(top - parseInt(lineY)) <= tolerance) {
+                            lineGroups[lineY].push(element);
+                            foundGroup = true;
+                            break;
+                        }
+                    }
+                    
+                    // Create a new line group if not found
+                    if (!foundGroup) {
+                        lineGroups[top] = [element];
+                    }
+                });
+                
+                // Process each line group
+                Object.values(lineGroups).forEach(lineElements => {
+                    // Sort elements by their left position
+                    lineElements.sort((a, b) => {
+                        return a.getBoundingClientRect().left - b.getBoundingClientRect().left;
+                    });
+                    
+                    // For adjacent spans, ensure spacing is precise
+                    for (let i = 0; i < lineElements.length - 1; i++) {
+                        const currentElement = lineElements[i];
+                        const nextElement = lineElements[i + 1];
+                        
+                        // Set explicit data attributes to help with selection
+                        currentElement.dataset.lineIndex = i;
+                        currentElement.dataset.lineTotal = lineElements.length;
+                        
+                        // Mark adjacent spans
+                        if (i < lineElements.length - 1) {
+                            currentElement.dataset.hasNextSpan = 'true';
+                            nextElement.dataset.hasPrevSpan = 'true';
+                        }
+                    }
+                    
+                    // Apply styling to each element in the line
+                    lineElements.forEach((element, index) => {
+                        // Preserve original positioning
+                        const originalStyle = element.getAttribute('style') || '';
+                        
+                        // Extract positioning styles
+                        const leftMatch = originalStyle.match(/left:\s*([^;]+)/);
+                        const topMatch = originalStyle.match(/top:\s*([^;]+)/);
+                        const fontSizeMatch = originalStyle.match(/font-size:\s*([^;]+)/);
+                        const fontFamilyMatch = originalStyle.match(/font-family:\s*([^;]+)/);
+                        
+                        // Create a new style string preserving original positioning
+                        let newStyle = '';
+                        
+                        if (leftMatch) newStyle += `left: ${leftMatch[1]}; `;
+                        if (topMatch) newStyle += `top: ${topMatch[1]}; `;
+                        if (fontSizeMatch) newStyle += `font-size: ${fontSizeMatch[1]}; `;
+                        if (fontFamilyMatch) newStyle += `font-family: ${fontFamilyMatch[1]}; `;
+                        
+                        // Add the exact scale transform from the image
+                        newStyle += 'transform: scaleX(0.7); transform-origin: 0% 0%;';
+                        
+                        // Make selection more precise with slight padding adjustments
+                        newStyle += 'padding: 0px; margin: 0px; ';
+                        
+                        // Apply the new style
+                        element.setAttribute('style', newStyle);
+                        
+                        // Make sure the element has correct role and properties
+                        element.setAttribute('role', 'presentation');
+                        
+                        // Add data attributes to help with selection
+                        element.dataset.index = index;
+                    });
+                });
+                
+                // Add selection improvement listener
+                addSelectionImprovementListener(textLayer);
+                
+                console.log(`[Adjust] Adjusted ${elements.length} elements across ${Object.keys(lineGroups).length} lines`);
+            }
+            
+            // Function to improve selection across spans
+            function addSelectionImprovementListener(textLayer) {
+                // We only need to add this listener once per text layer
+                if (textLayer.dataset.selectionListenerAdded) return;
+                
+                textLayer.addEventListener('mouseup', function(e) {
+                    // Get the current selection
+                    const selection = window.getSelection();
+                    if (!selection.rangeCount) return;
+                    
+                    // Check if we have a selection that spans multiple elements
+                    if (selection.anchorNode !== selection.focusNode) {
+                        // Get all text spans between the anchor and focus nodes
+                        const allSpans = Array.from(textLayer.querySelectorAll('span'));
+                        
+                        // Find the spans containing the anchor and focus nodes
+                        let anchorSpan = null;
+                        let focusSpan = null;
+                        
+                        for (const span of allSpans) {
+                            if (span.contains(selection.anchorNode)) {
+                                anchorSpan = span;
+                            }
+                            if (span.contains(selection.focusNode)) {
+                                focusSpan = span;
+                            }
+                        }
+                        
+                        // No need to continue if we couldn't find both spans
+                        if (!anchorSpan || !focusSpan) return;
+                        
+                        // Get indices of spans in the array
+                        const anchorIndex = allSpans.indexOf(anchorSpan);
+                        const focusIndex = allSpans.indexOf(focusSpan);
+                        
+                        // No need to continue if both spans are the same
+                        if (anchorIndex === focusIndex) return;
+                        
+                        // Make sure anchorIndex is the smaller one
+                        const startIndex = Math.min(anchorIndex, focusIndex);
+                        const endIndex = Math.max(anchorIndex, focusIndex);
+                        
+                        // Ensure we're selecting full spans for any spans between start and end
+                        for (let i = startIndex + 1; i < endIndex; i++) {
+                            const intermediateSpan = allSpans[i];
+                            if (intermediateSpan) {
+                                // Check if this span is already fully selected
+                                if (!isSpanFullySelected(intermediateSpan, selection)) {
+                                    // If not fully selected, we need to ensure it's added to the selection
+                                    extendSelectionToIncludeSpan(selection, intermediateSpan);
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Mark that we've added the listener
+                textLayer.dataset.selectionListenerAdded = 'true';
+            }
+            
+            // Helper function to check if a span is fully selected
+            function isSpanFullySelected(span, selection) {
+                if (!selection.rangeCount) return false;
+                
+                const range = selection.getRangeAt(0);
+                
+                // If the range contains the span's start and end, it's fully selected
+                return range.intersectsNode(span) && 
+                       range.comparePoint(span, 0) <= 0 && 
+                       range.comparePoint(span, span.childNodes.length) >= 0;
+            }
+            
+            // Helper function to extend selection to include a span
+            function extendSelectionToIncludeSpan(selection, span) {
+                if (!selection.rangeCount) return;
+                
+                const range = selection.getRangeAt(0);
+                
+                // Create a new range that includes the current range plus the span
+                const newRange = range.cloneRange();
+                
+                // Extend the range to include the span if needed
+                if (range.comparePoint(span, 0) > 0) {
+                    newRange.setStartBefore(span);
+                }
+                
+                if (range.comparePoint(span, span.childNodes.length) < 0) {
+                    newRange.setEndAfter(span);
+                }
+                
+                // Replace the selection with our extended range
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
+        }
+        
+        // Export the function to window so it can be called from pdf.js
+        window.adjustTextSpanStyles = adjustTextSpanStyles;
     </script>
 </body>
-</html> 
+</html>
