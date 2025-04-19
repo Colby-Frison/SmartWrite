@@ -11,6 +11,326 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+    <!-- Marked library for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Prism for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+    <!-- CodeMirror for markdown editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+    
+    <!-- Direct fallback for ensuring markdown section is visible and accessible -->
+    <script>
+        // Direct fallback to ensure markdown section is ready
+        window.ensureMarkdownSectionVisible = function() {
+            console.log('[Markdown] Ensuring markdown section is visible');
+            
+            // Get the elements
+            let markdownSection = document.querySelector('.markdown-section');
+            const pdfContainer = document.getElementById('pdfPagesContainer');
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            // If the markdown section doesn't exist, create it
+            if (!markdownSection) {
+                console.log('[Markdown] Markdown section not found, creating it');
+                
+                // Check if we have a PDF viewer to append to
+                if (!pdfViewer) {
+                    console.error('[Markdown] PDF viewer not found, cannot create markdown section');
+                    return {
+                        markdownSection: null,
+                        markdownContainer: null,
+                        markdownEditor: null,
+                        markdownPreview: null
+                    };
+                }
+                
+                // Create the markdown section with inline styles
+                markdownSection = document.createElement('div');
+                markdownSection.className = 'markdown-section';
+                markdownSection.style.display = 'flex';
+                markdownSection.style.flexDirection = 'column';
+                markdownSection.style.position = 'absolute';
+                markdownSection.style.top = '0';
+                markdownSection.style.left = '0';
+                markdownSection.style.right = '0';
+                markdownSection.style.bottom = '0';
+                markdownSection.style.backgroundColor = 'var(--bg-primary, white)';
+                markdownSection.style.zIndex = '10';
+                markdownSection.style.height = '100%';
+                markdownSection.style.width = '100%';
+                markdownSection.style.overflow = 'hidden';
+                
+                // Create controls with inline styles
+                const markdownControls = document.createElement('div');
+                markdownControls.className = 'markdown-controls';
+                markdownControls.style.display = 'flex';
+                markdownControls.style.alignItems = 'center';
+                markdownControls.style.gap = '15px';
+                markdownControls.style.padding = '6px';
+                markdownControls.style.backgroundColor = 'var(--bg-secondary, #f5f5f5)';
+                markdownControls.style.borderBottom = '1px solid var(--border-color, #ddd)';
+                markdownControls.style.height = '32px';
+                markdownControls.style.flexShrink = '0';
+                markdownControls.style.zIndex = '1';
+                markdownControls.innerHTML = `
+                    <div class="markdown-title" id="markdownTitle" style="font-size:14px;font-weight:500;color:var(--text-primary,#333);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Markdown Viewer</div>
+                    <div class="markdown-view-controls" style="display:flex;gap:10px;margin-left:auto;">
+                        <button class="view-mode-btn active" data-mode="edit" style="border:none;background:none;color:var(--text-secondary,#666);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px;background-color:var(--accent-primary,#007bff);color:white;">Edit</button>
+                        <button class="view-mode-btn" data-mode="split" style="border:none;background:none;color:var(--text-secondary,#666);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px;">Split</button>
+                        <button class="view-mode-btn" data-mode="preview" style="border:none;background:none;color:var(--text-secondary,#666);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px;">Preview</button>
+                    </div>
+                    <div class="markdown-editing-indicator" style="display:none;font-size:12px;color:var(--text-secondary,#666);margin-left:auto;align-items:center;gap:5px;">
+                        <i class="fas fa-pen"></i> Editing
+                    </div>
+                `;
+                markdownSection.appendChild(markdownControls);
+                
+                // Create the viewer container with inline styles
+                const markdownViewer = document.createElement('div');
+                markdownViewer.className = 'markdown-viewer';
+                markdownViewer.style.flex = '1';
+                markdownViewer.style.overflowY = 'auto';
+                markdownViewer.style.padding = '16px';
+                markdownViewer.style.backgroundColor = 'var(--bg-primary, white)';
+                markdownViewer.style.display = 'flex';
+                markdownViewer.style.flexDirection = 'column';
+                markdownSection.appendChild(markdownViewer);
+                
+                // Create the main container with inline styles
+                const markdownContainer = document.createElement('div');
+                markdownContainer.id = 'markdownContainer';
+                markdownContainer.className = 'markdown-container';
+                markdownContainer.style.maxWidth = '800px';
+                markdownContainer.style.margin = '0 auto';
+                markdownContainer.style.lineHeight = '1.6';
+                markdownContainer.style.fontSize = '16px';
+                markdownContainer.style.color = 'var(--text-primary, #333)';
+                markdownContainer.style.width = '100%';
+                markdownContainer.style.height = '100%';
+                markdownViewer.appendChild(markdownContainer);
+                
+                // Create the split view container with inline styles
+                const splitView = document.createElement('div');
+                splitView.className = 'markdown-split-view';
+                splitView.style.display = 'flex';
+                splitView.style.height = '100%';
+                splitView.style.gap = '20px';
+                markdownContainer.appendChild(splitView);
+                
+                // Create editor with inline styles
+                const markdownEditor = document.createElement('div');
+                markdownEditor.id = 'markdownEditor';
+                markdownEditor.className = 'markdown-editor';
+                markdownEditor.style.flex = '1';
+                markdownEditor.style.minHeight = '300px';
+                splitView.appendChild(markdownEditor);
+                
+                // Create preview with inline styles
+                const markdownPreview = document.createElement('div');
+                markdownPreview.id = 'markdownPreview';
+                markdownPreview.className = 'markdown-preview';
+                markdownPreview.style.flex = '1';
+                markdownPreview.style.overflowY = 'auto';
+                markdownPreview.style.padding = '0 10px';
+                markdownPreview.style.borderLeft = '1px solid var(--border-color, #ddd)';
+                splitView.appendChild(markdownPreview);
+                
+                // Add the markdown section to the PDF viewer
+                pdfViewer.appendChild(markdownSection);
+                
+                console.log('[Markdown] Created new markdown section');
+                
+                // Add event listeners to the view mode buttons
+                markdownSection.querySelectorAll('.view-mode-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const mode = this.getAttribute('data-mode');
+                        if (typeof setMarkdownViewMode === 'function') {
+                            setMarkdownViewMode(mode);
+                        }
+                    });
+                });
+            }
+            
+            // Set markdown section to display flex
+            markdownSection.style.display = 'flex';
+            console.log('[Markdown] Section display set to flex');
+            
+            // Hide PDF container if it exists
+            if (pdfContainer) {
+                pdfContainer.style.display = 'none';
+            }
+            
+            // Get the container elements
+            let markdownContainer = document.getElementById('markdownContainer');
+            let markdownEditor = document.getElementById('markdownEditor');
+            let markdownPreview = document.getElementById('markdownPreview');
+            
+            // Check if we have our container elements
+            if (!markdownContainer || !markdownEditor || !markdownPreview) {
+                console.error('[Markdown] One or more markdown containers missing', {
+                    markdownContainer: !!markdownContainer,
+                    markdownEditor: !!markdownEditor,
+                    markdownPreview: !!markdownPreview
+                });
+                
+                // Try to find the existing containers by another method
+                const markdownViewer = markdownSection.querySelector('.markdown-viewer');
+                
+                if (!markdownViewer) {
+                    console.log('[Markdown] Creating markdown viewer');
+                    const viewer = document.createElement('div');
+                    viewer.className = 'markdown-viewer';
+                    viewer.style.flex = '1';
+                    viewer.style.overflowY = 'auto';
+                    viewer.style.padding = '16px';
+                    viewer.style.backgroundColor = 'var(--bg-primary, white)';
+                    viewer.style.display = 'flex';
+                    viewer.style.flexDirection = 'column';
+                    viewer.style.width = '100%';
+                    viewer.style.height = 'calc(100% - 32px)'; // Subtract header height
+                    markdownSection.appendChild(viewer);
+                    
+                    // Create container
+                    markdownContainer = document.createElement('div');
+                    markdownContainer.id = 'markdownContainer';
+                    markdownContainer.className = 'markdown-container';
+                    markdownContainer.style.maxWidth = '900px';
+                    markdownContainer.style.margin = '0 auto';
+                    markdownContainer.style.lineHeight = '1.6';
+                    markdownContainer.style.fontSize = '16px';
+                    markdownContainer.style.color = 'var(--text-primary, #333)';
+                    markdownContainer.style.width = '100%';
+                    markdownContainer.style.height = '100%';
+                    markdownContainer.style.position = 'relative';
+                    markdownContainer.style.display = 'flex';
+                    markdownContainer.style.flexDirection = 'column';
+                    viewer.appendChild(markdownContainer);
+                    
+                    // Create split view
+                    const splitView = document.createElement('div');
+                    splitView.className = 'markdown-split-view';
+                    splitView.style.display = 'flex';
+                    splitView.style.height = '100%';
+                    splitView.style.gap = '20px';
+                    splitView.style.width = '100%';
+                    splitView.style.overflow = 'hidden';
+                    splitView.style.position = 'relative';
+                    markdownContainer.appendChild(splitView);
+                    
+                    // Create editor
+                    markdownEditor = document.createElement('div');
+                    markdownEditor.id = 'markdownEditor';
+                    markdownEditor.className = 'markdown-editor';
+                    markdownEditor.style.flex = '1';
+                    markdownEditor.style.minHeight = '300px';
+                    markdownEditor.style.overflow = 'auto';
+                    markdownEditor.style.border = '1px solid var(--border-color, #ddd)';
+                    markdownEditor.style.borderRadius = '4px';
+                    markdownEditor.style.backgroundColor = 'var(--bg-primary, white)';
+                    markdownEditor.style.position = 'relative';
+                    splitView.appendChild(markdownEditor);
+                    
+                    // Create preview
+                    markdownPreview = document.createElement('div');
+                    markdownPreview.id = 'markdownPreview';
+                    markdownPreview.className = 'markdown-preview';
+                    markdownPreview.style.flex = '1';
+                    markdownPreview.style.overflowY = 'auto';
+                    markdownPreview.style.padding = '0 10px';
+                    markdownPreview.style.borderLeft = '1px solid var(--border-color, #ddd)';
+                    markdownPreview.style.backgroundColor = 'var(--bg-primary, white)';
+                    markdownPreview.style.position = 'relative';
+                    splitView.appendChild(markdownPreview);
+                    
+                    console.log('[Markdown] Created markdown containers');
+                } else {
+                    if (!markdownContainer) {
+                        // Create or find container
+                        markdownContainer = markdownViewer.querySelector('#markdownContainer');
+                        if (!markdownContainer) {
+                            console.log('[Markdown] Creating markdown container');
+                            markdownContainer = document.createElement('div');
+                            markdownContainer.id = 'markdownContainer';
+                            markdownContainer.className = 'markdown-container';
+                            markdownContainer.style.maxWidth = '800px';
+                            markdownContainer.style.margin = '0 auto';
+                            markdownContainer.style.lineHeight = '1.6';
+                            markdownContainer.style.fontSize = '16px';
+                            markdownContainer.style.color = 'var(--text-primary, #333)';
+                            markdownContainer.style.width = '100%';
+                            markdownContainer.style.height = '100%';
+                            markdownViewer.appendChild(markdownContainer);
+                        }
+                    }
+                    
+                    // Create split view if needed
+                    let splitView = markdownContainer.querySelector('.markdown-split-view');
+                    if (!splitView) {
+                        console.log('[Markdown] Creating split view');
+                        splitView = document.createElement('div');
+                        splitView.className = 'markdown-split-view';
+                        splitView.style.display = 'flex';
+                        splitView.style.height = '100%';
+                        splitView.style.gap = '20px';
+                        markdownContainer.appendChild(splitView);
+                    }
+                    
+                    // Create editor if needed
+                    if (!markdownEditor) {
+                        console.log('[Markdown] Creating markdown editor');
+                        markdownEditor = document.createElement('div');
+                        markdownEditor.id = 'markdownEditor';
+                        markdownEditor.className = 'markdown-editor';
+                        markdownEditor.style.flex = '1';
+                        markdownEditor.style.minHeight = '300px';
+                        markdownEditor.style.overflow = 'auto';
+                        markdownEditor.style.border = '1px solid var(--border-color, #ddd)';
+                        markdownEditor.style.borderRadius = '4px';
+                        markdownEditor.style.backgroundColor = 'var(--bg-primary, white)';
+                        markdownEditor.style.position = 'relative';
+                        splitView.appendChild(markdownEditor);
+                    }
+                    
+                    // Create preview if needed
+                    if (!markdownPreview) {
+                        console.log('[Markdown] Creating markdown preview');
+                        markdownPreview = document.createElement('div');
+                        markdownPreview.id = 'markdownPreview';
+                        markdownPreview.className = 'markdown-preview';
+                        markdownPreview.style.flex = '1';
+                        markdownPreview.style.overflowY = 'auto';
+                        markdownPreview.style.padding = '0 10px';
+                        markdownPreview.style.borderLeft = '1px solid var(--border-color, #ddd)';
+                        markdownPreview.style.backgroundColor = 'var(--bg-primary, white)';
+                        markdownPreview.style.position = 'relative';
+                        splitView.appendChild(markdownPreview);
+                    }
+                }
+                
+                // Check if we now have our elements
+                markdownContainer = document.getElementById('markdownContainer');
+                markdownEditor = document.getElementById('markdownEditor');
+                markdownPreview = document.getElementById('markdownPreview');
+                
+                console.log('[Markdown] After creation:', {
+                    markdownContainer: !!markdownContainer,
+                    markdownEditor: !!markdownEditor,
+                    markdownPreview: !!markdownPreview
+                });
+            }
+            
+            return {
+                markdownSection,
+                markdownContainer,
+                markdownEditor,
+                markdownPreview
+            };
+        };
+    </script>
     <script>
         // Set up PDF.js worker
         if (typeof pdfjsLib !== 'undefined') {
@@ -20,26 +340,30 @@
             console.error('[PDF.js] PDF.js library not loaded');
         }
         
-        // Add error handler for PDF.js
-        window.addEventListener('error', function(event) {
-            if (event.filename && event.filename.includes('pdf.js')) {
-                console.error('[PDF.js Error]', event.message, 'at', event.filename, 'line', event.lineno);
+        // Check markdown libraries on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('[Markdown] Checking libraries on page load');
+            if (typeof marked === 'undefined') {
+                console.error('[Markdown] Marked library not loaded');
+            }
+            if (typeof CodeMirror === 'undefined') {
+                console.error('[Markdown] CodeMirror not loaded');
+            }
+            if (typeof Prism === 'undefined') {
+                console.error('[Markdown] Prism not loaded');
+            }
+            
+            // Ensure the markdown handler function is set globally
+            // This addresses the error: "[FileTree] Markdown handler function not available"
+            if (typeof handleMarkdownFileSelection === 'function') {
+                window.handleMarkdownFileSelection = handleMarkdownFileSelection;
+                console.log('[Markdown] Handler function set globally');
+            } else {
+                console.error('[Markdown] Handler function not available to set globally');
             }
         });
-        
-        // Test PDF.js availability
-        console.log('[PDF.js] Library loaded, version:', pdfjsLib ? pdfjsLib.version : 'not available');
     </script>
     
-    <!-- Marked library for markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- Prism.js for code highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <!-- Text layer fix -->
     <link rel="stylesheet" href="/frontend/public/text-layer-fix.css">
     <script src="/frontend/public/text-layer-fix.js"></script>
@@ -1007,40 +1331,76 @@
             bottom: 0;
             pointer-events: none;
             z-index: 10;
+            /* Hide search overlays by default */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
         }
         
+        /* Show search overlays only when the search modal is active */
+        .modal-overlay#searchModal.active ~ .main-content .search-overlay {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Alternative selector for when the direct sibling selector doesn't work */
+        body.search-active .search-overlay {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* All matches are highlighted in yellow by default */
         .search-match {
             position: absolute;
             background-color: rgba(255, 255, 0, 0.3);
+            border: 1px solid rgba(255, 255, 0, 0.5);
             border-radius: 2px;
-            pointer-events: none;
+            pointer-events: auto; /* Allow interaction */
+            cursor: pointer;
             z-index: 10;
+            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         
+        /* Hover effect for highlights */
+        .search-match:hover {
+            background-color: rgba(255, 255, 0, 0.5);
+            border-color: rgba(255, 200, 0, 0.8);
+            box-shadow: 0 0 3px rgba(255, 200, 0, 0.5);
+        }
+        
+        /* Current match is highlighted in green */
         .search-match.current {
             background-color: rgba(76, 175, 80, 0.5);
             border: 1px solid rgba(76, 175, 80, 0.8);
             box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            z-index: 11; /* Ensure current match is on top */
         }
         
-        .textLayer.search-active span,
-        .textLayer.search-active div {
-            color: transparent;
-            opacity: 0.3;
+        /* Hover effect for current match */
+        .search-match.current:hover {
+            background-color: rgba(76, 175, 80, 0.7);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
         }
         
-        .textLayer.search-active .search-highlight {
-            background-color: rgba(255, 255, 0, 0.3);
-            border-radius: 2px;
-            opacity: 1;
-            color: transparent;
-            mix-blend-mode: multiply;
+        /* Pulse animation for highlighting the current match */
+        @keyframes pulse-highlight {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
         }
         
-        .textLayer.search-active .search-highlight.current {
-            background-color: rgba(76, 175, 80, 0.5);
-            border: 1px solid rgba(76, 175, 80, 0.8);
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        .search-match.pulse-highlight {
+            animation: pulse-highlight 1s ease-out forwards;
+        }
+        
+        /* Make sure highlights are not visible when search is not active */
+        body:not(.search-active) .search-match,
+        body:not(.search-active) .search-match.current {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            box-shadow: none !important;
         }
     </style>
 </head>
@@ -1148,11 +1508,34 @@
                 </div>
                 <div class="search-control">
                     <button id="pdfSearchBtn" class="search-icon"><i class="fas fa-search"></i></button>
-                </div>
                     </div>
-            <div class="pdf-viewer">
+            </div>
+            <div class="pdf-viewer" id="pdfViewer">
                 <div id="pdfContainer" class="pdf-container">
                     <div id="pdfPagesContainer" class="pdf-pages-container active"></div>
+                </div>
+                
+                <!-- Markdown Viewer Section (inside the PDF viewer container) -->
+                <div class="markdown-section" style="display: none;">
+                    <div class="markdown-controls">
+                        <div class="markdown-title" id="markdownTitle">Markdown Viewer</div>
+                        <div class="markdown-view-controls">
+                            <button class="view-mode-btn active" data-mode="edit">Edit</button>
+                            <button class="view-mode-btn" data-mode="split">Split</button>
+                            <button class="view-mode-btn" data-mode="preview">Preview</button>
+                        </div>
+                        <div class="markdown-editing-indicator">
+                            <i class="fas fa-pen"></i> Editing
+                        </div>
+                    </div>
+                    <div class="markdown-viewer">
+                        <div id="markdownContainer" class="markdown-container">
+                            <div class="markdown-split-view">
+                                <div class="markdown-editor" id="markdownEditor"></div>
+                                <div class="markdown-preview" id="markdownPreview"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="pdf-file-bar">
@@ -1162,6 +1545,305 @@
             </div>
         </div>
     </div>
+    
+    <style>
+        /* Markdown Viewer Styles */
+        .markdown-section {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-primary);
+            z-index: 10;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .markdown-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 6px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            height: 32px;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+        
+        .markdown-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .markdown-viewer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background-color: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .markdown-container {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-size: 16px;
+            color: var(--text-primary);
+            width: 100%;
+            height: 100%;
+        }
+
+        /* CodeMirror Customizations */
+        .CodeMirror {
+            height: auto;
+            min-height: calc(100vh - 120px);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .CodeMirror-focused {
+            border-color: var(--accent-primary);
+        }
+
+        /* Editor and Preview split view */
+        .markdown-split-view {
+            display: flex;
+            height: 100%;
+            gap: 20px;
+        }
+
+        .markdown-editor {
+            flex: 1;
+            min-height: 300px;
+        }
+
+        .markdown-preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 10px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        /* View mode controls */
+        .markdown-view-controls {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .view-mode-btn {
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .view-mode-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .view-mode-btn.active {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        /* Styling for indicators when editing */
+        .markdown-line-editing {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .markdown-edit-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-editing-indicator {
+            display: none;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: auto;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .markdown-editing-indicator.active {
+            display: flex;
+        }
+        
+        /* Markdown save status indicator */
+        .markdown-save-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--accent-primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.3s ease-in-out, fadeOut 0.3s ease-in-out 1.7s forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+        
+        /* Markdown loading indicator */
+        .markdown-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: var(--text-secondary);
+            gap: 16px;
+            padding: 40px 0;
+        }
+        
+        .markdown-loading i {
+            font-size: 32px;
+            color: var(--accent-primary);
+        }
+        
+        /* Markdown error display */
+        .markdown-error {
+            padding: 16px;
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            border-radius: 4px;
+            margin: 16px 0;
+            border-left: 4px solid var(--danger);
+        }
+        
+        /* Markdown Content Styles */
+        .markdown-container h1 {
+            font-size: 1.8em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .markdown-container h2 {
+            font-size: 1.5em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .markdown-container h3 {
+            font-size: 1.25em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+        
+        .markdown-container h4, .markdown-container h5, .markdown-container h6 {
+            font-size: 1em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+        
+        .markdown-container p {
+            margin-bottom: 1em;
+        }
+        
+        .markdown-container ul, .markdown-container ol {
+            margin-bottom: 1em;
+            padding-left: 2em;
+        }
+        
+        .markdown-container li {
+            margin-bottom: 0.5em;
+        }
+        
+        .markdown-container code {
+            font-family: 'Courier New', Courier, monospace;
+            padding: 0.2em 0.4em;
+            background-color: var(--bg-secondary);
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        .markdown-container pre {
+            margin-bottom: 1em;
+            padding: 1em;
+            overflow-x: auto;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+        }
+        
+        .markdown-container pre code {
+            padding: 0;
+            background-color: transparent;
+        }
+        
+        .markdown-container blockquote {
+            padding-left: 1em;
+            margin-left: 0;
+            border-left: 4px solid var(--accent-primary);
+            color: var(--text-secondary);
+        }
+        
+        .markdown-container a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        
+        .markdown-container a:hover {
+            text-decoration: underline;
+        }
+        
+        .markdown-container table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1em;
+        }
+        
+        .markdown-container th, .markdown-container td {
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            text-align: left;
+        }
+        
+        .markdown-container th {
+            background-color: var(--bg-secondary);
+        }
+        
+        .markdown-container img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
 
     <!-- Search Modal - Added for PDF search functionality -->
     <div id="searchModal" class="search-modal">
@@ -1467,12 +2149,17 @@
                         const numPages = pdf.numPages;
                         console.log(`[Direct Fallback] PDF has ${numPages} pages`);
                         
-                        // Create a promise for each page
-                        const pagePromises = [];
+                        // Use sequential rendering to ensure pages are in the correct order
+                        let renderPromise = Promise.resolve();
                         
+                        // Create array to store rendered pages in order
+                        const renderedPages = new Array(numPages);
+                        
+                        // First, render all pages without adding them to the DOM yet
                         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                            pagePromises.push(
-                                pdf.getPage(pageNum).then(function(page) {
+                            renderPromise = renderPromise.then(() => {
+                                console.log(`[Direct Fallback] Starting to render page ${pageNum}`);
+            return pdf.getPage(pageNum).then(function(page) {
                 // Create a div for this page
                 const pageDiv = document.createElement('div');
                 pageDiv.className = 'pdf-page';
@@ -1507,8 +2194,8 @@
                                     pageNumDiv.textContent = pageNum;
                                     pageDiv.appendChild(pageNumDiv);
                                     
-                                    // Add the page to the container
-                                    pdfPagesContainer.appendChild(pageDiv);
+                                    // Store the page div in the array at its correct position (1-indexed)
+                                    renderedPages[pageNum-1] = pageDiv;
                                     
                                     // Render the page
                                     return page.render(renderContext).promise.then(function() {
@@ -1572,7 +2259,7 @@
                                             }
                                         });
                                         
-                                        // Second pass: Sort each line by x position and render as larger chunks
+                                        // Process text chunks
                                         Object.keys(lines).forEach(function(baseline) {
                                             // Sort items in this line by x position
                                             const lineItems = lines[baseline].sort((a, b) => a.x - b.x);
@@ -1639,14 +2326,27 @@
                                         });
                                         
                                         console.log(`[Direct Fallback] Rendered page ${pageNum} with grouped text`);
-                                    });
-                                })
-                            );
+                                return pageDiv;
+                            });
+                                });
+                            });
                         }
                         
-                        // Wait for all pages to render
-                        Promise.all(pagePromises).then(function() {
-                            console.log('[Direct Fallback] All pages rendered successfully');
+                        // After all pages are rendered, add them to the container in the correct order
+                        renderPromise.then(() => {
+                            console.log('[Direct Fallback] All pages rendered, adding to container in order');
+                            
+                            // Add pages to container in correct order
+                            renderedPages.forEach((pageDiv, index) => {
+                                if (pageDiv) {
+                                    console.log(`[Direct Fallback] Adding page ${index + 1} to container`);
+                                    pdfPagesContainer.appendChild(pageDiv);
+                                } else {
+                                    console.warn(`[Direct Fallback] Page ${index + 1} was not rendered properly`);
+                                }
+                            });
+                            
+                            console.log('[Direct Fallback] All pages added to container');
                             
                             // Remove loading indicator
                             const loadingIndicator = pdfViewer.querySelector('.pdf-loading');
@@ -1672,7 +2372,6 @@
                                 hideSkeletonScreen();
                             }
                             
-                            // Return success
                             return true;
                         }).catch(function(error) {
                             console.error('[Direct Fallback] Error rendering PDF pages:', error);
@@ -1755,7 +2454,7 @@
             
             // Helper to clear previous search highlights
             function clearSearchHighlights() {
-                // Remove all search overlays
+                // Remove all search overlays - this will remove all highlight elements
                 searchState.overlays.forEach(overlay => {
                     if (overlay && overlay.parentNode) {
                         overlay.parentNode.removeChild(overlay);
@@ -1802,45 +2501,91 @@
                         textChunks.forEach(chunk => {
                             const chunkText = chunk.textContent || '';
                             const chunkTextLower = chunkText.toLowerCase();
+                            const searchTextLower = searchState.searchText.toLowerCase();
                             
-                            // Check if this chunk contains the search text
+                            // Skip empty chunks
+                            if (!chunkText) return;
+                            
+                            // Find all occurrences of the search text in this chunk
                             let startIndex = 0;
-                            let matchFound = false;
                             
                             while (true) {
-                                const matchIndex = chunkTextLower.indexOf(searchState.searchText, startIndex);
+                                const matchIndex = chunkTextLower.indexOf(searchTextLower, startIndex);
                                 if (matchIndex === -1) break;
                                 
-                                matchFound = true;
-                                startIndex = matchIndex + 1;
-                            }
-                            
-                            // If we found a match, highlight the entire chunk
-                            if (matchFound) {
+                                // Calculate the position of this specific match
                                 const chunkRect = chunk.getBoundingClientRect();
                                 const pageRect = page.getBoundingClientRect();
                                 
-                                // Create highlight element
+                                // Create a temp element to measure text width precisely
+                                const measureElement = document.createElement('span');
+                                // Copy the styles from the chunk
+                                const computedStyle = window.getComputedStyle(chunk);
+                                measureElement.style.fontFamily = computedStyle.fontFamily;
+                                measureElement.style.fontSize = computedStyle.fontSize;
+                                measureElement.style.fontWeight = computedStyle.fontWeight;
+                                measureElement.style.letterSpacing = computedStyle.letterSpacing;
+                                measureElement.style.visibility = 'hidden';
+                                measureElement.style.position = 'absolute';
+                                measureElement.style.whiteSpace = 'pre';
+                                document.body.appendChild(measureElement);
+                                
+                                // Measure text before the match
+                                measureElement.textContent = chunkText.substring(0, matchIndex);
+                                const preMatchWidth = measureElement.getBoundingClientRect().width;
+                                
+                                // Measure the match text itself
+                                measureElement.textContent = chunkText.substring(matchIndex, matchIndex + searchState.searchText.length);
+                                const matchWidth = measureElement.getBoundingClientRect().width;
+                                
+                                // Clean up
+                                document.body.removeChild(measureElement);
+                                
+                                // Calculate the exact offset for the highlight
+                                const transformMatch = chunk.style.transform ? chunk.style.transform.match(/scaleX\(([^)]+)\)/) : null;
+                                const scaleX = transformMatch ? parseFloat(transformMatch[1]) : 1;
+                                const matchOffsetLeft = parseInt(chunk.style.left || '0') + (preMatchWidth * scaleX);
+                                
+                                // Create highlight element for this match only
                                 const highlight = document.createElement('div');
                                 highlight.className = 'search-match';
+                                highlight.setAttribute('data-match-index', allMatches.length);
                                 
-                                // Position highlight
-                                highlight.style.left = `${chunkRect.left - pageRect.left}px`;
-                                highlight.style.top = `${chunkRect.top - pageRect.top}px`;
-                                highlight.style.width = `${chunkRect.width}px`;
-                                highlight.style.height = `${chunkRect.height}px`;
+                                // Make highlights clickable
+                                highlight.style.pointerEvents = 'auto';
+                                highlight.style.cursor = 'pointer';
+                                highlight.addEventListener('click', function() {
+                                    const matchIndex = parseInt(this.getAttribute('data-match-index'), 10);
+                                    navigateToMatch(matchIndex);
+                                });
+                                
+                                // Position highlight only over the matched text
+                                highlight.style.left = `${matchOffsetLeft}px`;
+                                highlight.style.top = chunk.style.top;
+                                highlight.style.width = `${matchWidth}px`;
+                                highlight.style.height = `${parseInt(chunk.style.fontSize || '16')}px`;
+                                
+                                // If the chunk has a transform, apply it to the highlight too
+                                if (chunk.style.transform) {
+                                    highlight.style.transform = chunk.style.transform;
+                                    highlight.style.transformOrigin = '0% 0%';
+                                }
                                 
                                 // Add to overlay
                                 overlay.appendChild(highlight);
                                 
                                 // Add to matches array
                                 allMatches.push({
-                                    text: chunkText,
+                                    text: chunkText.substring(matchIndex, matchIndex + searchState.searchText.length),
                                     chunk: chunk,
                                     highlight: highlight,
                                     page: page,
-                                    pageIndex: pageIndex
+                                    pageIndex: pageIndex,
+                                    matchIndex: matchIndex
                                 });
+                                
+                                // Move to next potential match
+                                startIndex = matchIndex + 1;
                             }
                         });
                     });
@@ -1850,6 +2595,8 @@
                     
                     // If we found any matches, navigate to the first one
                     if (allMatches.length > 0) {
+                        // All matches are already highlighted in yellow
+                        // Now highlight the first match in green
                         searchState.currentMatchIndex = 0;
                         navigateToMatch(0);
                     }
@@ -1881,7 +2628,7 @@
                 // Make sure index is in bounds
                 index = Math.max(0, Math.min(index, searchState.matches.length - 1));
                 
-                // Remove current class from all highlights
+                // Remove 'current' class from all highlights, but keep them visible
                 searchState.matches.forEach(match => {
                     if (match.highlight) match.highlight.classList.remove('current');
                 });
@@ -1889,26 +2636,38 @@
                 // Get current match
                 const currentMatch = searchState.matches[index];
                 
-                // Add current class to highlight
+                // Add current class to the current match
                 if (currentMatch && currentMatch.highlight) {
                     currentMatch.highlight.classList.add('current');
-                }
-                
-                // Scroll to the match
-                if (currentMatch && currentMatch.page) {
-                    // First scroll to the page
-                    currentMatch.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     
-                    // Then scroll to the highlight after a small delay
+                    // Get the element's position information
+                    const element = currentMatch.highlight;
+                    
+                    // Wait a short moment to ensure DOM is updated
                     setTimeout(() => {
-                        if (currentMatch.highlight) {
-                            currentMatch.highlight.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'center', 
-                                inline: 'center' 
-                            });
-                        }
-                    }, 300);
+                        // Get element's position relative to the document
+                        const rect = element.getBoundingClientRect();
+                        
+                        // Calculate window's middle point
+                        const windowHeight = window.innerHeight;
+                        const windowMiddle = windowHeight / 2;
+                        
+                        // Calculate how far element is from middle of window
+                        const elementMiddle = rect.top + (rect.height / 2);
+                        const distanceFromMiddle = elementMiddle - windowMiddle;
+                        
+                        // Scroll by that distance to center the element
+                        window.scrollBy({
+                            top: distanceFromMiddle,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Add pulse animation
+                        element.classList.add('pulse-highlight');
+                        setTimeout(() => {
+                            if (element.classList) element.classList.remove('pulse-highlight');
+                        }, 1000);
+                    }, 50);
                 }
                 
                 // Update UI
@@ -2195,6 +2954,8 @@
                 searchBtn.addEventListener('click', function() {
                     if (searchModal) {
                         searchModal.classList.add('active');
+                        // Add search-active class to body when opening search
+                        document.body.classList.add('search-active');
                         if (searchInput) {
                             searchInput.focus();
                         }
@@ -2202,23 +2963,82 @@
                 });
             }
             
+            // Function to close search modal and clean up highlights
+            function directCloseSearchModal() {
+                console.log('[Search] Directly closing search modal and clearing highlights');
+                
+                // Hide the modal
+                if (searchModal) {
+                    searchModal.classList.remove('active');
+                }
+                
+                // Remove 'current' class from all matches to prevent leftover highlights
+                const currentMatches = document.querySelectorAll('.search-match.current');
+                currentMatches.forEach(match => {
+                    match.classList.remove('current');
+                    match.classList.remove('pulse-highlight');
+                });
+                
+                // Remove search-active class from body
+                document.body.classList.remove('search-active');
+                
+                // Reset search input
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                
+                // Reset search state
+                if (typeof searchState !== 'undefined') {
+                    searchState.currentMatchIndex = -1;
+                }
+            }
+            
             // Add close button click handler
             if (closeSearchModal) {
                 closeSearchModal.addEventListener('click', function() {
-                    if (searchModal) {
-                        searchModal.classList.remove('active');
-                    }
+                    directCloseSearchModal();
                 });
             }
             
             // Add search input keyup handler
             if (searchInput) {
+                // Use an input event to trigger the search as the user types
+                searchInput.addEventListener('input', function() {
+                    // Only search if there's actual text to search for
+                    if (searchInput.value && searchInput.value.trim().length > 0) {
+                        // Add small delay to avoid searching on every keystroke
+                        clearTimeout(searchInput.searchTimeout);
+                        searchInput.searchTimeout = setTimeout(function() {
+                            performSearch(searchInput.value);
+                        }, 250); // 250ms delay for better performance
+                    } else {
+                        // If search input is empty, clear the search highlights
+                        if (typeof window.clearSearchResults === 'function') {
+                            window.clearSearchResults();
+                        } else if (typeof window.searchPDF === 'function') {
+                            window.searchPDF(''); // Passing empty string will clear results
+                        }
+                    }
+                });
+                
+                // Keep the Enter key handler for immediate search
                 searchInput.addEventListener('keyup', function(e) {
                     if (e.key === 'Enter') {
+                        clearTimeout(searchInput.searchTimeout);
                         performSearch(searchInput.value);
+                    } else if (e.key === 'Escape') {
+                        // Close the search modal when Escape is pressed
+                        directCloseSearchModal();
                     }
                 });
             }
+            
+            // Add escape key listener to document to close search modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && searchModal && searchModal.classList.contains('active')) {
+                    directCloseSearchModal();
+                }
+            });
             
             // Add previous/next result button handlers
             if (prevResultBtn) {
@@ -3271,19 +4091,21 @@
                 console.log(`[FileTree] Selected item: ${itemId}`);
                 
                 // Hide both containers initially
-                const pdfContainer = document.getElementById('pdfPagesContainer');
-                const markdownContainer = document.getElementById('markdownContainer');
-                if (pdfContainer) pdfContainer.style.display = 'none';
-                if (markdownContainer) markdownContainer.style.display = 'none';
+                const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+                const markdownSection = document.querySelector('.markdown-section');
+                
+                if (pdfPagesContainer) pdfPagesContainer.style.display = 'none';
+                if (markdownSection) markdownSection.style.display = 'none';
                 
                 // Load the file based on its type
                 if (item.fileType === 'pdf') {
                     console.log(`[FileTree] Item is a PDF file, loading content`);
                     
                     // Show PDF container
-                    if (pdfContainer) {
-                        pdfContainer.style.display = 'block';
-                        pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF...</div>';
+                    if (pdfPagesContainer) {
+                        pdfPagesContainer.style.display = 'block';
+                        // Clear previous content and show loading indicator
+                        pdfPagesContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF...</div>';
                     }
                     
                     // Get the file content
@@ -3326,7 +4148,7 @@
                             } else {
                                 // Direct fallback - create our own basic PDF loader
                                 console.error('[FileTree] loadPDF function not available, using fallback');
-                                pdfContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
+                                pdfPagesContainer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner"></i> Loading PDF (fallback)...</div>';
                                 
                                 if (typeof pdfjsLib !== 'undefined') {
                                     const loadingTask = pdfjsLib.getDocument(url);
@@ -3334,12 +4156,12 @@
                                         console.log(`[FileTree] PDF loaded successfully via fallback: ${item.name} with ${pdf.numPages} pages`);
                                         
                                         // Clear container
-                                        pdfContainer.innerHTML = '';
+                                        pdfPagesContainer.innerHTML = '';
                                         
                                         // Use our fallback renderPage function
                                         const renderPromises = [];
                                         for (let i = 1; i <= pdf.numPages; i++) {
-                                            renderPromises.push(fallbackRenderPage(pdf, i, pdfContainer));
+                                            renderPromises.push(fallbackRenderPage(pdf, i, pdfPagesContainer));
                                         }
                                         
                                         // Wait for all pages to be rendered
@@ -3352,15 +4174,60 @@
                                             });
                                     }).catch(function(error) {
                                         console.error(`[FileTree] Error loading PDF via fallback: ${item.name}:`, error);
-                                        pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                                        pdfPagesContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
                                     });
                                 } else {
                                     console.error('[FileTree] PDF.js library not available for fallback');
-                                    pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
+                                    pdfPagesContainer.innerHTML = '<div class="pdf-error">PDF.js library not available</div>';
                                 }
                             }
                         };
                         reader.readAsArrayBuffer(item.file);
+                    }
+                } else if (item.fileType === 'markdown') {
+                    console.log(`[FileTree] Item is a markdown file, loading content`);
+                    
+                    // Show markdown section
+                    const markdownSection = document.querySelector('.markdown-section');
+                    if (markdownSection) {
+                        markdownSection.style.display = 'flex';
+                    }
+                    
+                    // Update the title
+                    const markdownTitle = document.getElementById('markdownTitle');
+                    if (markdownTitle) {
+                        markdownTitle.textContent = item.name;
+                    }
+                    
+                    // Handle markdown file through our handler
+                    if (typeof handleMarkdownFileSelection === 'function') {
+                        handleMarkdownFileSelection(item);
+                    } else if (typeof window.handleMarkdownFileSelection === 'function') {
+                        // Try global function if local one is not available
+                        window.handleMarkdownFileSelection(item);
+                    } else {
+                        console.error('[FileTree] Markdown handler function not available');
+                        
+                        // Fallback to basic display
+                        if (item.file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const content = e.target.result;
+                                const markdownContainer = document.getElementById('markdownContainer');
+                                if (markdownContainer) {
+                                    if (typeof marked !== 'undefined') {
+                                        markdownContainer.innerHTML = marked.parse(content);
+                                    } else {
+                                        // Super basic fallback
+                                        markdownContainer.innerHTML = `<pre>${content}</pre>`;
+                                    }
+                                }
+                            };
+                            reader.onerror = function(e) {
+                                console.error('[FileTree] Error reading markdown file:', e);
+                            };
+                            reader.readAsText(item.file);
+                        }
                     }
                 }
             }
@@ -4752,6 +5619,2119 @@
         
         // Export the function to window so it can be called from pdf.js
         window.adjustTextSpanStyles = adjustTextSpanStyles;
+    </script>
+    <script>
+        // Function to clear search results - alias for clarity
+        window.clearSearchResults = function() {
+            // Make sure we're using the function in the correct scope
+            if (typeof clearSearchHighlights === 'function') {
+                clearSearchHighlights();
+            } else {
+                // Manually clear highlights if function isn't available
+                const searchOverlays = document.querySelectorAll('.search-overlay');
+                searchOverlays.forEach(overlay => {
+                    if (overlay && overlay.parentNode) {
+                        console.log('[clearSearchResults] Removing overlay:', overlay);
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                });
+                
+                // Reset search state manually
+                if (typeof searchState !== 'undefined') {
+                    searchState.matches = [];
+                    searchState.currentMatchIndex = -1;
+                    searchState.overlays = [];
+                }
+            }
+            
+            // Reset UI elements
+            const searchCount = document.getElementById('searchCount');
+            if (searchCount) {
+                searchCount.textContent = '';
+            }
+            
+            // Disable navigation buttons
+            const prevResultBtn = document.getElementById('prevResult');
+            const nextResultBtn = document.getElementById('nextResult');
+            if (prevResultBtn) prevResultBtn.disabled = true;
+            if (nextResultBtn) nextResultBtn.disabled = true;
+        };
+    </script>
+    <!-- Search Utility Functions -->
+    <script>
+        window.adjustTextSpanStyles = adjustTextSpanStyles;
+    </script>
+    <!-- Markdown Functions -->
+    <script>
+        // Global variables for markdown handling
+        let markdownEditor = null;
+        let currentMarkdownFile = null;
+        let markdownViewMode = 'edit'; // Default view mode: edit, split, or preview
+        
+        // Function to load markdown file
+        window.loadMarkdown = function(fileUrl, fileName = 'Untitled') {
+            console.log(`[Markdown] Loading markdown: ${fileName} from ${fileUrl}`);
+            
+            // First ensure the markdown section is visible and containers exist
+            if (typeof window.ensureMarkdownSectionVisible === 'function') {
+                const containers = window.ensureMarkdownSectionVisible();
+                if (!containers.markdownContainer || !containers.markdownEditor || !containers.markdownPreview) {
+                    console.error('[Markdown] Failed to ensure markdown containers exist');
+                    return false;
+                }
+            }
+            
+            // Update title if element exists
+            const markdownTitle = document.getElementById('markdownTitle');
+            if (markdownTitle) {
+                markdownTitle.textContent = fileName;
+            }
+            
+            // Get or create markdown containers
+            const markdownContainer = document.getElementById('markdownContainer');
+            const editorElement = document.getElementById('markdownEditor');
+            const previewElement = document.getElementById('markdownPreview');
+            
+            if (!markdownContainer || !editorElement || !previewElement) {
+                console.error('[Markdown] Markdown containers not found');
+                return false;
+            }
+            
+            // Clear previous content if editor isn't initialized yet
+            if (!window.markdownEditor) {
+                editorElement.innerHTML = '';
+            }
+            previewElement.innerHTML = '<div class="markdown-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            try {
+                // Ensure required libraries are loaded
+                if (typeof marked === 'undefined' || typeof CodeMirror === 'undefined') {
+                    console.error('[Markdown] Required libraries not loaded');
+                    if (typeof ensureMarkdownFunctionsAvailable === 'function') {
+                        ensureMarkdownFunctionsAvailable();
+                        
+                        // If libraries aren't loaded, retry in a moment
+                        setTimeout(() => {
+                            if (typeof marked !== 'undefined' && typeof CodeMirror !== 'undefined') {
+                                console.log('[Markdown] Libraries now loaded, retrying load');
+                                window.loadMarkdown(fileUrl, fileName);
+                            }
+                        }, 1000);
+                        return false;
+                    }
+                }
+                
+                // Fetch the markdown content
+                fetch(fileUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(markdownContent => {
+                        // Save current file reference
+                        currentMarkdownFile = {
+                            url: fileUrl,
+                            name: fileName,
+                            content: markdownContent
+                        };
+                        
+                        // Initialize CodeMirror editor if not already initialized
+                        if (!window.markdownEditor) {
+                            window.markdownEditor = CodeMirror(editorElement, {
+                                value: markdownContent,
+                                mode: 'markdown',
+                                lineNumbers: true,
+                                lineWrapping: true,
+                                theme: 'default',
+                                extraKeys: {
+                                    'Ctrl-S': function() {
+                                        saveMarkdownFile();
+                                    }
+                                }
+                            });
+                            
+                            // Add event listener for content changes
+                            window.markdownEditor.on('change', function() {
+                                updateMarkdownPreview();
+                            });
+                        } else {
+                            // Just update content if editor already exists
+                            window.markdownEditor.setValue(markdownContent);
+                        }
+                        
+                        // Initial preview render
+                        if (typeof updateMarkdownPreview === 'function') {
+                            updateMarkdownPreview();
+                        } else {
+                            console.error('[Markdown] updateMarkdownPreview function not available');
+                            // Basic fallback
+                            if (typeof marked !== 'undefined') {
+                                previewElement.innerHTML = marked.parse(markdownContent);
+                            } else {
+                                previewElement.innerHTML = `<pre>${markdownContent}</pre>`;
+                            }
+                        }
+                        
+                        // Set the view mode
+                        if (typeof setMarkdownViewMode === 'function') {
+                            setMarkdownViewMode(markdownViewMode);
+                        }
+                        
+                        console.log(`[Markdown] Successfully loaded markdown: ${fileName}`);
+                        return true;
+                    })
+                    .catch(error => {
+                        console.error('[Markdown] Error loading markdown file:', error);
+                        previewElement.innerHTML = `<div class="markdown-error">Error loading markdown: ${error.message}</div>`;
+                        return false;
+                    });
+            } catch (error) {
+                console.error('[Markdown] Error in loadMarkdown:', error);
+                return false;
+            }
+            
+            return true;
+        };
+        
+        // Function to load markdown from a File object (for local files)
+        window.loadMarkdownFromFile = function(file) {
+            console.log(`[Markdown] Loading markdown from file object: ${file.name}`);
+            
+            if (!file) {
+                console.error('[Markdown] Invalid file object');
+                return false;
+            }
+            
+            // First ensure the markdown section is visible and containers exist
+            if (typeof window.ensureMarkdownSectionVisible === 'function') {
+                const containers = window.ensureMarkdownSectionVisible();
+                if (!containers.markdownContainer) {
+                    console.error('[Markdown] Failed to ensure markdown container exists');
+                    return false;
+                }
+            }
+            
+            // First make sure the required libraries are loaded
+            let librariesAvailable = true;
+            
+            // Check for marked
+            if (typeof marked === 'undefined') {
+                console.error('[Markdown] Marked library not loaded');
+                librariesAvailable = false;
+                
+                // Try to inject the Marked library
+                if (!document.querySelector('script[src*="marked"]')) {
+                    const markedScript = document.createElement('script');
+                    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+                    document.head.appendChild(markedScript);
+                    console.log('[Markdown] Injected Marked library script');
+                }
+            }
+            
+            // Check for CodeMirror
+            if (typeof CodeMirror === 'undefined') {
+                console.error('[Markdown] CodeMirror not loaded');
+                librariesAvailable = false;
+                
+                // Try to inject CodeMirror
+                if (!document.querySelector('script[src*="codemirror"]')) {
+                    // Add the CSS
+                    const cmCSS = document.createElement('link');
+                    cmCSS.rel = 'stylesheet';
+                    cmCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css';
+                    document.head.appendChild(cmCSS);
+                    
+                    // Add the JS
+                    const cmScript = document.createElement('script');
+                    cmScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js';
+                    document.head.appendChild(cmScript);
+                    
+                    // Add the markdown mode
+                    const modeScript = document.createElement('script');
+                    modeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js';
+                    document.head.appendChild(modeScript);
+                    
+                    console.log('[Markdown] Injected CodeMirror scripts and styles');
+                }
+            }
+            
+            // Try to load libraries if needed
+            if (!librariesAvailable) {
+                if (typeof ensureMarkdownFunctionsAvailable === 'function') {
+                    ensureMarkdownFunctionsAvailable();
+                }
+                
+                // Show fallback while waiting for libraries
+                const markdownPreview = document.getElementById('markdownPreview');
+                if (markdownPreview) {
+                    markdownPreview.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading required libraries...</div>';
+                }
+            }
+            
+            // Show loading indicator
+            const markdownContainer = document.getElementById('markdownContainer');
+            if (markdownContainer) {
+                const loadingHtml = '<div class="markdown-loading" style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading markdown...</div>';
+                markdownContainer.innerHTML = loadingHtml;
+            }
+            
+            try {
+                // Read the file content
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    console.log('[Markdown] File read successfully, content length:', content.length);
+                    
+                    // Store the content in a global variable for potential reuse
+                    window.currentMarkdownFile = {
+                        name: file.name,
+                        content: content,
+                        file: file
+                    };
+                    
+                    // Use the direct content creation function
+                    if (typeof window.createMarkdownContent === 'function') {
+                        window.createMarkdownContent(content, file.name);
+                    } else {
+                        console.error('[Markdown] Content creation function not available');
+                        
+                        // Fallback
+                        const editorElement = document.getElementById('markdownEditor');
+                        const previewElement = document.getElementById('markdownPreview');
+                        
+                        if (editorElement) {
+                            editorElement.innerHTML = `<pre style="white-space:pre-wrap;word-break:break-all;">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                        }
+                        
+                        if (previewElement && typeof marked !== 'undefined') {
+                            previewElement.innerHTML = marked.parse(content);
+                        } else if (previewElement) {
+                            previewElement.innerHTML = `<pre style="white-space:pre-wrap;word-break:break-all;">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                        }
+                    }
+                };
+                reader.onerror = function(e) {
+                    console.error('[Markdown] Error reading file:', e);
+                    
+                    // Show error message
+                    if (markdownContainer) {
+                        markdownContainer.innerHTML = `<div class="markdown-error">Error reading file: ${e.message || 'Unknown error'}</div>`;
+                    }
+                    return false;
+                };
+                reader.readAsText(file);
+                return true;
+            } catch (error) {
+                console.error('[Markdown] Error in loadMarkdownFromFile:', error);
+                
+                // Show error message
+                if (markdownContainer) {
+                    markdownContainer.innerHTML = `<div class="markdown-error">Error: ${error.message || 'Unknown error'}</div>`;
+                }
+                return false;
+            }
+        };
+        
+        // Make the function available globally
+        window.ensureMarkdownFunctionsAvailable = ensureMarkdownFunctionsAvailable;
+    </script>
+    <!-- Function to ensure markdown functions are available -->
+    <script>
+        // Function to ensure markdown functions are available
+        function ensureMarkdownFunctionsAvailable() {
+            console.log('[Markdown] Ensuring markdown functions are available');
+            
+            let allLibrariesLoaded = true;
+            
+            // Check if the Marked library is loaded
+            if (typeof marked === 'undefined') {
+                console.error('[Markdown] Marked library is not loaded');
+                allLibrariesLoaded = false;
+                
+                // Check if the script is already in the document but not loaded yet
+                const existingScript = document.querySelector('script[src*="marked"]');
+                if (!existingScript) {
+                    // Add the script dynamically
+                    const markedScript = document.createElement('script');
+                    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+                    document.head.appendChild(markedScript);
+                }
+            }
+            
+            // Check if CodeMirror is loaded
+            if (typeof CodeMirror === 'undefined') {
+                console.error('[Markdown] CodeMirror is not loaded');
+                allLibrariesLoaded = false;
+                
+                // Check if the script is already in the document but not loaded yet
+                const existingScript = document.querySelector('script[src*="codemirror"]');
+                if (!existingScript) {
+                    // Add the styles if not already present
+                    if (!document.querySelector('link[href*="codemirror"]')) {
+                        const codeMirrorCSS = document.createElement('link');
+                        codeMirrorCSS.rel = 'stylesheet';
+                        codeMirrorCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css';
+                        document.head.appendChild(codeMirrorCSS);
+                    }
+                    
+                    // Add the scripts
+                    const codeMirrorScript = document.createElement('script');
+                    codeMirrorScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js';
+                    document.head.appendChild(codeMirrorScript);
+                    
+                    // Add mode script
+                    const modeScript = document.createElement('script');
+                    modeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js';
+                    document.head.appendChild(modeScript);
+                }
+            }
+            
+            // Check if Prism is loaded (for syntax highlighting)
+            if (typeof Prism === 'undefined') {
+                console.error('[Markdown] Prism is not loaded');
+                allLibrariesLoaded = false;
+                
+                // Check if the script is already in the document but not loaded yet
+                const existingScript = document.querySelector('script[src*="prism"]');
+                if (!existingScript) {
+                    // Add the styles if not already present
+                    if (!document.querySelector('link[href*="prism"]')) {
+                        const prismCSS = document.createElement('link');
+                        prismCSS.rel = 'stylesheet';
+                        prismCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css';
+                        document.head.appendChild(prismCSS);
+                    }
+                    
+                    // Add the scripts
+                    const prismScript = document.createElement('script');
+                    prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
+                    document.head.appendChild(prismScript);
+                    
+                    // Add language scripts
+                    const languages = ['markdown', 'javascript', 'python', 'css', 'html'];
+                    languages.forEach(lang => {
+                        const langScript = document.createElement('script');
+                        langScript.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
+                        document.head.appendChild(langScript);
+                    });
+                }
+            }
+            
+            // If libraries were missing, display a message
+            if (!allLibrariesLoaded) {
+                // Display a helpful message in the markdown container
+                const markdownPreview = document.getElementById('markdownPreview');
+                if (markdownPreview) {
+                    markdownPreview.innerHTML = `
+                        <div class="markdown-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading required libraries...</p>
+                            <p>Please try selecting the file again in a moment.</p>
+                        </div>
+                    `;
+                }
+                
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Make function available globally
+        window.ensureMarkdownFunctionsAvailable = ensureMarkdownFunctionsAvailable;
+    </script>
+    <!-- Function to update the markdown preview -->
+    <script>
+        function updateMarkdownPreview() {
+            const markdownPreview = document.getElementById('markdownPreview');
+            if (!markdownPreview) {
+                console.error('[Markdown] Preview element not found');
+                return;
+            }
+            
+            let content = '';
+            
+            try {
+                // Try to get content from our wrapper object
+                if (window.markdownEditor && typeof window.markdownEditor.getValue === 'function') {
+                    content = window.markdownEditor.getValue();
+                }
+                // Fallback to textarea if CodeMirror isn't available
+                else {
+                    const textarea = document.getElementById('markdownTextarea');
+                    if (textarea) {
+                        content = textarea.value;
+                    } else {
+                        console.error('[Markdown] No editor content found');
+                        return;
+                    }
+                }
+                
+                // Check if marked library is available
+                if (typeof marked === 'undefined') {
+                    console.error('[Markdown] Marked library not available for rendering');
+                    markdownPreview.innerHTML = `
+                        <div class="markdown-error">
+                            <p>Error: Marked library not available for rendering.</p>
+                            <pre>${content ? content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'No content'}</pre>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Use Marked.js to convert markdown to HTML
+                const parsedContent = marked.parse(content, {
+                    gfm: true, // GitHub Flavored Markdown
+                    breaks: true, // Convert line breaks to <br>
+                    sanitize: false, // Allow HTML
+                    smartLists: true,
+                    smartypants: true,
+                    highlight: function(code, lang) {
+                        // Use Prism for syntax highlighting if available
+                        if (Prism && Prism.highlight && Prism.languages[lang]) {
+                            return Prism.highlight(code, Prism.languages[lang], lang);
+                        }
+                        return code;
+                    }
+                });
+                
+                // Wrap with styled container to ensure proper display
+                markdownPreview.innerHTML = `
+                    <div class="marked-content" style="padding:20px;height:100%;overflow:auto;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;">
+                        ${parsedContent}
+                    </div>
+                `;
+                
+                // Apply styles to specific elements
+                const styledElements = markdownPreview.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, pre, blockquote, table');
+                styledElements.forEach(el => {
+                    if (el.tagName === 'H1') {
+                        el.style.borderBottom = '1px solid #eaecef';
+                        el.style.paddingBottom = '0.3em';
+                    }
+                    if (el.tagName === 'H2') {
+                        el.style.borderBottom = '1px solid #eaecef';
+                        el.style.paddingBottom = '0.3em';
+                    }
+                    if (el.tagName === 'BLOCKQUOTE') {
+                        el.style.borderLeft = '0.25em solid #dfe2e5';
+                        el.style.color = '#6a737d';
+                        el.style.padding = '0 1em';
+                    }
+                    if (el.tagName === 'PRE') {
+                        el.style.padding = '16px';
+                        el.style.overflow = 'auto';
+                        el.style.fontSize = '85%';
+                        el.style.lineHeight = '1.45';
+                        el.style.backgroundColor = '#f6f8fa';
+                        el.style.borderRadius = '3px';
+                    }
+                    if (el.tagName === 'TABLE') {
+                        el.style.borderCollapse = 'collapse';
+                        el.style.width = '100%';
+                        el.style.overflow = 'auto';
+                        el.style.display = 'block';
+                        el.style.marginBottom = '16px';
+                    }
+                });
+                
+                // Apply styles to table elements
+                const tableElements = markdownPreview.querySelectorAll('table th, table td');
+                tableElements.forEach(el => {
+                    el.style.padding = '6px 13px';
+                    el.style.border = '1px solid #dfe2e5';
+                });
+                
+                // Apply syntax highlighting to code blocks
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAllUnder(markdownPreview);
+                }
+            } catch (error) {
+                console.error('[Markdown] Error updating preview:', error);
+                markdownPreview.innerHTML = `<div class="markdown-error">Error rendering preview: ${error.message}</div>`;
+                
+                // Try to at least show raw content
+                if (content) {
+                    markdownPreview.innerHTML += `<pre>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                }
+            }
+        }
+        
+        // Function to set the markdown view mode
+        function setMarkdownViewMode(mode) {
+            console.log('[Markdown] Setting view mode to:', mode);
+            
+            const editor = document.getElementById('markdownEditor');
+            const preview = document.getElementById('markdownPreview');
+            const container = document.getElementById('markdownContainer');
+            const splitView = document.querySelector('.markdown-split-view');
+            
+            if (!editor || !preview || !container || !splitView) {
+                console.error('[Markdown] Required elements not found for setting view mode');
+                return;
+            }
+            
+            // Store the current mode
+            window.markdownViewMode = mode;
+            
+            // Update button active states
+            document.querySelectorAll('.view-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                // Also remove styles that might have been added directly
+                btn.style.backgroundColor = '';
+                btn.style.color = 'var(--text-secondary, #666)';
+            });
+            
+            const activeBtn = document.querySelector(`.view-mode-btn[data-mode="${mode}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                // Add styles directly
+                activeBtn.style.backgroundColor = 'var(--accent-primary, #007bff)';
+                activeBtn.style.color = 'white';
+            }
+            
+            // Apply the appropriate layout
+            splitView.style.display = 'flex'; // Reset display
+            
+            try {
+                switch (mode) {
+                    case 'edit':
+                        editor.style.display = 'block';
+                        preview.style.display = 'none';
+                        splitView.style.flexDirection = 'column';
+                        break;
+                    case 'preview':
+                        editor.style.display = 'none';
+                        preview.style.display = 'block';
+                        splitView.style.flexDirection = 'column';
+                        break;
+                    case 'split':
+                        editor.style.display = 'block';
+                        preview.style.display = 'block';
+                        splitView.style.flexDirection = 'row';
+                        break;
+                }
+                
+                // Resize editor if we have a valid CodeMirror instance
+                if (window.markdownEditor) {
+                    // Use our wrapper object if it has a refresh method
+                    if (typeof window.markdownEditor.refresh === 'function') {
+                        window.markdownEditor.refresh();
+                    }
+                    // Try the instance directly if available
+                    else if (window.markdownEditor.instance && typeof window.markdownEditor.instance.refresh === 'function') {
+                        window.markdownEditor.instance.refresh();
+                    }
+                    // Otherwise just log a message
+                    else {
+                        console.log('[Markdown] No refresh method available for editor');
+                    }
+                }
+                
+                console.log('[Markdown] View mode updated to:', mode);
+            } catch (error) {
+                console.error('[Markdown] Error setting view mode:', error);
+            }
+        }
+        
+        // Function to save the markdown file (placeholder - would need to be implemented with actual file saving)
+        function saveMarkdownFile() {
+            if (!currentMarkdownFile || !window.markdownEditor) return;
+            
+            try {
+                const content = window.markdownEditor.getValue();
+                console.log('[Markdown] Would save file:', currentMarkdownFile.name);
+                
+                // In a real implementation, this would save to a file
+                // For now, just update the current content
+                currentMarkdownFile.content = content;
+                
+                // Show a temporary success message
+                const statusIndicator = document.createElement('div');
+                statusIndicator.className = 'markdown-save-status';
+                statusIndicator.innerHTML = '<i class="fas fa-check"></i> Saved';
+                document.body.appendChild(statusIndicator);
+                
+                // Remove the message after a delay
+                setTimeout(() => {
+                    statusIndicator.remove();
+                }, 2000);
+            } catch (error) {
+                console.error('[Markdown] Error saving file:', error);
+            }
+        }
+        
+        // Initialize markdown view controls
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Markdown] Initializing markdown controls');
+            
+            // Add click handlers for view mode buttons
+            document.querySelectorAll('.view-mode-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const mode = this.getAttribute('data-mode');
+                    setMarkdownViewMode(mode);
+                });
+            });
+        });
+        
+        // Function to handle loading a markdown file when selected in the file tree
+        function handleMarkdownFileSelection(item) {
+            console.log(`[Markdown] Handling markdown file selection: ${item ? item.name : 'unknown'}`);
+            
+            if (!item) {
+                console.error('[Markdown] No item provided to markdown handler');
+                return false;
+            }
+            
+            // Ensure markdown functions are available before proceeding
+            try {
+                if (typeof ensureMarkdownFunctionsAvailable === 'function') {
+                    ensureMarkdownFunctionsAvailable();
+                } else {
+                    console.warn('[Markdown] ensureMarkdownFunctionsAvailable function not available');
+                }
+            } catch (error) {
+                console.error('[Markdown] Error ensuring functions available:', error);
+            }
+            
+            // Ensure markdown section is visible using our new helper
+            try {
+                if (typeof window.ensureMarkdownSectionVisible === 'function') {
+                    const containers = window.ensureMarkdownSectionVisible();
+                    console.log('[Markdown] Container check result:', {
+                        section: !!containers.markdownSection,
+                        container: !!containers.markdownContainer,
+                        editor: !!containers.markdownEditor,
+                        preview: !!containers.markdownPreview
+                    });
+                    
+                    // Initialize the view mode buttons if we have a section
+                    if (containers.markdownSection) {
+                        const viewModeButtons = containers.markdownSection.querySelectorAll('.view-mode-btn');
+                        if (viewModeButtons.length) {
+                            viewModeButtons.forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const mode = this.getAttribute('data-mode');
+                                    if (typeof setMarkdownViewMode === 'function') {
+                                        setMarkdownViewMode(mode);
+                                    } else {
+                                        console.warn('[Markdown] setMarkdownViewMode function not available');
+                                    }
+                                });
+                            });
+                            console.log('[Markdown] View mode buttons initialized');
+                        }
+                    }
+                } else {
+                    // Show markdown section, hide PDF content (fallback if helper not available)
+                    console.warn('[Markdown] ensureMarkdownSectionVisible function not available, using fallback');
+                    const markdownSection = document.querySelector('.markdown-section');
+                    const pdfContainer = document.getElementById('pdfPagesContainer');
+                    
+                    if (markdownSection) {
+                        markdownSection.style.display = 'flex';
+                        console.log('[Markdown] Section display set using fallback');
+                    } else {
+                        console.error('[Markdown] Markdown section not found using fallback');
+                    }
+                    
+                    if (pdfContainer) {
+                        pdfContainer.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('[Markdown] Error in section visibility handling:', error);
+            }
+            
+            // Update markdown title
+            try {
+                const markdownTitle = document.getElementById('markdownTitle');
+                if (markdownTitle) {
+                    markdownTitle.textContent = item.name;
+                }
+            } catch (error) {
+                console.error('[Markdown] Error updating title:', error);
+            }
+            
+            // Get file content and load it
+            try {
+                if (item.file) {
+                    console.log('[Markdown] Loading from file object');
+                    if (typeof window.loadMarkdownFromFile === 'function') {
+                        window.loadMarkdownFromFile(item.file);
+                    } else {
+                        console.error('[Markdown] loadMarkdownFromFile function not available');
+                        // Direct fallback
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            if (typeof window.createMarkdownContent === 'function') {
+                                window.createMarkdownContent(e.target.result, item.name);
+                            } else {
+                                console.error('[Markdown] All markdown functions unavailable');
+                                alert('Error: Markdown functions not available');
+                            }
+                        };
+                        reader.onerror = function(e) {
+                            console.error('[Markdown] Error reading file:', e);
+                            alert('Error reading file: ' + (e.message || 'Unknown error'));
+                        };
+                        reader.readAsText(item.file);
+                    }
+                } else if (item.fileHandle) {
+                    // For File System Access API
+                    console.log('[Markdown] Loading from file handle');
+                    item.fileHandle.getFile().then(file => {
+                        if (typeof window.loadMarkdownFromFile === 'function') {
+                            window.loadMarkdownFromFile(file);
+                        } else {
+                            console.error('[Markdown] loadMarkdownFromFile function not available for handle');
+                            // Similar direct fallback as above
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                if (typeof window.createMarkdownContent === 'function') {
+                                    window.createMarkdownContent(e.target.result, item.name);
+                                }
+                            };
+                            reader.readAsText(file);
+                        }
+                    }).catch(error => {
+                        console.error('[Markdown] Error getting file from handle:', error);
+                        const markdownPreview = document.getElementById('markdownPreview');
+                        if (markdownPreview) {
+                            markdownPreview.innerHTML = `<div class="markdown-error">Error: ${error.message}</div>`;
+                        }
+                    });
+                } else {
+                    console.error('[Markdown] No file reference available');
+                    const markdownPreview = document.getElementById('markdownPreview');
+                    if (markdownPreview) {
+                        markdownPreview.innerHTML = '<div class="markdown-error">Error: No file reference available</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('[Markdown] Error in file handling:', error);
+            }
+            
+            return true;
+        }
+        
+        // Make functions globally available
+        window.handleMarkdownFileSelection = handleMarkdownFileSelection;
+        window.updateMarkdownPreview = updateMarkdownPreview;
+        window.setMarkdownViewMode = setMarkdownViewMode;
+        window.saveMarkdownFile = saveMarkdownFile;
+    </script>
+    <!-- Markdown Functions -->
+    <script>
+        // Make all markdown functions globally available immediately
+        function exposeMarkdownFunctions() {
+            console.log('[Markdown] Exposing markdown functions globally');
+            
+            // Functions that should be globally available
+            if (typeof loadMarkdown === 'function') window.loadMarkdown = loadMarkdown;
+            if (typeof loadMarkdownFromFile === 'function') window.loadMarkdownFromFile = loadMarkdownFromFile;
+            if (typeof updateMarkdownPreview === 'function') window.updateMarkdownPreview = updateMarkdownPreview;
+            if (typeof setMarkdownViewMode === 'function') window.setMarkdownViewMode = setMarkdownViewMode;
+            if (typeof saveMarkdownFile === 'function') window.saveMarkdownFile = saveMarkdownFile;
+            if (typeof handleMarkdownFileSelection === 'function') window.handleMarkdownFileSelection = handleMarkdownFileSelection;
+            if (typeof ensureMarkdownFunctionsAvailable === 'function') window.ensureMarkdownFunctionsAvailable = ensureMarkdownFunctionsAvailable;
+        }
+        
+        // Call this function at the end of all scripts
+        document.addEventListener('DOMContentLoaded', exposeMarkdownFunctions);
+        
+        // Backup direct exposure of functions
+        window.loadMarkdown = window.loadMarkdown || loadMarkdown;
+        window.loadMarkdownFromFile = window.loadMarkdownFromFile || loadMarkdownFromFile;
+        window.updateMarkdownPreview = window.updateMarkdownPreview || updateMarkdownPreview;
+        window.setMarkdownViewMode = window.setMarkdownViewMode || setMarkdownViewMode;
+        window.saveMarkdownFile = window.saveMarkdownFile || saveMarkdownFile;
+        window.handleMarkdownFileSelection = window.handleMarkdownFileSelection || handleMarkdownFileSelection;
+        window.ensureMarkdownFunctionsAvailable = window.ensureMarkdownFunctionsAvailable || ensureMarkdownFunctionsAvailable;
+        
+        // Call expose function directly as a safeguard
+        if (typeof exposeMarkdownFunctions === 'function') {
+            exposeMarkdownFunctions();
+        }
+    </script>
+    <!-- Direct fallback for initializing markdown content -->
+    <script>
+        // Direct function to create markdown content with fallbacks
+        window.createMarkdownContent = function(content, fileName) {
+            console.log('[Markdown] Creating markdown content for:', fileName);
+            
+            // First ensure the section is visible
+            if (typeof window.ensureMarkdownSectionVisible === 'function') {
+                const containers = window.ensureMarkdownSectionVisible();
+                
+                // Set the title
+                const titleElement = document.getElementById('markdownTitle');
+                if (titleElement) {
+                    titleElement.textContent = fileName || 'Markdown Viewer';
+                }
+                
+                // Get the elements directly
+                const editorElement = document.getElementById('markdownEditor');
+                const previewElement = document.getElementById('markdownPreview');
+                
+                if (!editorElement || !previewElement) {
+                    console.error('[Markdown] Editor or preview element still not found after container creation');
+                    // Create fallback display
+                    const container = document.querySelector('.markdown-section');
+                    if (container) {
+                        container.innerHTML = `
+                            <div style="padding: 20px; text-align: center;">
+                                <h3>Fallback Markdown Display</h3>
+                                <p>Editor containers could not be created.</p>
+                                <pre style="text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; max-height: 400px; overflow: auto;">${content ? content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'No content available'}</pre>
+                            </div>
+                        `;
+                    }
+                    return false;
+                }
+                
+                // Reset the markdownEditor if it's not a proper CodeMirror instance
+                if (window.markdownEditor && (!window.markdownEditor.setValue || !window.markdownEditor.getValue || !window.markdownEditor.refresh)) {
+                    console.log('[Markdown] Resetting invalid CodeMirror instance');
+                    window.markdownEditor = null;
+                }
+                
+                try {
+                    // SIMPLE TEXT DISPLAY FIRST - to ensure content is visible no matter what
+                    console.log('[Markdown] Setting up direct text display first');
+                    
+                    // Simple editor display - with explicit styles
+                    editorElement.innerHTML = `<textarea id="markdownTextarea" style="width:100%;height:100%;min-height:300px;border:1px solid #ddd;padding:10px;font-family:monospace;resize:none;outline:none;background-color:white;color:#333;font-size:14px;line-height:1.5;">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>`;
+                    
+                    // Simple preview display with more explicit styles
+                    if (typeof marked !== 'undefined') {
+                        previewElement.innerHTML = `<div class="marked-content" style="padding:20px;height:100%;overflow:auto;">${marked.parse(content)}</div>`;
+                        // Apply syntax highlighting if Prism is available
+                        if (typeof Prism !== 'undefined') {
+                            Prism.highlightAllUnder(previewElement);
+                        }
+                    } else {
+                        previewElement.innerHTML = `<pre style="white-space:pre-wrap;word-break:break-all;padding:20px;height:100%;overflow:auto;margin:0;font-family:monospace;font-size:14px;line-height:1.5;">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                    }
+                    
+                    // Force element dimensions to ensure visibility
+                    const splitView = document.querySelector('.markdown-split-view');
+                    if (splitView) {
+                        splitView.style.display = 'flex';
+                        splitView.style.flexDirection = 'row';
+                        splitView.style.width = '100%';
+                        splitView.style.height = '100%';
+                        splitView.style.overflow = 'hidden';
+                        
+                        // Ensure editor is visible
+                        if (editorElement) {
+                            editorElement.style.display = 'block';
+                            editorElement.style.flex = '1 0 50%';
+                            editorElement.style.height = '100%';
+                            editorElement.style.overflow = 'auto';
+                        }
+                        
+                        // Ensure preview is visible
+                        if (previewElement) {
+                            previewElement.style.display = 'block';
+                            previewElement.style.flex = '1 0 50%';
+                            previewElement.style.height = '100%';
+                            previewElement.style.overflow = 'auto';
+                        }
+                    }
+                    
+                    // Try to add basic textarea change handler
+                    const textarea = document.getElementById('markdownTextarea');
+                    if (textarea) {
+                        textarea.addEventListener('input', function() {
+                            try {
+                                if (typeof marked !== 'undefined' && previewElement) {
+                                    previewElement.innerHTML = marked.parse(textarea.value);
+                                    // Apply syntax highlighting if Prism is available
+                                    if (typeof Prism !== 'undefined') {
+                                        Prism.highlightAllUnder(previewElement);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('[Markdown] Error updating preview from textarea:', error);
+                            }
+                        });
+                    }
+                    
+                    // At this point, basic content should be visible
+                    console.log('[Markdown] Direct text display complete');
+                    
+                    // Now try to initialize CodeMirror if available
+                    if (typeof CodeMirror !== 'undefined') {
+                        try {
+                            console.log('[Markdown] Attempting to initialize CodeMirror');
+                            
+                            // Create a new textarea for CodeMirror to use
+                            const cmTextarea = document.createElement('textarea');
+                            cmTextarea.value = content;
+                            cmTextarea.style.width = '100%';
+                            cmTextarea.style.height = '100%';
+                            cmTextarea.style.minHeight = '300px';
+                            editorElement.innerHTML = '';
+                            editorElement.appendChild(cmTextarea);
+                            
+                            // Initialize CodeMirror on the new textarea
+                            const cmInstance = CodeMirror.fromTextArea(cmTextarea, {
+                                mode: 'markdown',
+                                lineNumbers: true,
+                                lineWrapping: true,
+                                theme: 'default',
+                                viewportMargin: Infinity, // Render all content
+                                autofocus: true
+                            });
+                            
+                            // Add direct styles to CodeMirror
+                            const cmElement = cmInstance.getWrapperElement();
+                            cmElement.style.height = '100%';
+                            cmElement.style.fontSize = '14px';
+                            cmElement.style.lineHeight = '1.5';
+                            cmElement.style.border = '1px solid #ddd';
+                            cmElement.style.borderRadius = '4px';
+                            
+                            // Force refresh for proper sizing
+                            setTimeout(() => {
+                                cmInstance.refresh();
+                            }, 10);
+                            
+                            // Add handler for content changes
+                            cmInstance.on('change', function() {
+                                try {
+                                    const content = cmInstance.getValue();
+                                    if (typeof marked !== 'undefined' && previewElement) {
+                                        previewElement.innerHTML = marked.parse(content);
+                                        if (typeof Prism !== 'undefined') {
+                                            Prism.highlightAllUnder(previewElement);
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('[Markdown] Error updating preview from CodeMirror:', error);
+                                }
+                            });
+                            
+                            // Store the instance with direct references to important methods
+                            window.markdownEditor = {
+                                instance: cmInstance,
+                                getValue: function() { return cmInstance.getValue(); },
+                                setValue: function(value) { return cmInstance.setValue(value); },
+                                refresh: function() { return cmInstance.refresh(); }
+                            };
+                            
+                            console.log('[Markdown] CodeMirror initialized successfully');
+                        } catch (error) {
+                            console.error('[Markdown] Error initializing CodeMirror, using simple textarea:', error);
+                            // We already have a simple textarea set up, so we can continue
+                        }
+                    } else {
+                        console.warn('[Markdown] CodeMirror not available, using simple textarea');
+                    }
+                } catch (error) {
+                    console.error('[Markdown] Error in content creation:', error);
+                    editorElement.innerHTML = `<div style="color:red;padding:10px;">Error: ${error.message}</div><textarea style="width:100%;height:100%;min-height:300px;">${content}</textarea>`;
+                    previewElement.innerHTML = `<div style="color:red;padding:10px;">Error: ${error.message}</div><pre>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                }
+                
+                console.log('[Markdown] Content creation complete');
+                return true;
+            } else {
+                console.error('[Markdown] ensureMarkdownSectionVisible function not available');
+                return false;
+            }
+        };
+    </script>
+    <script>
+        // Set up PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('[PDF.js] Worker initialized');
+        } else {
+            console.error('[PDF.js] PDF.js library not loaded');
+        }
+        
+        // Check markdown libraries on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('[Markdown] Checking libraries on page load');
+            if (typeof marked === 'undefined') {
+                console.error('[Markdown] Marked library not loaded');
+            }
+            if (typeof CodeMirror === 'undefined') {
+                console.error('[Markdown] CodeMirror not loaded');
+            }
+            if (typeof Prism === 'undefined') {
+                console.error('[Markdown] Prism not loaded');
+            }
+            
+            // Ensure the markdown handler function is set globally
+            // This addresses the error: "[FileTree] Markdown handler function not available"
+            if (typeof handleMarkdownFileSelection === 'function') {
+                window.handleMarkdownFileSelection = handleMarkdownFileSelection;
+                console.log('[Markdown] Handler function set globally');
+            } else {
+                console.error('[Markdown] Handler function not available to set globally');
+            }
+        });
+    </script>
+    
+    <!-- Direct standalone markdown viewer
+    <script>
+        // Function to create a completely standalone markdown viewer
+        window.createStandaloneMarkdownViewer = function(content, fileName) {
+            console.log('[Markdown] Creating standalone viewer for:', fileName);
+            
+            // Target the main content area
+            const mainContent = document.querySelector('.main-content');
+            if (!mainContent) {
+                console.error('[Markdown] Main content area not found');
+                return false;
+            }
+            
+            // Hide the PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (pdfViewer) {
+                pdfViewer.style.display = 'none';
+            }
+            
+            // Remove any existing markdown viewer
+            const existingViewer = document.getElementById('standaloneMarkdownViewer');
+            if (existingViewer) {
+                existingViewer.remove();
+            }
+            
+            // Create our standalone viewer
+            const viewer = document.createElement('div');
+            viewer.id = 'standaloneMarkdownViewer';
+            viewer.style.position = 'absolute';
+            viewer.style.top = '0';
+            viewer.style.left = '0';
+            viewer.style.width = '100%';
+            viewer.style.height = '100%';
+            viewer.style.backgroundColor = 'white';
+            viewer.style.zIndex = '10';
+            viewer.style.display = 'flex';
+            viewer.style.flexDirection = 'column';
+            viewer.style.overflow = 'hidden';
+            
+            // Add a header
+            const header = document.createElement('div');
+            header.style.backgroundColor = '#f5f5f5';
+            header.style.borderBottom = '1px solid #ddd';
+            header.style.padding = '8px 16px';
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.justifyContent = 'space-between';
+            header.style.height = '40px';
+            
+            // Add title
+            const title = document.createElement('div');
+            title.textContent = fileName || 'Markdown Viewer';
+            title.style.fontWeight = 'bold';
+            title.style.overflow = 'hidden';
+            title.style.textOverflow = 'ellipsis';
+            title.style.whiteSpace = 'nowrap';
+            header.appendChild(title);
+            
+            // Add view mode controls
+            const viewControls = document.createElement('div');
+            viewControls.style.display = 'flex';
+            viewControls.style.gap = '8px';
+            
+            const modes = [
+                { name: 'Edit', value: 'edit' },
+                { name: 'Split', value: 'split' },
+                { name: 'Preview', value: 'preview' }
+            ];
+            
+            modes.forEach(mode => {
+                const btn = document.createElement('button');
+                btn.textContent = mode.name;
+                btn.setAttribute('data-mode', mode.value);
+                btn.style.padding = '4px 8px';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '4px';
+                btn.style.cursor = 'pointer';
+                btn.style.backgroundColor = mode.value === 'split' ? '#007bff' : 'transparent';
+                btn.style.color = mode.value === 'split' ? 'white' : '#333';
+                
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    viewControls.querySelectorAll('button').forEach(b => {
+                        b.style.backgroundColor = 'transparent';
+                        b.style.color = '#333';
+                    });
+                    btn.style.backgroundColor = '#007bff';
+                    btn.style.color = 'white';
+                    
+                    // Apply view mode
+                    const contentSection = document.getElementById('markdownContent');
+                    if (contentSection) {
+                        switch (mode.value) {
+                            case 'edit':
+                                contentSection.style.gridTemplateColumns = '1fr';
+                                document.getElementById('markdownEditor').style.display = 'block';
+                                document.getElementById('markdownPreview').style.display = 'none';
+                                break;
+                            case 'preview':
+                                contentSection.style.gridTemplateColumns = '1fr';
+                                document.getElementById('markdownEditor').style.display = 'none';
+                                document.getElementById('markdownPreview').style.display = 'block';
+                                break;
+                            case 'split':
+                                contentSection.style.gridTemplateColumns = '1fr 1fr';
+                                document.getElementById('markdownEditor').style.display = 'block';
+                                document.getElementById('markdownPreview').style.display = 'block';
+                                break;
+                        }
+                    }
+                });
+                
+                viewControls.appendChild(btn);
+            });
+            
+            header.appendChild(viewControls);
+            viewer.appendChild(header);
+            
+            // Create content section
+            const contentSection = document.createElement('div');
+            contentSection.id = 'markdownContent';
+            contentSection.style.display = 'grid';
+            contentSection.style.gridTemplateColumns = '1fr 1fr';
+            contentSection.style.gap = '16px';
+            contentSection.style.padding = '16px';
+            contentSection.style.height = 'calc(100% - 40px)';
+            contentSection.style.overflow = 'hidden';
+            viewer.appendChild(contentSection);
+            
+            // Add editor
+            const editor = document.createElement('div');
+            editor.id = 'markdownEditor';
+            editor.style.height = '100%';
+            editor.style.overflow = 'auto';
+            editor.style.border = '1px solid #ddd';
+            editor.style.borderRadius = '4px';
+            editor.style.backgroundColor = 'white';
+            contentSection.appendChild(editor);
+            
+            // Add preview
+            const preview = document.createElement('div');
+            preview.id = 'markdownPreview';
+            preview.style.height = '100%';
+            preview.style.overflow = 'auto';
+            preview.style.border = '1px solid #ddd';
+            preview.style.borderRadius = '4px';
+            preview.style.backgroundColor = 'white';
+            preview.style.padding = '16px';
+            contentSection.appendChild(preview);
+            
+            // Add the viewer to the main content
+            mainContent.appendChild(viewer);
+            
+            try {
+                // Create a simple textarea first
+                const textarea = document.createElement('textarea');
+                textarea.id = 'markdownTextarea';
+                textarea.value = content;
+                textarea.style.width = '100%';
+                textarea.style.height = '100%';
+                textarea.style.padding = '16px';
+                textarea.style.border = 'none';
+                textarea.style.resize = 'none';
+                textarea.style.outline = 'none';
+                textarea.style.fontFamily = 'monospace';
+                textarea.style.fontSize = '14px';
+                textarea.style.backgroundColor = bgPrimary;
+                textarea.style.color = textPrimary;
+                editor.appendChild(textarea);
+                
+                // Render preview
+                if (typeof marked !== 'undefined') {
+                    const renderedContent = marked.parse(content);
+                    preview.innerHTML = `
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                            ${renderedContent}
+                        </div>
+                    `;
+                    
+                    // Apply syntax highlighting
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightAllUnder(preview);
+                    }
+                    
+                    // Fix list indentation (apply immediately)
+                    fixListIndentation(preview);
+                    
+                    // Additional styling for lists and nested content
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        /* Enhanced list styling */
+                        #markdownPreview ul, #markdownPreview ol {
+                            padding-left: 20px;
+                            margin-left: 0;
+                        }
+                        
+                        #markdownPreview ul ul, #markdownPreview ol ol,
+                        #markdownPreview ul ol, #markdownPreview ol ul {
+                            margin-left: 20px;
+                        }
+                        
+                        #markdownPreview li {
+                            margin-bottom: 5px;
+                        }
+                        
+                        /* Enhanced blockquote styling */
+                        #markdownPreview blockquote {
+                            margin-left: 0;
+                            padding-left: 1em;
+                            border-left: 0.25em solid ${borderColor};
+                            color: ${textSecondary};
+                        }
+                        
+                        /* Enhanced code styling */
+                        #markdownPreview pre {
+                            background-color: ${bgSecondary};
+                            padding: 16px;
+                            border-radius: 4px;
+                            overflow: auto;
+                        }
+                        
+                        #markdownPreview code {
+                            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+                            font-size: 85%;
+                        }
+                        
+                        #markdownPreview p code, 
+                        #markdownPreview li code, 
+                        #markdownPreview h1 code, 
+                        #markdownPreview h2 code, 
+                        #markdownPreview h3 code, 
+                        #markdownPreview h4 code, 
+                        #markdownPreview h5 code, 
+                        #markdownPreview h6 code {
+                            background-color: ${bgSecondary};
+                            padding: 0.2em 0.4em;
+                            border-radius: 3px;
+                        }
+                        
+                        /* Enhanced table styling */
+                        #markdownPreview table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin-bottom: 16px;
+                        }
+                        
+                        #markdownPreview th, #markdownPreview td {
+                            border: 1px solid ${borderColor};
+                            padding: 6px 13px;
+                        }
+                        
+                        #markdownPreview th {
+                            background-color: ${bgSecondary};
+                            font-weight: 600;
+                        }
+                    `;
+                    document.head.appendChild(styleElement);
+                    
+                    // Add some basic styling to common elements
+                    preview.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+                        el.style.borderBottom = '1px solid #eaecef';
+                        el.style.paddingBottom = '0.3em';
+                        el.style.marginTop = '24px';
+                        el.style.marginBottom = '16px';
+                        el.style.fontWeight = '600';
+                        el.style.lineHeight = '1.25';
+                    });
+                    
+                    preview.querySelectorAll('pre').forEach(el => {
+                        el.style.padding = '16px';
+                        el.style.overflow = 'auto';
+                        el.style.backgroundColor = '#f6f8fa';
+                        el.style.borderRadius = '3px';
+                        el.style.marginBottom = '16px';
+                    });
+                    
+                    preview.querySelectorAll('code').forEach(el => {
+                        if (!el.closest('pre')) {
+                            el.style.padding = '0.2em 0.4em';
+                            el.style.margin = '0';
+                            el.style.fontSize = '85%';
+                            el.style.backgroundColor = 'rgba(27,31,35,0.05)';
+                            el.style.borderRadius = '3px';
+                        }
+                    });
+                    
+                    preview.querySelectorAll('table').forEach(el => {
+                        el.style.borderCollapse = 'collapse';
+                        el.style.marginBottom = '16px';
+                        el.style.display = 'block';
+                        el.style.width = '100%';
+                        el.style.overflow = 'auto';
+                    });
+                    
+                    preview.querySelectorAll('th, td').forEach(el => {
+                        el.style.padding = '6px 13px';
+                        el.style.border = `1px solid ${borderColor}`;
+                    });
+                    
+                    // Style blockquotes
+                    preview.querySelectorAll('blockquote').forEach(el => {
+                        el.style.padding = '0 1em';
+                        el.style.borderLeft = `0.25em solid ${borderColor}`;
+                        el.style.color = textSecondary;
+                    });
+                    
+                    // Style links
+                    preview.querySelectorAll('a').forEach(el => {
+                        el.style.color = accentPrimary;
+                        el.style.textDecoration = 'none';
+                    });
+                } else {
+                    preview.innerHTML = `<pre style="padding: 16px; white-space: pre-wrap; word-break: break-word; color: ${textPrimary};">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                }
+                
+                // Set up live update
+                textarea.addEventListener('input', function() {
+                    if (typeof marked !== 'undefined') {
+                        const renderedContent = marked.parse(textarea.value);
+                        preview.innerHTML = `
+                            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                                ${renderedContent}
+                            </div>
+                        `;
+                        
+                        // Apply syntax highlighting
+                        if (typeof Prism !== 'undefined') {
+                            Prism.highlightAllUnder(preview);
+                        }
+                    } else {
+                        preview.innerHTML = `<pre style="padding: 16px; white-space: pre-wrap; word-break: break-word; color: ${textPrimary};">${textarea.value.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                    }
+                });
+                
+                // Try to initialize CodeMirror if available
+                if (typeof CodeMirror !== 'undefined') {
+                    try {
+                        const cm = CodeMirror.fromTextArea(textarea, {
+                            mode: 'markdown',
+                            lineNumbers: true,
+                            lineWrapping: true,
+                            theme: 'default',
+                            viewportMargin: Infinity
+                        });
+                        
+                        // Style the CodeMirror instance
+                        const cmElement = cm.getWrapperElement();
+                        cmElement.style.height = '100%';
+                        cmElement.style.fontSize = '14px';
+                        cmElement.style.backgroundColor = bgPrimary;
+                        
+                        // Improve code styling
+                        const styleElement = document.createElement('style');
+                        styleElement.textContent = `
+                            /* Basic text color */
+                            .CodeMirror pre.CodeMirror-line, 
+                            .CodeMirror pre.CodeMirror-line-like {
+                                color: ${textPrimary};
+                            }
+                            
+                            /* Style markdown syntax elements with a light blue color */
+                            .cm-header, .cm-quote, .cm-link, .cm-url,
+                            .cm-string, .cm-comment, .cm-list, .cm-meta,
+                            .cm-variable, .cm-variable-2, .cm-hr, .cm-keyword,
+                            .cm-attribute, .cm-tag, .cm-def {
+                                color: #7bc5ff !important;
+                            }
+                            
+                            /* Style text content */
+                            .cm-string-2, .cm-qualifier, .cm-property, .cm-em,
+                            .cm-strong, .cm-atom, .cm-number, .cm-variable-3,
+                            .cm-builtin, .cm-bracket, .cm-operator, .cm-punctuation {
+                                color: ${textPrimary} !important;
+                            }
+                            
+                            /* Style active line */
+                            .CodeMirror-activeline-background {
+                                background: rgba(128, 128, 128, 0.1);
+                            }
+                            
+                            /* Style selected text */
+                            .CodeMirror-selected {
+                                background: rgba(128, 128, 255, 0.1) !important;
+                            }
+                        `;
+                        document.head.appendChild(styleElement);
+                        
+                        // Try to style the CodeMirror content
+                        const cmContent = cmElement.querySelector('.CodeMirror-sizer');
+                        if (cmContent) {
+                            cmContent.style.color = textPrimary;
+                        }
+                        
+                        // Update preview on change
+                        cm.on('change', function() {
+                            if (typeof marked !== 'undefined') {
+                                const renderedContent = marked.parse(cm.getValue());
+                                const formattedContent = `
+                                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                                        ${renderedContent}
+                                    </div>
+                                `;
+                                preview.innerHTML = formattedContent;
+                                
+                                // Apply syntax highlighting
+                                if (typeof Prism !== 'undefined') {
+                                    Prism.highlightAllUnder(preview);
+                                }
+                                
+                                // Fix list indentation
+                                fixListIndentation(preview);
+                            }
+                        });
+                        
+                        // Initial preview rendering with fixed indentation
+                        if (typeof marked !== 'undefined') {
+                            setTimeout(() => {
+                                fixListIndentation(preview);
+                            }, 100);
+                        }
+                    } catch (error) {
+                        console.error('[Markdown] Error initializing CodeMirror:', error);
+                    }
+                }
+                
+                // Helper function to fix list indentation
+                function fixListIndentation(previewElement) {
+                    // Fix nested lists indentation
+                    const lists = previewElement.querySelectorAll('ul, ol');
+                    lists.forEach(list => {
+                        // Make sure list items have proper indentation
+                        list.style.paddingLeft = '20px';
+                        list.style.marginLeft = '0';
+                        
+                        // Fix nested lists
+                        const nestedLists = list.querySelectorAll('ul, ol');
+                        nestedLists.forEach(nestedList => {
+                            nestedList.style.marginLeft = '20px';
+                        });
+                        
+                        // Ensure list items have proper styling
+                        const listItems = list.querySelectorAll('li');
+                        listItems.forEach(item => {
+                            item.style.marginBottom = '5px';
+                        });
+                    });
+                    
+                    // Fix blockquote indentation
+                    const blockquotes = previewElement.querySelectorAll('blockquote');
+                    blockquotes.forEach(quote => {
+                        quote.style.marginLeft = '0';
+                        quote.style.paddingLeft = '1em';
+                        quote.style.borderLeft = `0.25em solid ${borderColor}`;
+                    });
+                    
+                    // Fix code block indentation
+                    const codeBlocks = previewElement.querySelectorAll('pre');
+                    codeBlocks.forEach(block => {
+                        block.style.marginLeft = '0';
+                    });
+                }
+                
+                // Apply initial fixes to preview
+                fixListIndentation(preview);
+                
+                console.log('[Markdown] Standalone viewer created successfully');
+                return true;
+            } catch (error) {
+                console.error('[Markdown] Error creating standalone viewer:', error);
+                return false;
+            }
+        };
+    </script>
+    
+    <!-- Update the file handling to use our standalone viewer -->
+    <script>
+        // Update handleMarkdownFileSelection to use the standalone viewer
+        const originalHandleMarkdownFileSelection = window.handleMarkdownFileSelection;
+        
+        window.handleMarkdownFileSelection = function(item) {
+            console.log('[Markdown] Using standalone viewer for', item.name);
+            
+            if (!item) {
+                console.error('[Markdown] No item provided to markdown handler');
+                return false;
+            }
+            
+            try {
+                if (item.file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        window.createStandaloneMarkdownViewer(e.target.result, item.name);
+                    };
+                    reader.onerror = function(e) {
+                        console.error('[Markdown] Error reading file:', e);
+                        alert('Error reading file: ' + (e.message || 'Unknown error'));
+                    };
+                    reader.readAsText(item.file);
+                    return true;
+                } else if (item.fileHandle) {
+                    item.fileHandle.getFile().then(file => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            window.createStandaloneMarkdownViewer(e.target.result, item.name);
+                        };
+                        reader.readAsText(file);
+                    }).catch(error => {
+                        console.error('[Markdown] Error getting file from handle:', error);
+                    });
+                    return true;
+                } else {
+                    console.error('[Markdown] No file reference available');
+                    return false;
+                }
+            } catch (error) {
+                console.error('[Markdown] Error in standalone file handling:', error);
+                
+                // Try to fall back to the original handler if it exists
+                if (typeof originalHandleMarkdownFileSelection === 'function') {
+                    console.log('[Markdown] Falling back to original handler');
+                    return originalHandleMarkdownFileSelection(item);
+                }
+                
+                return false;
+            }
+        };
+    </script>
+    <!-- Update PDF loading to hide markdown viewer -->
+    <script>
+        // Store reference to the original loadPDF function
+        const originalLoadPDF = window.loadPDF;
+        
+        // Override loadPDF to also hide the markdown viewer
+        window.loadPDF = function(url, name, scrollToPage, setCurrentPage) {
+            console.log('[PDF] Loading PDF and hiding markdown viewer');
+            
+            // Hide the markdown viewer if it exists
+            const markdownViewer = document.getElementById('standaloneMarkdownViewer');
+            if (markdownViewer) {
+                markdownViewer.style.display = 'none';
+            }
+            
+            // Show the PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (pdfViewer) {
+                pdfViewer.style.display = 'block';
+            }
+            
+            // Call the original function
+            return originalLoadPDF(url, name, scrollToPage, setCurrentPage);
+        };
+    </script>
+    <!-- Improved standalone markdown viewer with consistent styling -->
+    <script>
+        // Function to create a completely standalone markdown viewer
+        window.createStandaloneMarkdownViewer = function(content, fileName) {
+            console.log('[Markdown] Creating standalone viewer for:', fileName);
+            
+            // Target the main content area
+            const mainContent = document.querySelector('.main-content');
+            if (!mainContent) {
+                console.error('[Markdown] Main content area not found');
+                return false;
+            }
+            
+            // Hide the PDF viewer
+            const pdfViewer = document.getElementById('pdfViewer');
+            if (pdfViewer) {
+                pdfViewer.style.display = 'none';
+            }
+            
+            // Remove any existing markdown viewer
+            const existingViewer = document.getElementById('standaloneMarkdownViewer');
+            if (existingViewer) {
+                existingViewer.remove();
+            }
+            
+            // Get application colors and styles
+            const computedStyle = getComputedStyle(document.documentElement);
+            const bgPrimary = computedStyle.getPropertyValue('--bg-primary') || 'white';
+            const bgSecondary = computedStyle.getPropertyValue('--bg-secondary') || '#f5f5f5';
+            const textPrimary = computedStyle.getPropertyValue('--text-primary') || '#333';
+            const textSecondary = computedStyle.getPropertyValue('--text-secondary') || '#666';
+            const accentPrimary = computedStyle.getPropertyValue('--accent-primary') || '#007bff';
+            const borderColor = computedStyle.getPropertyValue('--border-color') || '#ddd';
+            
+            // Create our standalone viewer
+            const viewer = document.createElement('div');
+            viewer.id = 'standaloneMarkdownViewer';
+            viewer.style.position = 'absolute';
+            viewer.style.top = '0';
+            viewer.style.left = '0';
+            viewer.style.width = '100%';
+            viewer.style.height = '100%';
+            viewer.style.backgroundColor = bgPrimary;
+            viewer.style.zIndex = '10';
+            viewer.style.display = 'flex';
+            viewer.style.flexDirection = 'column';
+            viewer.style.overflow = 'hidden';
+            
+            // Add a header
+            const header = document.createElement('div');
+            header.style.backgroundColor = bgSecondary;
+            header.style.borderBottom = `1px solid ${borderColor}`;
+            header.style.padding = '8px 16px';
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.justifyContent = 'space-between';
+            header.style.height = '40px';
+            
+            // Add title
+            const title = document.createElement('div');
+            title.textContent = fileName || 'Markdown Viewer';
+            title.style.fontWeight = 'bold';
+            title.style.overflow = 'hidden';
+            title.style.textOverflow = 'ellipsis';
+            title.style.whiteSpace = 'nowrap';
+            title.style.color = textPrimary;
+            header.appendChild(title);
+            
+            // Add view mode controls
+            const viewControls = document.createElement('div');
+            viewControls.style.display = 'flex';
+            viewControls.style.gap = '8px';
+            
+            const modes = [
+                { name: 'Edit', value: 'edit' },
+                { name: 'Split', value: 'split' },
+                { name: 'Preview', value: 'preview' }
+            ];
+            
+            modes.forEach(mode => {
+                const btn = document.createElement('button');
+                btn.textContent = mode.name;
+                btn.setAttribute('data-mode', mode.value);
+                btn.style.padding = '4px 8px';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '4px';
+                btn.style.cursor = 'pointer';
+                btn.style.backgroundColor = mode.value === 'split' ? accentPrimary : 'transparent';
+                btn.style.color = mode.value === 'split' ? 'white' : textSecondary;
+                
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    viewControls.querySelectorAll('button').forEach(b => {
+                        b.style.backgroundColor = 'transparent';
+                        b.style.color = textSecondary;
+                    });
+                    btn.style.backgroundColor = accentPrimary;
+                    btn.style.color = 'white';
+                    
+                    // Apply view mode
+                    const contentSection = document.getElementById('markdownContent');
+                    if (contentSection) {
+                        switch (mode.value) {
+                            case 'edit':
+                                contentSection.style.gridTemplateColumns = '1fr';
+                                document.getElementById('markdownEditor').style.display = 'block';
+                                document.getElementById('markdownPreview').style.display = 'none';
+                                break;
+                            case 'preview':
+                                contentSection.style.gridTemplateColumns = '1fr';
+                                document.getElementById('markdownEditor').style.display = 'none';
+                                document.getElementById('markdownPreview').style.display = 'block';
+                                break;
+                            case 'split':
+                                contentSection.style.gridTemplateColumns = '1fr 1fr';
+                                document.getElementById('markdownEditor').style.display = 'block';
+                                document.getElementById('markdownPreview').style.display = 'block';
+                                break;
+                        }
+                    }
+                });
+                
+                viewControls.appendChild(btn);
+            });
+            
+            header.appendChild(viewControls);
+            viewer.appendChild(header);
+            
+            // Create content section
+            const contentSection = document.createElement('div');
+            contentSection.id = 'markdownContent';
+            contentSection.style.display = 'grid';
+            contentSection.style.gridTemplateColumns = '1fr 1fr';
+            contentSection.style.gap = '16px';
+            contentSection.style.padding = '16px';
+            contentSection.style.height = 'calc(100% - 40px)';
+            contentSection.style.overflow = 'hidden';
+            contentSection.style.backgroundColor = bgPrimary;
+            viewer.appendChild(contentSection);
+            
+            // Add editor
+            const editor = document.createElement('div');
+            editor.id = 'markdownEditor';
+            editor.style.height = '100%';
+            editor.style.overflow = 'auto';
+            editor.style.border = `1px solid ${borderColor}`;
+            editor.style.borderRadius = '4px';
+            editor.style.backgroundColor = bgPrimary;
+            contentSection.appendChild(editor);
+            
+            // Add preview
+            const preview = document.createElement('div');
+            preview.id = 'markdownPreview';
+            preview.style.height = '100%';
+            preview.style.overflow = 'auto';
+            preview.style.border = `1px solid ${borderColor}`;
+            preview.style.borderRadius = '4px';
+            preview.style.backgroundColor = bgPrimary;
+            preview.style.padding = '16px';
+            preview.style.color = textPrimary;
+            contentSection.appendChild(preview);
+            
+            // Add the viewer to the main content
+            mainContent.appendChild(viewer);
+            
+            try {
+                // Create a simple textarea first
+                const textarea = document.createElement('textarea');
+                textarea.id = 'markdownTextarea';
+                textarea.value = content;
+                textarea.style.width = '100%';
+                textarea.style.height = '100%';
+                textarea.style.padding = '16px';
+                textarea.style.border = 'none';
+                textarea.style.resize = 'none';
+                textarea.style.outline = 'none';
+                textarea.style.fontFamily = 'monospace';
+                textarea.style.fontSize = '14px';
+                textarea.style.lineHeight = '1.6';
+                textarea.style.backgroundColor = bgPrimary;
+                textarea.style.color = textPrimary;
+                editor.appendChild(textarea);
+                
+                // Add textarea styles for markdown
+                const textareaStyle = document.createElement('style');
+                textareaStyle.textContent = `
+                    #markdownTextarea {
+                        tab-size: 4;
+                        white-space: pre-wrap;
+                        word-break: keep-all;
+                        overflow-wrap: break-word;
+                        caret-color: ${accentPrimary};
+                    }
+                    
+                    #markdownTextarea:focus {
+                        box-shadow: 0 0 0 2px ${accentPrimary}33;
+                    }
+                `;
+                document.head.appendChild(textareaStyle);
+                
+                // Render preview
+                if (typeof marked !== 'undefined') {
+                    const renderedContent = marked.parse(content);
+                    preview.innerHTML = `
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                            ${renderedContent}
+                        </div>
+                    `;
+                    
+                    // Apply syntax highlighting
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightAllUnder(preview);
+                    }
+                    
+                    // Fix list indentation (apply immediately)
+                    fixListIndentation(preview);
+                    
+                    // Additional styling for lists and nested content
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        /* Enhanced list styling */
+                        #markdownPreview ul, #markdownPreview ol {
+                            padding-left: 20px;
+                            margin-left: 0;
+                        }
+                        
+                        #markdownPreview ul ul, #markdownPreview ol ol,
+                        #markdownPreview ul ol, #markdownPreview ol ul {
+                            margin-left: 20px;
+                        }
+                        
+                        #markdownPreview li {
+                            margin-bottom: 5px;
+                        }
+                        
+                        /* Enhanced blockquote styling */
+                        #markdownPreview blockquote {
+                            margin-left: 0;
+                            padding-left: 1em;
+                            border-left: 0.25em solid ${borderColor};
+                            color: ${textSecondary};
+                        }
+                        
+                        /* Enhanced code styling */
+                        #markdownPreview pre {
+                            background-color: ${bgSecondary};
+                            padding: 16px;
+                            border-radius: 4px;
+                            overflow: auto;
+                        }
+                        
+                        #markdownPreview code {
+                            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+                            font-size: 85%;
+                        }
+                        
+                        #markdownPreview p code, 
+                        #markdownPreview li code, 
+                        #markdownPreview h1 code, 
+                        #markdownPreview h2 code, 
+                        #markdownPreview h3 code, 
+                        #markdownPreview h4 code, 
+                        #markdownPreview h5 code, 
+                        #markdownPreview h6 code {
+                            background-color: ${bgSecondary};
+                            padding: 0.2em 0.4em;
+                            border-radius: 3px;
+                        }
+                        
+                        /* Enhanced table styling */
+                        #markdownPreview table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin-bottom: 16px;
+                        }
+                        
+                        #markdownPreview th, #markdownPreview td {
+                            border: 1px solid ${borderColor};
+                            padding: 6px 13px;
+                        }
+                        
+                        #markdownPreview th {
+                            background-color: ${bgSecondary};
+                            font-weight: 600;
+                        }
+                    `;
+                    document.head.appendChild(styleElement);
+                    
+                    // Add some basic styling to common elements
+                    preview.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+                        el.style.borderBottom = '1px solid #eaecef';
+                        el.style.paddingBottom = '0.3em';
+                        el.style.marginTop = '24px';
+                        el.style.marginBottom = '16px';
+                        el.style.fontWeight = '600';
+                        el.style.lineHeight = '1.25';
+                    });
+                    
+                    preview.querySelectorAll('pre').forEach(el => {
+                        el.style.padding = '16px';
+                        el.style.overflow = 'auto';
+                        el.style.backgroundColor = bgSecondary;
+                        el.style.borderRadius = '3px';
+                        el.style.marginBottom = '16px';
+                    });
+                    
+                    preview.querySelectorAll('code').forEach(el => {
+                        if (!el.closest('pre')) {
+                            el.style.padding = '0.2em 0.4em';
+                            el.style.margin = '0';
+                            el.style.fontSize = '85%';
+                            el.style.backgroundColor = bgSecondary;
+                            el.style.borderRadius = '3px';
+                        }
+                    });
+                    
+                    preview.querySelectorAll('table').forEach(el => {
+                        el.style.borderCollapse = 'collapse';
+                        el.style.marginBottom = '16px';
+                        el.style.display = 'block';
+                        el.style.width = '100%';
+                        el.style.overflow = 'auto';
+                    });
+                    
+                    preview.querySelectorAll('th, td').forEach(el => {
+                        el.style.padding = '6px 13px';
+                        el.style.border = `1px solid ${borderColor}`;
+                    });
+                    
+                    // Style blockquotes
+                    preview.querySelectorAll('blockquote').forEach(el => {
+                        el.style.padding = '0 1em';
+                        el.style.borderLeft = `0.25em solid ${borderColor}`;
+                        el.style.color = textSecondary;
+                    });
+                    
+                    // Style links
+                    preview.querySelectorAll('a').forEach(el => {
+                        el.style.color = accentPrimary;
+                        el.style.textDecoration = 'none';
+                    });
+                } else {
+                    preview.innerHTML = `<pre style="padding: 16px; white-space: pre-wrap; word-break: break-word; color: ${textPrimary};">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                }
+                
+                // Set up live update
+                textarea.addEventListener('input', function() {
+                    if (typeof marked !== 'undefined') {
+                        const renderedContent = marked.parse(textarea.value);
+                        preview.innerHTML = `
+                            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                                ${renderedContent}
+                            </div>
+                        `;
+                        
+                        // Apply syntax highlighting
+                        if (typeof Prism !== 'undefined') {
+                            Prism.highlightAllUnder(preview);
+                        }
+                    } else {
+                        preview.innerHTML = `<pre style="padding: 16px; white-space: pre-wrap; word-break: break-word; color: ${textPrimary};">${textarea.value.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+                    }
+                });
+                
+                // Try to initialize CodeMirror if available
+                if (typeof CodeMirror !== 'undefined') {
+                    try {
+                        const cm = CodeMirror.fromTextArea(textarea, {
+                            mode: 'markdown',
+                            lineNumbers: true,
+                            lineWrapping: true,
+                            theme: 'default',
+                            viewportMargin: Infinity
+                        });
+                        
+                        // Style the CodeMirror instance
+                        const cmElement = cm.getWrapperElement();
+                        cmElement.style.height = '100%';
+                        cmElement.style.fontSize = '14px';
+                        cmElement.style.backgroundColor = bgPrimary;
+                        
+                        // Improve code styling
+                        const styleElement = document.createElement('style');
+                        styleElement.textContent = `
+                            /* Basic text color */
+                            .CodeMirror pre.CodeMirror-line, 
+                            .CodeMirror pre.CodeMirror-line-like {
+                                color: ${textPrimary};
+                            }
+                            
+                            /* Style markdown syntax elements with a light blue color */
+                            .cm-header, .cm-quote, .cm-link, .cm-url,
+                            .cm-string, .cm-comment, .cm-list, .cm-meta,
+                            .cm-variable, .cm-variable-2, .cm-hr, .cm-keyword,
+                            .cm-attribute, .cm-tag, .cm-def {
+                                color: #7bc5ff !important;
+                            }
+                            
+                            /* Style text content */
+                            .cm-string-2, .cm-qualifier, .cm-property, .cm-em,
+                            .cm-strong, .cm-atom, .cm-number, .cm-variable-3,
+                            .cm-builtin, .cm-bracket, .cm-operator, .cm-punctuation {
+                                color: ${textPrimary} !important;
+                            }
+                            
+                            /* Style active line */
+                            .CodeMirror-activeline-background {
+                                background: rgba(128, 128, 128, 0.1);
+                            }
+                            
+                            /* Style selected text */
+                            .CodeMirror-selected {
+                                background: rgba(128, 128, 255, 0.1) !important;
+                            }
+                        `;
+                        document.head.appendChild(styleElement);
+                        
+                        // Try to style the CodeMirror content
+                        const cmContent = cmElement.querySelector('.CodeMirror-sizer');
+                        if (cmContent) {
+                            cmContent.style.color = textPrimary;
+                        }
+                        
+                        // Update preview on change
+                        cm.on('change', function() {
+                            if (typeof marked !== 'undefined') {
+                                const renderedContent = marked.parse(cm.getValue());
+                                const formattedContent = `
+                                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; line-height: 1.6; color: ${textPrimary};">
+                                        ${renderedContent}
+                                    </div>
+                                `;
+                                preview.innerHTML = formattedContent;
+                                
+                                // Apply syntax highlighting
+                                if (typeof Prism !== 'undefined') {
+                                    Prism.highlightAllUnder(preview);
+                                }
+                                
+                                // Fix list indentation
+                                fixListIndentation(preview);
+                            }
+                        });
+                        
+                        // Initial preview rendering with fixed indentation
+                        if (typeof marked !== 'undefined') {
+                            setTimeout(() => {
+                                fixListIndentation(preview);
+                            }, 100);
+                        }
+                    } catch (error) {
+                        console.error('[Markdown] Error initializing CodeMirror:', error);
+                    }
+                }
+                
+                // Helper function to fix list indentation
+                function fixListIndentation(previewElement) {
+                    // Fix nested lists indentation
+                    const lists = previewElement.querySelectorAll('ul, ol');
+                    lists.forEach(list => {
+                        // Make sure list items have proper indentation
+                        list.style.paddingLeft = '20px';
+                        list.style.marginLeft = '0';
+                        
+                        // Fix nested lists
+                        const nestedLists = list.querySelectorAll('ul, ol');
+                        nestedLists.forEach(nestedList => {
+                            nestedList.style.marginLeft = '20px';
+                        });
+                        
+                        // Ensure list items have proper styling
+                        const listItems = list.querySelectorAll('li');
+                        listItems.forEach(item => {
+                            item.style.marginBottom = '5px';
+                        });
+                    });
+                    
+                    // Fix blockquote indentation
+                    const blockquotes = previewElement.querySelectorAll('blockquote');
+                    blockquotes.forEach(quote => {
+                        quote.style.marginLeft = '0';
+                        quote.style.paddingLeft = '1em';
+                        quote.style.borderLeft = `0.25em solid ${borderColor}`;
+                    });
+                    
+                    // Fix code block indentation
+                    const codeBlocks = previewElement.querySelectorAll('pre');
+                    codeBlocks.forEach(block => {
+                        block.style.marginLeft = '0';
+                    });
+                }
+                
+                // Apply initial fixes to preview
+                fixListIndentation(preview);
+                
+                console.log('[Markdown] Standalone viewer created successfully');
+                return true;
+            } catch (error) {
+                console.error('[Markdown] Error creating standalone viewer:', error);
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
