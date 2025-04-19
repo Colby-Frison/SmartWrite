@@ -6,9 +6,10 @@ This directory contains unit tests for the PDF search functionality in SmartWrit
 
 The tests are organized as follows:
 
-- `fixtures/` - Contains sample text files used for testing
+- `fixtures/` - Contains sample text files and PDFs used for testing
 - `pdfSearch.test.js` - Basic tests for PDF search functionality
 - `pdfSearchComprehensive.test.js` - Comprehensive tests covering incorrect, boundary, and edge cases
+- `textLayerRendering.test.js` - Tests for the new text layer rendering implementation
 - `runTests.js` - Script to run all tests
 
 ## Test Categories
@@ -20,6 +21,8 @@ The tests cover the following categories:
 3. **Boundary Test Cases** - Testing for random words at different positions
 4. **Edge Case Testing** - Testing for first and last words
 5. **Context-based Testing** - Testing for phrases and multi-word searches
+6. **Text Layer Testing** - Testing for proper text chunking and positioning
+7. **Search Highlighting** - Testing for proper highlight positioning and styling
 
 ## Running the Tests
 
@@ -36,9 +39,23 @@ npx jest tests/pdf
 npx jest tests/pdf/pdfSearch.test.js
 ```
 
+## Text Layer Implementation
+
+The tests now also verify the new text layer implementation, which includes:
+
+- **Text Chunking** - Testing that text is properly grouped into logical chunks
+- **Line Detection** - Testing that text is correctly grouped by vertical position
+- **Positioning** - Testing that chunks are correctly positioned on the page
+- **Style Application** - Testing that styles are correctly applied to text chunks
+- **Scale Factor** - Testing that the horizontal scale factor is correctly applied
+
 ## Test Fixtures
 
-The tests use a sample text file (`fixtures/sample-text.txt`) to simulate PDF content. This file contains various words and phrases that are used for testing different search scenarios.
+The tests use a combination of:
+
+- Sample text files (`fixtures/sample-text.txt`) to simulate PDF content
+- Real PDF files with various layouts and content types
+- Mock DOM elements to simulate the browser environment
 
 ## Mock Implementation
 
@@ -46,33 +63,44 @@ Since the actual PDF search functionality relies on PDF.js and browser DOM eleme
 
 ## Test Results
 
-The tests output information about the search results, including:
+The tests output information about:
 
-- Number of matches found
-- Position of matches in the document
-- Text content of matches
-
-This information can be used to verify that the search functionality is working correctly.
-
-## Test Summary
-
-All tests are currently passing. The test suite verifies that:
-
-1. The search function correctly finds words at the beginning, middle, and end of the document
-2. The search function returns empty results for words not in the document
-3. The search function is case-insensitive
-4. The search function can find multiple occurrences of common words
-5. The search function can find phrases (multi-word searches)
-6. The search function handles edge cases like empty search terms and very short words
+- Text chunking quality and accuracy
+- Search results accuracy and position
+- Highlight rendering and positioning
+- Performance metrics for rendering and searching
 
 ## Implementation Notes
 
+### Text Layer Implementation
+
+The text layer works by:
+
+1. Grouping text items by vertical position to create lines
+2. Sorting items within each line by horizontal position
+3. Grouping adjacent items with similar characteristics into chunks
+4. Creating span elements for each chunk with the appropriate styling
+5. Positioning the spans absolutely within the text layer
+
+This chunking approach reduces the number of DOM elements while maintaining text searchability and selectability.
+
+### Search Implementation
+
 The search function works by:
 
-1. Creating a continuous text string for each page
-2. Searching for the term in the continuous text
-3. Mapping the search results back to the original text items
-4. Calculating the position and dimensions of the search results
-5. Returning the search results with page information
+1. Searching for the term in each text chunk
+2. Creating highlight elements for chunks containing matches
+3. Positioning the highlights over the matching chunks
+4. Adding navigation functionality to move between matches
 
-This approach allows for accurate searching of phrases that might span multiple text items in the PDF. 
+This approach allows searching to work reliably with the new text chunking implementation.
+
+## Fallback Mechanisms
+
+The tests also verify the fallback mechanisms:
+
+1. **Direct Fallback** - Testing that critical functions are available directly in workspace.html
+2. **Module Fallback** - Testing the automatic loading of the PDF.js module
+3. **Browser Fallback** - Testing the use of browser capabilities when available
+
+These fallbacks ensure that PDF functionality remains available even if one layer fails. 
