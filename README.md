@@ -1,7 +1,7 @@
 # SmartWrite
 
 ## Overview
-SmartWrite is an innovative tool that transforms handwritten notes into digital text. Powered by AI technology, it not only converts your handwritten content but also helps improve and organize your notes. The integrated AI assistant can answer questions about your notes, making it a comprehensive solution for a more efficient learning experience
+SmartWrite is an innovative tool that transforms handwritten notes into digital text. Powered by AI technology, it not only converts your handwritten content but also helps improve and organize your notes. The integrated AI assistant can answer questions about your notes, making it a comprehensive solution for a more efficient learning experience.
 
 ## Features
 - Handwritten text to digital conversion
@@ -10,6 +10,8 @@ SmartWrite is an innovative tool that transforms handwritten notes into digital 
 - Built-in AI assistant for answering questions
 - User-friendly desktop interface
 - Secure local database storage
+- Advanced PDF viewer with search functionality
+- Text highlighting and selection in PDFs
 
 ## Project Structure
 ```
@@ -34,7 +36,7 @@ SmartWrite/
 │       │   └── js/           # Legacy JavaScript
 │       │       └── theme.js
 │       ├── index.html        # Main entry point
-│       ├── workspace.html
+│       ├── workspace.html    # Main workspace interface
 │       └── ... (other HTML files)
 ├── backend/
 │   └── src/
@@ -46,12 +48,24 @@ SmartWrite/
 └── package.json            # Project dependencies and scripts
 ```
 
+## PDF Viewer Features
+The SmartWrite PDF viewer includes advanced functionality:
+
+- **PDF.js Integration**: Uses Mozilla's PDF.js library for reliable PDF rendering
+- **Text Layer Optimization**: Enhanced text layer with improved text grouping and positioning
+- **Search Functionality**: Search within PDF documents with highlighted results
+- **Search Navigation**: Navigate between search results with next/previous buttons
+- **Zoom Controls**: Adjust zoom level for better readability
+- **Responsive Layout**: Adapts to different screen sizes
+- **Fallback Mechanisms**: Ensures functionality even when primary modules fail to load
+
 ## Development Notes
 - JavaScript code is organized into modular files in `frontend/src/js/`
 - Each module handles a specific aspect of the application's functionality
 - The main entry point is `frontend/src/js/main.js`
 - HTML files in the public directory reference JavaScript files using ES6 modules
 - The development server serves the `frontend/public` directory
+- PDF viewer implementation provides multiple fallback mechanisms for reliability
 
 ## Development Setup
 
@@ -105,6 +119,15 @@ The application uses a .env file for configuration. Key configurations include:
 - API keys
 - File processing settings
 
+## PDF Module Architecture
+The PDF functionality is implemented with multiple layers of fallbacks:
+
+1. **Primary Implementation**: Uses the modular PDF.js module in `frontend/src/js/pdf.js`
+2. **Direct Fallback**: Implements critical functions directly in workspace.html
+3. **Browser Fallback**: Uses built-in browser capabilities when available
+
+This architecture ensures that core functionality remains available even if one layer fails.
+
 ## Getting Started
 
 ### Using the Web Interface
@@ -112,6 +135,7 @@ The application uses a .env file for configuration. Key configurations include:
 2. Upload your handwritten notes through the drag-and-drop interface
 3. Use the workspace to view and edit your converted notes
 4. Interact with the AI assistant for enhanced note organization
+5. Use the PDF viewer to view and search within PDF documents
 
 ### Using the Desktop Application
 1. Launch the SmartWrite application
@@ -124,12 +148,14 @@ We are actively working on several exciting features:
 - Customizable AI model selection for the assistant
 - Multi-language support
 - Mobile application support
+- Enhanced PDF annotation capabilities
 
 ## Technical Details
 - Frontend: HTML, CSS, JavaScript
 - Backend: Node.js with Electron
 - Storage: Local database (cloud sync coming soon)
 - Language Support: Currently English (expansion planned)
+- PDF Support: Mozilla PDF.js with custom text layer implementation
 
 ## Community and Support
 We value community feedback and engagement. Users can:
