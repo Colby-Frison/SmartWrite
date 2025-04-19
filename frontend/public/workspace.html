@@ -82,7 +82,6 @@
             flex-direction: column;
             align-items: center;
             padding: 20px 48px;
-            min-height: 100%;
             width: 100%;
             position: relative;
             background-color: var(--bg-primary);
@@ -92,9 +91,19 @@
             left: 0;
         }
         
+        .pdf-pages-container {
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
+        }
+        
         .pdf-page {
             position: relative;
-            margin: 20px auto;
+            margin: 8px auto;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             background-color: var(--pdf-bg);
             border-radius: 4px;
@@ -154,7 +163,7 @@
         }
         
         #pdfPagesContainer {
-            padding: 10px;
+            padding: 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -184,12 +193,11 @@
         .textLayer > span,
         .textLayer > div {
             color: transparent;
-            position: absolute;
+            position: absolute !important;
             white-space: pre;
             cursor: text;
             transform-origin: 0% 0%;
-            /* Ensure exact scale factor from image */
-            transform: scaleX(0.7);
+            /* Use default transform to allow PDF.js to position correctly */
             margin: 0;
             padding: 0;
             /* Improve text selection behavior */
@@ -219,7 +227,7 @@
             background: rgba(0, 100, 255, 0.4);
             mix-blend-mode: multiply;
             transform-origin: 0% 0%;
-            transform: scaleX(0.7);
+            transform: scaleX(1.0);
             /* Improve selection appearance */
             border-radius: 1px;
             box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
@@ -229,7 +237,7 @@
             background: rgba(0, 100, 255, 0.4);
             mix-blend-mode: multiply;
             transform-origin: 0% 0%;
-            transform: scaleX(0.7);
+            transform: scaleX(1.0);
             /* Improve selection appearance */
             border-radius: 1px;
             box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
@@ -267,6 +275,7 @@
             pointer-events: none;
             z-index: 3;
             mix-blend-mode: multiply;
+            border-radius: 2px;
         }
 
         .search-highlight:hover {
@@ -274,9 +283,9 @@
         }
 
         .search-highlight.current {
-            background-color: rgba(76, 175, 80, 0.3);
+            background-color: rgba(76, 175, 80, 0.5);
             border-color: rgba(76, 175, 80, 0.8);
-            box-shadow: 0 0 3px rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
         }
 
         /* Loading and Error States */
@@ -964,6 +973,75 @@
         .tree-retry-btn:hover {
             background-color: var(--accent-hover);
         }
+        
+        .textLayer.search-active span,
+        .textLayer.search-active div {
+            color: transparent;
+            opacity: 0.3;
+        }
+        
+        .textLayer.search-active .search-highlight {
+            background-color: rgba(255, 255, 0, 0.3);
+            border-radius: 2px;
+            opacity: 1;
+            color: transparent;
+            mix-blend-mode: multiply;
+        }
+        
+        .textLayer.search-active .search-highlight.current {
+            background-color: rgba(76, 175, 80, 0.5);
+            border: 1px solid rgba(76, 175, 80, 0.8);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        
+        /* New search overlay approach */
+        .pdf-page {
+            position: relative;
+        }
+        
+        .search-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .search-match {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.3);
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .search-match.current {
+            background-color: rgba(76, 175, 80, 0.5);
+            border: 1px solid rgba(76, 175, 80, 0.8);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        
+        .textLayer.search-active span,
+        .textLayer.search-active div {
+            color: transparent;
+            opacity: 0.3;
+        }
+        
+        .textLayer.search-active .search-highlight {
+            background-color: rgba(255, 255, 0, 0.3);
+            border-radius: 2px;
+            opacity: 1;
+            color: transparent;
+            mix-blend-mode: multiply;
+        }
+        
+        .textLayer.search-active .search-highlight.current {
+            background-color: rgba(76, 175, 80, 0.5);
+            border: 1px solid rgba(76, 175, 80, 0.8);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
     </style>
 </head>
 <body class="workspace">
@@ -1064,22 +1142,17 @@
             <!-- PDF Controls - Updated -->
             <div class="pdf-controls">
                 <div class="zoom-control">
-                    <button class="zoom-btn" id="zoomOut">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <span class="zoom-level" id="zoomLevel">100%</span>
-                    <button class="zoom-btn" id="zoomIn">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                    <button id="zoomOut" class="zoom-btn"><i class="fas fa-search-minus"></i></button>
+                    <span id="zoomLevel" class="zoom-level">100%</span>
+                    <button id="zoomIn" class="zoom-btn"><i class="fas fa-search-plus"></i></button>
                 </div>
-                <button class="search-icon" id="searchIcon">
-                            <i class="fas fa-search"></i>
-                        </button>
+                <div class="search-control">
+                    <button id="pdfSearchBtn" class="search-icon"><i class="fas fa-search"></i></button>
+                </div>
                     </div>
             <div class="pdf-viewer">
                 <div id="pdfContainer" class="pdf-container">
-                    <div id="pdfPagesContainer" class="pdf-pages-container"></div>
-                    <div id="markdownContainer" class="markdown-container"></div>
+                    <div id="pdfPagesContainer" class="pdf-pages-container active"></div>
                 </div>
             </div>
             <div class="pdf-file-bar">
@@ -1333,7 +1406,729 @@
         </div>
     </div>
     
-    <!-- Load our scripts -->
+    <!-- Add this script right at the top to ensure loadPDF is available immediately -->
+    <script>
+        // Direct fallback implementation of loadPDF that will be available immediately
+        window.loadPDF = function(url) {
+            console.log('[Direct Fallback] Loading PDF from URL:', url);
+            
+            try {
+                // Get the PDF viewer
+                const pdfViewer = document.querySelector('.pdf-viewer');
+                if (!pdfViewer) {
+                    console.error('[Direct Fallback] PDF viewer not found');
+                    return false;
+                }
+                
+                // Show loading message
+                pdfViewer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF...</div>';
+                
+                // Get or create the PDF container
+                let pdfContainer = document.getElementById('pdfContainer');
+                if (!pdfContainer) {
+                    pdfContainer = document.createElement('div');
+                    pdfContainer.id = 'pdfContainer';
+                    pdfContainer.className = 'pdf-container';
+                    pdfViewer.appendChild(pdfContainer);
+                }
+                
+                // Get or create pdfPagesContainer
+                let pdfPagesContainer = document.getElementById('pdfPagesContainer');
+                if (!pdfPagesContainer) {
+                    pdfPagesContainer = document.createElement('div');
+                    pdfPagesContainer.id = 'pdfPagesContainer';
+                    pdfPagesContainer.className = 'pdf-pages-container active';
+                    pdfContainer.appendChild(pdfPagesContainer);
+            } else {
+                    pdfPagesContainer.classList.add('active');
+                }
+                
+                // Check if PDF.js is loaded
+                if (typeof pdfjsLib === 'undefined') {
+                    console.error('[Direct Fallback] PDF.js library not loaded');
+                    pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not loaded</div>';
+                    return false;
+                }
+                
+                try {
+                    // Load the PDF using PDF.js
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    
+                    loadingTask.promise.then(function(pdf) {
+                        console.log('[Direct Fallback] PDF loaded successfully, rendering pages');
+                        
+                        // Clear any existing content
+                        pdfPagesContainer.innerHTML = '';
+                        
+                        // Store the PDF document reference
+                        window.pdfDoc = pdf;
+                        
+                        // Render each page
+                        const numPages = pdf.numPages;
+                        console.log(`[Direct Fallback] PDF has ${numPages} pages`);
+                        
+                        // Create a promise for each page
+                        const pagePromises = [];
+                        
+                        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                            pagePromises.push(
+                                pdf.getPage(pageNum).then(function(page) {
+                // Create a div for this page
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.dataset.pageNumber = pageNum;
+                
+                                    // Create canvas for rendering
+                const canvas = document.createElement('canvas');
+                                    const context = canvas.getContext('2d');
+                                    
+                                    // Set canvas dimensions to match the PDF page
+                                    const viewport = page.getViewport({ scale: 1.5 });
+                canvas.width = viewport.width;
+                                    canvas.height = viewport.height;
+                                    
+                                    // Render the PDF page to the canvas
+                const renderContext = {
+                                        canvasContext: context,
+                    viewport: viewport
+                };
+                
+                                    // Add the canvas to the page div
+                                    pageDiv.appendChild(canvas);
+                                    
+                                    // Create text layer div
+                                    const textLayerDiv = document.createElement('div');
+                                    textLayerDiv.className = 'textLayer';
+                                    pageDiv.appendChild(textLayerDiv);
+                                    
+                                    // Add page number indicator
+                                    const pageNumDiv = document.createElement('div');
+                                    pageNumDiv.className = 'page-number';
+                                    pageNumDiv.textContent = pageNum;
+                                    pageDiv.appendChild(pageNumDiv);
+                                    
+                                    // Add the page to the container
+                                    pdfPagesContainer.appendChild(pageDiv);
+                                    
+                                    // Render the page
+                                    return page.render(renderContext).promise.then(function() {
+                                        // Get the text content
+                                        return page.getTextContent();
+                                    }).then(function(textContent) {
+                                        // Create text layer
+                        const textLayer = document.createElement('div');
+                        textLayer.className = 'textLayer';
+                                        
+                                        // Position text layer over the canvas
+                                        textLayer.style.left = canvas.offsetLeft + 'px';
+                                        textLayer.style.top = canvas.offsetTop + 'px';
+                                        textLayer.style.width = canvas.width + 'px';
+                                        textLayer.style.height = canvas.height + 'px';
+                                        
+                                        // Add text layer to page
+                                        pageDiv.appendChild(textLayer);
+                                        
+                                        // Group text items by their vertical position (lines)
+                                        const lines = {};
+                                        const lineHeight = 1.2; // multiplier for line height
+                                        const tolerance = 5; // pixels of tolerance for same line detection
+
+                                        // First pass: group text items by vertical position
+                                        textContent.items.forEach(function(item) {
+                                            // Transform the item position
+                                            const tx = pdfjsLib.Util.transform(
+                                                viewport.transform,
+                                                item.transform
+                                            );
+                                            
+                                            // Get baseline position (vertical)
+                                            const baseline = Math.round(tx[5]);
+                                            
+                                            // Either add to existing line or create new line
+                                            let foundLine = false;
+                                            for (const key in lines) {
+                                                const lineY = parseInt(key);
+                                                if (Math.abs(baseline - lineY) <= tolerance) {
+                                                    lines[key].push({
+                                                        text: item.str,
+                                                        x: tx[4],
+                                                        y: baseline,
+                                                        fontSize: tx[0],
+                                                        fontFamily: item.fontName || 'sans-serif'
+                                                    });
+                                                    foundLine = true;
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            if (!foundLine) {
+                                                lines[baseline] = [{
+                                                    text: item.str,
+                                                    x: tx[4],
+                                                    y: baseline,
+                                                    fontSize: tx[0],
+                                                    fontFamily: item.fontName || 'sans-serif'
+                                                }];
+                                            }
+                                        });
+                                        
+                                        // Second pass: Sort each line by x position and render as larger chunks
+                                        Object.keys(lines).forEach(function(baseline) {
+                                            // Sort items in this line by x position
+                                            const lineItems = lines[baseline].sort((a, b) => a.x - b.x);
+                                            
+                                            // Find chunks of text with similar characteristics
+                                            const chunks = [];
+                                            let currentChunk = [];
+                                            let prevItem = null;
+                                            
+                                            lineItems.forEach(function(item) {
+                                                if (!prevItem) {
+                                                    // First item in line
+                                                    currentChunk.push(item);
+                                                } else {
+                                                    // Check if this item should be part of the current chunk
+                                                    const gap = item.x - (prevItem.x + prevItem.text.length * prevItem.fontSize * 0.5);
+                                                    
+                                                    if (gap < 10 && item.fontSize === prevItem.fontSize) {
+                                                        // Same chunk - small gap and same font size
+                                                        currentChunk.push(item);
+                                                    } else {
+                                                        // New chunk
+                                                        chunks.push(currentChunk);
+                                                        currentChunk = [item];
+                                                    }
+                                                }
+                                                prevItem = item;
+                                            });
+                                            
+                                            // Add the last chunk if not empty
+                                            if (currentChunk.length > 0) {
+                                                chunks.push(currentChunk);
+                                            }
+                                            
+                                            // Create spans for each chunk
+                                            chunks.forEach(function(chunk) {
+                                                if (chunk.length === 0) return;
+                                                
+                                                // Get first and last items for positioning
+                                                const firstItem = chunk[0];
+                                                const lastItem = chunk[chunk.length - 1];
+                                                
+                                                // Create text span
+                                                const span = document.createElement('span');
+                                                span.className = 'text-chunk';
+                                                
+                                                // Combine text from all items in this chunk
+                                                span.textContent = chunk.map(item => item.text).join('');
+                                                
+                                                // Position the span
+                                                span.style.position = 'absolute';
+                                                span.style.left = `${firstItem.x}px`;
+                                                span.style.top = `${firstItem.y - firstItem.fontSize}px`;
+                                                span.style.fontSize = `${firstItem.fontSize}px`;
+                                                span.style.fontFamily = firstItem.fontFamily;
+                                                span.style.transform = 'scaleX(1.0)';
+                                                span.style.transformOrigin = '0% 0%';
+                                                span.style.color = 'transparent';
+                                                span.style.whiteSpace = 'pre';
+                                                
+                                                // Add span to text layer
+                                                textLayer.appendChild(span);
+                                            });
+                                        });
+                                        
+                                        console.log(`[Direct Fallback] Rendered page ${pageNum} with grouped text`);
+                                    });
+                                })
+                            );
+                        }
+                        
+                        // Wait for all pages to render
+                        Promise.all(pagePromises).then(function() {
+                            console.log('[Direct Fallback] All pages rendered successfully');
+                            
+                            // Remove loading indicator
+                            const loadingIndicator = pdfViewer.querySelector('.pdf-loading');
+                            if (loadingIndicator) {
+                                loadingIndicator.remove();
+                            }
+                            
+                            // Adjust text spans if needed
+                            if (typeof adjustTextSpanStyles === 'function') {
+                                // Find all text layers and apply adjustments to each
+                                const textLayers = document.querySelectorAll('.textLayer');
+                                textLayers.forEach(function(textLayer) {
+                                    try {
+                                adjustTextSpanStyles(textLayer);
+                                    } catch (e) {
+                                        console.warn('[Direct Fallback] Error adjusting text spans:', e);
+                                    }
+                                });
+                            }
+                            
+                            // Hide the skeleton screen if present
+                            if (typeof hideSkeletonScreen === 'function') {
+                                hideSkeletonScreen();
+                            }
+                            
+                            // Return success
+                            return true;
+                        }).catch(function(error) {
+                            console.error('[Direct Fallback] Error rendering PDF pages:', error);
+                            pdfContainer.innerHTML = `<div class="pdf-error">Error rendering PDF: ${error.message}</div>`;
+                            return false;
+                        });
+                        
+                        return true;
+                    }).catch(function(error) {
+                        console.error('[Direct Fallback] Error loading PDF:', error);
+                        pdfContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
+                        return false;
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    console.error('[Direct Fallback] Error in PDF loading process:', error);
+                    pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                    return false;
+                }
+            } catch (error) {
+                console.error('[Direct Fallback] Unexpected error:', error);
+                return false;
+            }
+        };
+        
+        console.log('[Direct Fallback] loadPDF function added to window object');
+        
+        // Add fallback for adjustTextSpanStyles function
+        if (typeof window.adjustTextSpanStyles !== 'function') {
+            window.adjustTextSpanStyles = function(textLayer) {
+                console.log('[Fallback] Adjusting text spans in text layer');
+                const textSpans = textLayer.querySelectorAll('span');
+                
+                // Process each text span
+                textSpans.forEach(span => {
+                    // Get original style
+                    const originalStyle = span.getAttribute('style') || '';
+                    
+                    // Don't modify styles if they already have a transform
+                    if (originalStyle.includes('transform:')) {
+                        return;
+                    }
+                    
+                    // Extract positioning styles to preserve them
+                    const leftMatch = originalStyle.match(/left:\s*([^;]+)/);
+                    const topMatch = originalStyle.match(/top:\s*([^;]+)/);
+                    const fontSizeMatch = originalStyle.match(/font-size:\s*([^;]+)/);
+                    const fontFamilyMatch = originalStyle.match(/font-family:\s*([^;]+)/);
+                    const transformMatch = originalStyle.match(/transform:\s*([^;]+)/);
+                    
+                    // Create new style preserving original positioning exactly
+                    let newStyle = originalStyle;
+                    
+                    // Only add the transform if one isn't already present
+                    if (!transformMatch) {
+                        newStyle += ' transform: scaleX(1.0); transform-origin: 0% 0%;';
+                    }
+                    
+                    // Apply the new style
+                    span.setAttribute('style', newStyle);
+                    span.setAttribute('role', 'presentation');
+                });
+                
+                console.log(`[Fallback] Adjusted ${textSpans.length} text spans`);
+            };
+            
+            console.log('[Direct Fallback] Added fallback adjustTextSpanStyles function');
+        }
+        
+        // Add fallback search function if not available
+        if (typeof window.searchPDF !== 'function') {
+            // Track search state
+            let searchState = {
+                searchText: '',
+                matches: [],
+                currentMatchIndex: -1,
+                overlays: []
+            };
+            
+            // Helper to clear previous search highlights
+            function clearSearchHighlights() {
+                // Remove all search overlays
+                searchState.overlays.forEach(overlay => {
+                    if (overlay && overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                });
+                searchState.overlays = [];
+                
+                // Reset search state
+                searchState.matches = [];
+                searchState.currentMatchIndex = -1;
+            }
+            
+            // Main search function - simplified approach for text chunks
+            window.searchPDF = function(searchText) {
+                console.log('[PDF Search] Searching PDF for:', searchText);
+                
+                // Clear previous highlights
+                clearSearchHighlights();
+                
+                if (!searchText || searchText.trim() === '') {
+                    return false;
+                }
+                
+                // Update search state
+                searchState.searchText = searchText.trim().toLowerCase();
+                
+                try {
+                    // Get all PDF pages
+                    const pdfPages = document.querySelectorAll('.pdf-page');
+                    const allMatches = [];
+                    
+                    // Process each page
+                    pdfPages.forEach((page, pageIndex) => {
+                        // Create a search overlay for this page
+                        const overlay = document.createElement('div');
+                        overlay.className = 'search-overlay';
+                        page.appendChild(overlay);
+                        searchState.overlays.push(overlay);
+                        
+                        // Get all text chunks in this page
+                        const textChunks = page.querySelectorAll('.text-chunk, span');
+                        
+                        // Find matches in text chunks
+                        textChunks.forEach(chunk => {
+                            const chunkText = chunk.textContent || '';
+                            const chunkTextLower = chunkText.toLowerCase();
+                            
+                            // Check if this chunk contains the search text
+                            let startIndex = 0;
+                            let matchFound = false;
+                            
+                            while (true) {
+                                const matchIndex = chunkTextLower.indexOf(searchState.searchText, startIndex);
+                                if (matchIndex === -1) break;
+                                
+                                matchFound = true;
+                                startIndex = matchIndex + 1;
+                            }
+                            
+                            // If we found a match, highlight the entire chunk
+                            if (matchFound) {
+                                const chunkRect = chunk.getBoundingClientRect();
+                                const pageRect = page.getBoundingClientRect();
+                                
+                                // Create highlight element
+                                const highlight = document.createElement('div');
+                                highlight.className = 'search-match';
+                                
+                                // Position highlight
+                                highlight.style.left = `${chunkRect.left - pageRect.left}px`;
+                                highlight.style.top = `${chunkRect.top - pageRect.top}px`;
+                                highlight.style.width = `${chunkRect.width}px`;
+                                highlight.style.height = `${chunkRect.height}px`;
+                                
+                                // Add to overlay
+                                overlay.appendChild(highlight);
+                                
+                                // Add to matches array
+                                allMatches.push({
+                                    text: chunkText,
+                                    chunk: chunk,
+                                    highlight: highlight,
+                                    page: page,
+                                    pageIndex: pageIndex
+                                });
+                            }
+                        });
+                    });
+                    
+                    // Update search state
+                    searchState.matches = allMatches;
+                    
+                    // If we found any matches, navigate to the first one
+                    if (allMatches.length > 0) {
+                        searchState.currentMatchIndex = 0;
+                        navigateToMatch(0);
+                    }
+                    
+                    // Update UI
+                    const searchCount = document.getElementById('searchCount');
+                    if (searchCount) {
+                        searchCount.textContent = allMatches.length > 0 ? 
+                            `1/${allMatches.length}` : 'No results';
+                    }
+                    
+                    // Update navigation buttons
+                    const prevResultBtn = document.getElementById('prevResult');
+                    const nextResultBtn = document.getElementById('nextResult');
+                    if (prevResultBtn) prevResultBtn.disabled = allMatches.length <= 1;
+                    if (nextResultBtn) nextResultBtn.disabled = allMatches.length <= 1;
+                    
+                    return allMatches.length > 0;
+                } catch (error) {
+                    console.error('[PDF Search] Error searching:', error);
+                    return false;
+                }
+            };
+            
+            // Function to navigate to a specific match
+            function navigateToMatch(index) {
+                if (searchState.matches.length === 0) return;
+                
+                // Make sure index is in bounds
+                index = Math.max(0, Math.min(index, searchState.matches.length - 1));
+                
+                // Remove current class from all highlights
+                searchState.matches.forEach(match => {
+                    if (match.highlight) match.highlight.classList.remove('current');
+                });
+                
+                // Get current match
+                const currentMatch = searchState.matches[index];
+                
+                // Add current class to highlight
+                if (currentMatch && currentMatch.highlight) {
+                    currentMatch.highlight.classList.add('current');
+                }
+                
+                // Scroll to the match
+                if (currentMatch && currentMatch.page) {
+                    // First scroll to the page
+                    currentMatch.page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Then scroll to the highlight after a small delay
+                    setTimeout(() => {
+                        if (currentMatch.highlight) {
+                            currentMatch.highlight.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center', 
+                                inline: 'center' 
+                            });
+                        }
+                    }, 300);
+                }
+                
+                // Update UI
+                const searchCount = document.getElementById('searchCount');
+                if (searchCount) {
+                    searchCount.textContent = `${index + 1}/${searchState.matches.length}`;
+                }
+                
+                // Update state
+                searchState.currentMatchIndex = index;
+            }
+            
+            // Navigation functions
+            window.nextSearchResult = function() {
+                if (searchState.matches.length === 0) return;
+                
+                const nextIndex = (searchState.currentMatchIndex + 1) % searchState.matches.length;
+                navigateToMatch(nextIndex);
+            };
+            
+            window.prevSearchResult = function() {
+                if (searchState.matches.length === 0) return;
+                
+                const prevIndex = (searchState.currentMatchIndex - 1 + searchState.matches.length) % searchState.matches.length;
+                navigateToMatch(prevIndex);
+            };
+            
+            console.log('[PDF Search] Added simplified search functions');
+        }
+    </script>
+
+    <!-- Ensure PDF.js is loaded -->
+    <script>
+        // Check if PDF.js is already loaded
+        if (typeof pdfjsLib === 'undefined') {
+            console.log('Loading PDF.js library');
+            
+            // Create script element for PDF.js
+            const pdfJsScript = document.createElement('script');
+            pdfJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+            pdfJsScript.integrity = 'sha512-ysGZ5eGTEg6WRJJNfEC1OEL53zQfBMA4jSS+lqJutJnwuEjFqIzLwE9rig6H5O4S0QrNX+7GY8PFDiDQlLPJw==';
+            pdfJsScript.crossOrigin = 'anonymous';
+            pdfJsScript.referrerPolicy = 'no-referrer';
+            pdfJsScript.onload = function() {
+                console.log('PDF.js library loaded successfully');
+                
+                // Set worker source after library loads
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                    console.log('PDF.js worker source set');
+                }
+            };
+            pdfJsScript.onerror = function() {
+                console.error('Failed to load PDF.js library');
+            };
+            
+            // Append script to document
+            document.head.appendChild(pdfJsScript);
+        } else {
+            console.log('PDF.js library already loaded');
+        }
+    </script>
+
+    <!-- Before the existing scripts, add this script tag to ensure PDF.js functions are available -->
+    <script>
+        // Ensure PDF.js is properly loaded before continuing
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load PDF.js script if needed
+            if (typeof pdfjsLib === 'undefined') {
+                console.error('[Workspace] PDF.js library not found, adding script tag');
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                document.head.appendChild(script);
+            }
+            
+            // First, load our custom PDF.js module
+            const scriptElement = document.createElement('script');
+            scriptElement.src = '/frontend/src/js/pdf.js';
+            scriptElement.type = 'text/javascript';
+            
+            scriptElement.onload = function() {
+                console.log('[Workspace] PDF.js script loaded successfully');
+                
+                // Check if functions were exported to global scope
+                if (typeof window.loadPDF !== 'function') {
+                    console.warn('[Workspace] loadPDF not found in global scope after script load, creating fallback');
+                    
+                    // Create a simple fallback if the function doesn't exist
+                    window.loadPDF = function(url) {
+                        console.log('[Fallback] Using fallback loadPDF function');
+                        
+                        // Get containers
+                        const pdfViewer = document.querySelector('.pdf-viewer');
+                        if (!pdfViewer) return false;
+                        
+                        // Show loading state
+                        pdfViewer.innerHTML = '<div class="pdf-loading"><i class="fas fa-spinner fa-spin"></i> Loading PDF (fallback)...</div>';
+                        
+                        // Create or get container
+                        let pdfContainer = document.getElementById('pdfContainer');
+                        if (!pdfContainer) {
+                            pdfContainer = document.createElement('div');
+                            pdfContainer.id = 'pdfContainer';
+                            pdfContainer.className = 'pdf-container';
+                            pdfViewer.appendChild(pdfContainer);
+                        }
+                        
+                        // Get pdfPagesContainer
+                        let pdfPagesContainer = document.getElementById('pdfPagesContainer');
+                        if (!pdfPagesContainer) {
+                            pdfPagesContainer = document.createElement('div');
+                            pdfPagesContainer.id = 'pdfPagesContainer';
+                            pdfPagesContainer.className = 'pdf-pages-container active';
+                            pdfContainer.appendChild(pdfPagesContainer);
+                        }
+                        
+                        if (typeof pdfjsLib === 'undefined') {
+                            console.error('[Fallback] PDF.js library not loaded');
+                            pdfContainer.innerHTML = '<div class="pdf-error">PDF.js library not loaded</div>';
+                            return false;
+                        }
+                        
+                        try {
+                            // Load the PDF using PDF.js
+                            const loadingTask = pdfjsLib.getDocument(url);
+                            loadingTask.promise.then(function(pdf) {
+                                console.log(`[Fallback] PDF loaded successfully with ${pdf.numPages} pages`);
+                                
+                                // Clear container
+                                pdfPagesContainer.innerHTML = '';
+                                
+                                // Keep track of promises for all page renders
+                                const renderPromises = [];
+                                
+                                // Render each page sequentially to ensure order
+                                function renderPagesSequentially(startPage) {
+                                    if (startPage > pdf.numPages) {
+                                        console.log('[Fallback] All pages rendered successfully');
+                                        return Promise.resolve();
+                                    }
+                                    
+                                    return pdf.getPage(startPage).then(function(page) {
+                                        // Create page container
+                                        const pageContainer = document.createElement('div');
+                                        pageContainer.className = 'pdf-page';
+                                        pageContainer.dataset.pageNumber = startPage;
+                                        
+                                        // Set viewport
+                                        const scale = 1.0;
+                                        const viewport = page.getViewport({ scale });
+                                        
+                                        // Create canvas
+                                        const canvas = document.createElement('canvas');
+                                        const ctx = canvas.getContext('2d');
+                                        canvas.height = viewport.height;
+                                        canvas.width = viewport.width;
+                                        
+                                        // Set size on container
+                                        pageContainer.style.width = `${viewport.width}px`;
+                                        pageContainer.style.height = `${viewport.height}px`;
+                                        
+                                        // Wrapper for canvas
+                                        const wrapper = document.createElement('div');
+                                        wrapper.className = 'pdf-page-wrapper';
+                                        wrapper.style.width = `${viewport.width}px`;
+                                        wrapper.style.height = `${viewport.height}px`;
+                                        wrapper.style.position = 'relative';
+                                        
+                                        // Render to canvas
+                                        return page.render({
+                                            canvasContext: ctx,
+                                            viewport: viewport
+                                        }).promise.then(function() {
+                                            // Add page number
+                        const pageNumberDiv = document.createElement('div');
+                        pageNumberDiv.className = 'page-number';
+                                            pageNumberDiv.textContent = startPage;
+                                            
+                                            // Add everything to the DOM
+                                            wrapper.appendChild(canvas);
+                                            wrapper.appendChild(textLayer);
+                                            pageContainer.appendChild(wrapper);
+                                            pageContainer.appendChild(pageNumberDiv);
+                                            pdfPagesContainer.appendChild(pageContainer);
+                                            
+                                            console.log(`[Fallback] Page ${startPage} rendered successfully`);
+                                            
+                                            // Render next page
+                                            return renderPagesSequentially(startPage + 1);
+                    });
+            });
+                                }
+                                
+                                // Start rendering from page 1
+                                renderPagesSequentially(1);
+                            }).catch(function(error) {
+                                console.error('[Fallback] Error loading PDF:', error);
+                                pdfContainer.innerHTML = `<div class="pdf-error">Error loading PDF: ${error.message}</div>`;
+                            });
+                            
+                            return true;
+                        } catch (error) {
+                            console.error('[Fallback] Error in PDF loading process:', error);
+                            pdfContainer.innerHTML = `<div class="pdf-error">Error: ${error.message}</div>`;
+                            return false;
+                        }
+                    };
+                }
+            };
+            
+            scriptElement.onerror = function() {
+                console.error('[Workspace] Failed to load PDF.js script');
+            };
+            
+            // Add script to document head
+            document.head.appendChild(scriptElement);
+        });
+    </script>
+
+    <!-- Existing scripts -->
     <script src="/frontend/src/js/pdf.js"></script>
     <script src="/frontend/src/js/filetree.js"></script>
     <script>
@@ -1350,155 +2145,6 @@
             } else {
                 console.log('[Workspace] loadPDF function is available');
             }
-        }
-        
-        // Fallback render page function that works directly with PDF.js
-        function fallbackRenderPage(pdf, pageNum, container) {
-            console.log(`[Fallback] Rendering page ${pageNum}`);
-            
-            return pdf.getPage(pageNum).then(function(page) {
-                // Create a div for this page
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'pdf-page';
-                pageDiv.dataset.pageNumber = pageNum;
-                
-                // Set viewport with proper scale
-                const scale = 1.0;
-                const viewport = page.getViewport({ scale });
-                
-                // Create canvas
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                // Create wrapper for canvas and text layer
-                const wrapper = document.createElement('div');
-                wrapper.className = 'pdf-page-wrapper';
-                wrapper.style.width = `${viewport.width}px`;
-                wrapper.style.height = `${viewport.height}px`;
-                wrapper.style.position = 'relative';
-                
-                // Render page content
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                
-                // Chain all promises properly
-                return page.render(renderContext).promise
-                    .then(function() {
-                        // After canvas rendering is done, get text content
-                        return page.getTextContent({
-                            normalizeWhitespace: true,
-                            disableCombineTextItems: false
-                        });
-                    })
-                    .then(function(textContent) {
-                        // Create text layer container
-                        const textLayer = document.createElement('div');
-                        textLayer.className = 'textLayer';
-                        textLayer.style.width = `${viewport.width}px`;
-                        textLayer.style.height = `${viewport.height}px`;
-                        textLayer.style.left = '0';
-                        textLayer.style.top = '0';
-                        textLayer.style.position = 'absolute';
-                        
-                        // Process text content items to group them by line
-                        try {
-                            // Group text items by their vertical position (y-coordinate)
-                            const textItemsByLine = {};
-                            const items = textContent.items;
-                            
-                            // First pass: group items by their vertical position
-                            items.forEach(item => {
-                                // Round the y-coordinate to account for small variations within the same line
-                                const lineY = Math.round(item.transform[5] * 10) / 10;
-                                
-                                if (!textItemsByLine[lineY]) {
-                                    textItemsByLine[lineY] = [];
-                                }
-                                
-                                textItemsByLine[lineY].push(item);
-                            });
-                            
-                            // Second pass: sort each line's items by x-coordinate
-                            Object.keys(textItemsByLine).forEach(lineY => {
-                                textItemsByLine[lineY].sort((a, b) => a.transform[4] - b.transform[4]);
-                            });
-                            
-                            // Use the standard PDF.js text layer renderer
-                            return pdfjsLib.renderTextLayer({
-                                textContent: textContent,
-                                container: textLayer,
-                                viewport: viewport,
-                                textDivs: []
-                            }).promise.then(function() {
-                                // Apply specific styling to each text span after rendering
-                                adjustTextSpanStyles(textLayer);
-                                
-                                // Add canvas and text layer to wrapper
-                                wrapper.appendChild(canvas);
-                                wrapper.appendChild(textLayer);
-                                
-                                // Add wrapper to page div
-                                pageDiv.appendChild(wrapper);
-                                
-                                // Add page number indicator
-                                const pageNumberDiv = document.createElement('div');
-                                pageNumberDiv.className = 'page-number';
-                                pageNumberDiv.textContent = pageNum;
-                                pageDiv.appendChild(pageNumberDiv);
-                                
-                                // Add page div to container
-                                container.appendChild(pageDiv);
-                                
-                                return pageDiv;
-                            });
-                        } catch (err) {
-                            console.error('Error processing text content:', err);
-                            
-                            // Fall back to standard rendering if grouping fails
-                            return pdfjsLib.renderTextLayer({
-                                textContent: textContent,
-                                container: textLayer,
-                                viewport: viewport,
-                                textDivs: []
-                            }).promise.then(function() {
-                                adjustTextSpanStyles(textLayer);
-                                wrapper.appendChild(canvas);
-                                wrapper.appendChild(textLayer);
-                                pageDiv.appendChild(wrapper);
-                                
-                                const pageNumberDiv = document.createElement('div');
-                                pageNumberDiv.className = 'page-number';
-                                pageNumberDiv.textContent = pageNum;
-                                pageDiv.appendChild(pageNumberDiv);
-                                
-                                container.appendChild(pageDiv);
-                                return pageDiv;
-                            });
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error(`[Fallback] Error rendering page ${pageNum}:`, error);
-                        
-                        // Even if text layer fails, still show the page with canvas
-                        wrapper.appendChild(canvas);
-                        pageDiv.appendChild(wrapper);
-                        
-                        // Add page number indicator even in case of error
-                        const pageNumberDiv = document.createElement('div');
-                        pageNumberDiv.className = 'page-number';
-                        pageNumberDiv.textContent = pageNum;
-                        pageDiv.appendChild(pageNumberDiv);
-                        
-                        // Add page div to container
-                        container.appendChild(pageDiv);
-                        
-                        return pageDiv;
-                    });
-            });
         }
 
         // Initialize application
@@ -1518,6 +2164,9 @@
                 }
             }
             
+            // Set up search functionality
+            setupPDFSearch();
+            
             // Automatically test the PDF rendering after a short delay
             setTimeout(function() {
                 console.log('[Workspace] Auto-testing PDF rendering');
@@ -1528,6 +2177,87 @@
             
             console.log('[Workspace] Application initialized');
         });
+        
+        // Setup search functionality
+        function setupPDFSearch() {
+            console.log('[Workspace] Setting up PDF search functionality');
+            
+            // Get search elements
+            const searchBtn = document.getElementById('pdfSearchBtn');
+            const searchModal = document.getElementById('searchModal');
+            const closeSearchModal = document.getElementById('closeSearchModal');
+            const searchInput = document.getElementById('pdfSearchInput');
+            const prevResultBtn = document.getElementById('prevResult');
+            const nextResultBtn = document.getElementById('nextResult');
+            
+            // Add search button click handler
+            if (searchBtn) {
+                searchBtn.addEventListener('click', function() {
+                    if (searchModal) {
+                        searchModal.classList.add('active');
+                        if (searchInput) {
+                            searchInput.focus();
+                        }
+                    }
+                });
+            }
+            
+            // Add close button click handler
+            if (closeSearchModal) {
+                closeSearchModal.addEventListener('click', function() {
+                    if (searchModal) {
+                        searchModal.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Add search input keyup handler
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        performSearch(searchInput.value);
+                    }
+                });
+            }
+            
+            // Add previous/next result button handlers
+            if (prevResultBtn) {
+                prevResultBtn.addEventListener('click', function() {
+                    if (typeof window.prevSearchResult === 'function') {
+                        window.prevSearchResult();
+                    }
+                });
+            }
+            
+            if (nextResultBtn) {
+                nextResultBtn.addEventListener('click', function() {
+                    if (typeof window.nextSearchResult === 'function') {
+                        window.nextSearchResult();
+                    }
+                });
+            }
+            
+            // Function to perform search
+            function performSearch(text) {
+                if (!text || text.trim() === '') {
+                    return;
+                }
+                
+                console.log(`[Search] Searching for: "${text}"`);
+                
+                // Use searchPDF function from pdf.js module if available
+                if (typeof window.searchPDF === 'function') {
+                    window.searchPDF(text);
+                    
+                    // Enable navigation buttons
+                    if (prevResultBtn) prevResultBtn.disabled = false;
+                    if (nextResultBtn) nextResultBtn.disabled = false;
+                } else {
+                    // Fallback to built-in browser search
+                    window.find(text);
+                }
+            }
+        }
         
         // Add error handler for script loading
         window.addEventListener('error', function(event) {
@@ -3902,7 +4632,7 @@
                         if (fontFamilyMatch) newStyle += `font-family: ${fontFamilyMatch[1]}; `;
                         
                         // Add the exact scale transform from the image
-                        newStyle += 'transform: scaleX(0.7); transform-origin: 0% 0%;';
+                        newStyle += 'transform: scaleX(1.0); transform-origin: 0% 0%;';
                         
                         // Make selection more precise with slight padding adjustments
                         newStyle += 'padding: 0px; margin: 0px; ';
