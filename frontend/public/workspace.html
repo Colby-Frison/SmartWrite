@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -22,8 +22,273 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
     
+    <!-- Custom model selector styles -->
+    <style>
+        /* Override model dropdown styles to position it to the right and improve styling */
+        .model-dropdown {
+            position: absolute;
+            bottom: 100%;  /* Keep it opening upward */
+            left: 0;    /* Reset left positioning */
+            right: auto;      /* Align with the right edge of the button */
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;  /* Increased border radius */
+            padding: 8px 0;  /* Increased padding */
+            margin-bottom: 8px;  /* Add space between button and dropdown */
+            min-width: 180px;  /* Increased width */
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);  /* Added shadow */
+        }
+
+        .model-option {
+            padding: 8px 16px;  /* Increased padding */
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;  /* Increased font size */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease;  /* Added smooth transition */
+        }
+    </style>
+    
     <!-- Direct fallback for ensuring markdown section is visible and accessible -->
     <script>
+        // Define our IndexedDB database for storing directory handles
+        let db;
+        
+        // Initialize the IndexedDB database
+        function initializeHandleDatabase() {
+            return new Promise((resolve, reject) => {
+                console.log('[Workspace] Initializing IndexedDB for directory handles');
+                const request = indexedDB.open('SmartWriteDirectoryHandles', 1);
+                
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    // Create an object store for directory handles if it doesn't exist
+                    if (!db.objectStoreNames.contains('handles')) {
+                        db.createObjectStore('handles', { keyPath: 'id' });
+                        console.log('[Workspace] Created handles object store');
+                    }
+                };
+                
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    console.log('[Workspace] IndexedDB initialized successfully');
+                    resolve(db);
+                };
+                
+                request.onerror = function(event) {
+                    console.error('[Workspace] IndexedDB initialization error:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        // Save a directory handle to IndexedDB
+        async function saveDirectoryHandle(handle) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                try {
+                    const transaction = db.transaction(['handles'], 'readwrite');
+                    const store = transaction.objectStore('handles');
+                    const request = store.put({
+                        id: 'workspaceFolder',
+                        handle: handle,
+                        name: handle.name,
+                        dateAdded: new Date().toISOString()
+                    });
+                    
+                    request.onsuccess = function() {
+                        console.log('[Workspace] Directory handle saved to IndexedDB');
+                        // Also save to localStorage for backward compatibility
+                        localStorage.setItem('workspaceFolderPath', handle.name);
+                        // Store in window for current session
+                        window.workspaceFolderHandle = handle;
+                        resolve();
+                    };
+                    
+                    request.onerror = function(event) {
+                        console.error('[Workspace] Error saving handle:', event.target.error);
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    console.error('[Workspace] Error in saveDirectoryHandle:', error);
+                    reject(error);
+                }
+            });
+        }
+        
+        // Get the stored directory handle from IndexedDB
+        async function getDirectoryHandle() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    reject(new Error('Database not initialized'));
+                    return;
+                }
+                
+                try {
+                    const transaction = db.transaction(['handles'], 'readonly');
+                    const store = transaction.objectStore('handles');
+                    const request = store.get('workspaceFolder');
+                    
+                    request.onsuccess = function(event) {
+                        const result = event.target.result;
+                        if (result && result.handle) {
+                            console.log('[Workspace] Retrieved directory handle from IndexedDB');
+                            window.workspaceFolderHandle = result.handle;
+                            resolve(result.handle);
+                        } else {
+                            console.log('[Workspace] No directory handle found in IndexedDB');
+                            resolve(null);
+                        }
+                    };
+                    
+                    request.onerror = function(event) {
+                        console.error('[Workspace] Error retrieving handle:', event.target.error);
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    console.error('[Workspace] Error in getDirectoryHandle:', error);
+                    reject(error);
+                }
+            });
+        }
+        
+        // Verify we have permission to access the directory
+        async function verifyPermission(fileHandle, readWrite = false) {
+            const options = {
+                mode: readWrite ? 'readwrite' : 'read'
+            };
+            
+            // Check if we already have permission
+            if (await fileHandle.queryPermission(options) === 'granted') {
+                return true;
+            }
+            
+            // Request permission if we don't have it
+            try {
+                if (await fileHandle.requestPermission(options) === 'granted') {
+                    return true;
+                }
+            } catch (error) {
+                console.error('[Workspace] Permission request error:', error);
+            }
+            
+            return false;
+        }
+        
+        // Initialize database when the page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Initialize the database
+                await initializeHandleDatabase();
+                
+                // Try to get the saved directory handle
+                const directoryHandle = await getDirectoryHandle();
+                
+                // If we have a handle, verify permission and use it
+                if (directoryHandle) {
+                    console.log('[Workspace] Found saved directory handle, verifying permission');
+                    
+                    try {
+                        const hasPermission = await verifyPermission(directoryHandle);
+                        
+                        if (hasPermission) {
+                            console.log('[Workspace] Permission granted, using saved directory');
+                            // Update the workspace path in the UI
+                            const workspacePath = document.getElementById('workspacePath');
+                            if (workspacePath) {
+                                workspacePath.value = directoryHandle.name;
+                            }
+                            
+                            // Update the file system from the directory
+                            await updateFileSystemFromLocalFolder(directoryHandle);
+                            hideEmptyWorkspaceMessage();
+                        } else {
+                            console.log('[Workspace] Permission denied for saved directory');
+                            showEmptyWorkspaceMessage();
+                        }
+                    } catch (error) {
+                        console.error('[Workspace] Error verifying permission:', error);
+                        showEmptyWorkspaceMessage();
+                    }
+                } else if (localStorage.getItem('workspaceFolderPath')) {
+                    // Handle legacy approach - show a message that we need to reselect
+                    console.log('[Workspace] Found legacy path, but need to reselect for permission');
+                    const workspacePath = document.getElementById('workspacePath');
+                    if (workspacePath) {
+                        const savedPath = localStorage.getItem('workspaceFolderPath');
+                        workspacePath.value = savedPath + ' (Please reselect for permission)';
+                    }
+                    showEmptyWorkspaceMessage();
+                } else {
+                    console.log('[Workspace] No directory handle found, showing empty state');
+                    showEmptyWorkspaceMessage();
+                }
+            } catch (error) {
+                console.error('[Workspace] Error during initialization:', error);
+                showEmptyWorkspaceMessage();
+            }
+        });
+        
+        // Enhanced directory selection function that persists the handle
+        async function selectWorkspaceFolder() {
+            try {
+                // Try modern File System Access API first (Chrome, Edge, etc.)
+                if (typeof window.showDirectoryPicker === 'function') {
+                    try {
+                        // Show directory picker
+                        const directoryHandle = await window.showDirectoryPicker();
+                        
+                        // Save folder path in UI
+                        const workspacePath = document.getElementById('workspacePath');
+                        if (workspacePath) {
+                            workspacePath.value = directoryHandle.name;
+                        }
+                        
+                        // Save directory handle to IndexedDB
+                        await saveDirectoryHandle(directoryHandle);
+                        
+                        // Update file system with files from this folder
+                        await updateFileSystemFromLocalFolder(directoryHandle);
+                        
+                        // Hide empty message if shown
+                        hideEmptyWorkspaceMessage();
+                    } catch (error) {
+                        console.error('[Workspace] Error with directory picker:', error);
+                        if (error.name === 'AbortError') {
+                            console.log('[Workspace] User cancelled folder selection');
+                            // Only clear if no path is already set
+                            const savedPath = localStorage.getItem('workspaceFolderPath');
+                            if (!savedPath) {
+                                // Keep showing empty state
+                                ensureEmptyFileTree();
+                            }
+                        } else {
+                            // If error is not user cancellation, try fallback
+                            useFallbackFolderSelection();
+                        }
+                    }
+                } else {
+                    // Browser doesn't support File System Access API (Firefox, Safari, etc.)
+                    console.log('[Workspace] Browser does not support File System Access API, using fallback method');
+                    useFallbackFolderSelection();
+                }
+            } catch (error) {
+                console.error('[Workspace] Error in folder selection:', error);
+                useFallbackFolderSelection();
+            }
+        }
+        
+        // Override the original selectWorkspaceFolder function
+        window.selectWorkspaceFolder = selectWorkspaceFolder;
+        
         // Direct fallback to ensure markdown section is ready
         window.ensureMarkdownSectionVisible = function() {
             console.log('[Markdown] Ensuring markdown section is visible');
@@ -4229,6 +4494,29 @@
                             reader.readAsText(item.file);
                         }
                     }
+                } else {
+                    // File type not supported - show our custom message
+                    console.log(`[FileTree] Unsupported file type: ${item.fileType} for file: ${item.name}`);
+                    
+                    // Use our new showFileNotSupportedMessage function if available
+                    if (typeof window.showFileNotSupportedMessage === 'function') {
+                        window.showFileNotSupportedMessage(item.name, item.fileType);
+                    } else {
+                        // Fallback if our function is not loaded
+                        const pdfContainer = document.getElementById('pdfContainer');
+                        if (pdfContainer) {
+                            pdfContainer.innerHTML = `
+                                <div class="empty-workspace-message">
+                                    <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: #e74c3c; margin-bottom: 1rem;"></i>
+                                    <h3>File Type Not Supported</h3>
+                                    <p>The file "${item.name}" cannot be previewed.</p>
+                                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 1rem;">
+                                        <i class="fas fa-info-circle"></i> This application currently supports PDF and Markdown (.md) files for preview.
+                                    </p>
+                                </div>
+                            `;
+                        }
+                    }
                 }
             }
         }
@@ -5022,6 +5310,12 @@
             renderFolder(fileTreeElement, fileSystem);
             
                 console.log('File tree rendered successfully');
+
+                // Call our trigger message function if available
+                if (typeof window.triggerNoFileSelectedMessage === 'function') {
+                    console.log('[FileTree] Triggering no file selected message check after tree render');
+                    setTimeout(window.triggerNoFileSelectedMessage, 800);
+                }
             } catch (error) {
                 console.error('Error rendering file tree:', error);
                 // Show simple UI with error
@@ -5218,6 +5512,23 @@
                         console.error('Failed to update from folder handle:', error);
                         showEmptyWorkspaceMessage();
                     });
+                    
+                    // Show "no file selected" message if the workspace is loaded but no file is selected
+                    if (typeof window.showNoFileSelectedMessage === 'function') {
+                        setTimeout(() => {
+                            // Only show if no other content is already displayed
+                            const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+                            const markdownSection = document.querySelector('.markdown-section');
+                            const emptyMessage = document.querySelector('.empty-workspace-message');
+                            
+                            if ((!pdfPagesContainer || pdfPagesContainer.style.display === 'none') && 
+                                (!markdownSection || markdownSection.style.display === 'none') &&
+                                !emptyMessage) {
+                                console.log('Showing no file selected message on initialization');
+                                window.showNoFileSelectedMessage();
+                            }
+                        }, 1000); // Short delay to ensure everything is loaded
+                    }
                 } else {
                     showEmptyWorkspaceMessage();
                 }
@@ -6337,7 +6648,7 @@
                         console.error('[Markdown] Markdown section not found using fallback');
                     }
                     
-                    if (pdfContainer) {
+                        if (pdfContainer) {
                         pdfContainer.style.display = 'none';
                     }
                 }
@@ -6486,9 +6797,9 @@
                                 <h3>Fallback Markdown Display</h3>
                                 <p>Editor containers could not be created.</p>
                                 <pre style="text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; max-height: 400px; overflow: auto;">${content ? content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'No content available'}</pre>
-                            </div>
-                        `;
-                    }
+                                </div>
+                            `;
+                        }
                     return false;
                 }
                 
@@ -7732,6 +8043,19 @@
                 return false;
             }
         };
-    </script>
+    
+</script>
+    <!-- Enhanced workspace permissions handling -->
+    <script src="/assets/js/workspace-permissions.js" defer></script>
+    
+    
+    <!-- Enhanced directory persistence -->
+    <script src="/assets/js/enhanced-persistence.js" defer></script>
+    
+    <!-- File selection messages -->
+    <script src="/assets/js/file-selection-messages.js" defer></script>
+
+    <script src='/assets/js/model-manager.js'></script>
+    <script src='/assets/js/chat-model-integration.js'></script>
 </body>
 </html>
