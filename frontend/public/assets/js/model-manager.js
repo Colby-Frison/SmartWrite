@@ -420,17 +420,32 @@ class ModelManager {
      * @returns {Object} Simulated response
      */
     async handleGeminiRequest(message) {
-        // This method can be replaced with an actual API call to Gemini
         console.log('[ModelManager] Handling Gemini request for:', message);
-        
-        return await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: message,
-        }).then(response => {
+    
+        try {
+            // Attempt to call Gemini AI
+            const response = await ai.models.generateContent({
+                model: "gemini-2.0-flash",
+                contents: message,
+            });
             console.log(response.text);
             return response;
-        });
+        } catch (error) {
+            console.error('[ModelManager] Gemini AI failed:', error);
+    
+            // Record the error for Gemini AI
+            const fallbackModel = this.recordError(error);
+    
+            if (fallbackModel) {
+                console.log(`[ModelManager] Falling back to ${fallbackModel}`);
+                return this.sendMessage(message, null, null); // Retry with the fallback model
+            } else {
+                throw new Error('[ModelManager] No fallback models available');
+            }
+        }
     }
+
+    
     
     /**
      * Handle Unstable AI request (simulation)
