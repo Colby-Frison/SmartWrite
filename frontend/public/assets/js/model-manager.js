@@ -5,6 +5,10 @@
  * are unresponsive or have errors.
  */
 
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: "AIzaSyBTleZKDD83c19YDqmkb6pyOE3TxvaSeZQ" });
+
 class ModelManager {
     constructor() {
         // Model configurations with ordered fallback list
@@ -415,14 +419,17 @@ class ModelManager {
      * @param {string} message - User message
      * @returns {Object} Simulated response
      */
-    handleGeminiRequest(message) {
+    async handleGeminiRequest(message) {
         // This method can be replaced with an actual API call to Gemini
         console.log('[ModelManager] Handling Gemini request for:', message);
-        return {
-            text: `Gemini Pro: Analyzing "${message}"... Here are my thoughts based on my multimodal understanding...`,
-            model: 'gemini-pro',
-            timestamp: new Date().toISOString()
-        };
+        
+        return await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: message,
+        }).then(response => {
+            console.log(response.text);
+            return response;
+        });
     }
     
     /**
