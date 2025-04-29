@@ -5,7 +5,8 @@
   "main": "backend/src/js/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "http-server frontend/public -p 8080 -c-1",
+    "serve": "http-server frontend/public -p 8080 -c-1",
+    "dev": "concurrently \"npm run api\" \"npm run serve\"",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "postinstall": "electron-builder install-app-deps",
@@ -15,6 +16,7 @@
   "author": "Your Team Name",
   "license": "ISC",
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
     "http-server": "^14.1.1",
