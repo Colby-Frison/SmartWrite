@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AiSimplify – Upload PDF</title>
+
+    <!-- External stylesheets - works both in development and Live Server environments -->
+    <link rel="stylesheet" href="/assets/styles/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <style>
+      /* Base layout and styling */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: #141219;
+        color: #e7e7ff;
+      }
+
+      /* Navigation buttons in fixed positions at the top of the page */
+      .top-link {
+        position: fixed;
+        top: 16px;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+        color: #fff;
+        background: #2e2a63;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+        transition: background 0.2s;
+        z-index: 3500;
+      }
+      .top-link:hover {
+        background: #4741a3;
+      }
+      .top-left {
+        left: 16px;
+      }
+      .top-right {
+        right: 16px;
+      }
+
+      /* Initial upload screen - centered content */
+      .center-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        text-align: center;
+        gap: 2rem;
+        padding: 1rem;
+      }
+      .upload-btn {
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        font-size: 1.1rem;
+        padding: 1rem 2.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        transition: background 0.2s;
+      }
+      .upload-btn:hover {
+        background: #5953e6;
+      }
+
+      /* Loading overlay with spinner - shown during processing */
+      #loadingOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 3000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        font-size: 1.4rem;
+        letter-spacing: 0.03em;
+      }
+      #loadingOverlay.show {
+        display: flex;
+      }
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Result card container for displaying extracted text */
+      #result {
+        display: none;
+        padding: 3rem 1.5rem;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .card {
+        position: relative;
+        background: #2e2a63;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        padding: 2.5rem 2rem 4.5rem;
+        color: #f3f3ff;
+        animation: fadeInUp 0.35s ease-out both;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      h2.result-title {
+        margin: 0 0 1.2rem;
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #c4b7ff;
+      }
+      #extractedText {
+        width: 100%;
+        height: 65vh;
+        resize: vertical;
+        border: none;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-family: Consolas, monospace;
+        font-size: 0.94rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        background: #1d1a3c;
+        color: #f3f3ff;
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Close button - top right of the result card */
+      .close-btn {
+        position: absolute;
+        top: 18px;
+        right: 22px;
+        font-size: 1.4rem;
+        color: #b0abff;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+      .close-btn:hover {
+        color: #ffffff;
+      }
+
+      /* Primary action button - AI summarization */
+      .action-btn {
+        position: absolute;
+        right: 22px;
+        bottom: 22px;
+        background: #6c63ff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        padding: 0.7rem 1.6rem;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        transition: background 0.2s;
+      }
+      .action-btn:hover {
+        background: #5953e6;
+      }
+
+      /* Secondary action - copy to clipboard button */
+      .copy-btn {
+        position: absolute;
+        left: 22px;
+        bottom: 22px;
+        background: #44406f;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        padding: 0.7rem 1.6rem;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        transition: background 0.2s;
+      }
+      .copy-btn:hover {
+        background: #5a5691;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation links -->
+    <a href="home.html" class="top-link top-left"
+      ><i class="fas fa-arrow-left"></i> Home</a
+    >
+    <a href="workspace.html" class="top-link top-right"
+      >Workspace <i class="fas fa-arrow-right"></i
+    ></a>
+
+    <!-- Initial upload view -->
+    <div class="center-wrapper" id="uploadView">
+      <h1>AiSimplify</h1>
+      <p>Select a PDF to summarize</p>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      <button class="upload-btn" id="uploadBtn">
+        <i class="fas fa-file-upload"></i> Upload PDF
+      </button>
+    </div>
+
+    <!-- Loading overlay with spinner -->
+    <div id="loadingOverlay">
+      <div class="spinner"></div>
+      Analyzing text…
+    </div>
+
+    <!-- Results view - shown after PDF processing -->
+    <div id="result">
+      <div class="card">
+        <button class="close-btn" id="closeBtn" title="Close">&times;</button>
+        <h2 class="result-title">Extracted Text</h2>
+        <textarea id="extractedText" readonly></textarea>
+
+        <!-- Copy to clipboard button -->
+        <button class="copy-btn" id="copyBtn">
+          <i class="fas fa-copy"></i> Copy
+        </button>
+
+        <!-- AI summarization button -->
+        <button class="action-btn" id="runSimplify">
+          <i class="fas fa-wand-magic-sparkles"></i> AiSimplify
+        </button>
+      </div>
+    </div>
+
+    <!-- PDF.js library for PDF processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- PDF text extraction logic -->
+    <script>
+      // Set up PDF.js worker script
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      
+      // Get references to DOM elements
+      const uploadBtn = document.getElementById("uploadBtn"),
+        pdfInput = document.getElementById("pdfInput"),
+        uploadView = document.getElementById("uploadView"),
+        resultView = document.getElementById("result"),
+        outputArea = document.getElementById("extractedText"),
+        overlay = document.getElementById("loadingOverlay"),
+        closeBtn = document.getElementById("closeBtn");
+      
+      /**
+       * Extract text content from PDF document
+       * @param {PDFDocumentProxy} pdf - The PDF document object from PDF.js
+       * @returns {string} Extracted text content
+       */
+      async function extractText(pdf) {
+        let t = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const p = await pdf.getPage(i);
+          const c = await p.getTextContent();
+          t += c.items.map((it) => it.str).join(" ") + "\n\n";
+        }
+        return t.trim();
+      }
+      
+      // Helper functions for loading overlay
+      const showO = () => overlay.classList.add("show"),
+        hideO = () => overlay.classList.remove("show");
+      
+      // Connect the upload button to the hidden file input
+      uploadBtn.addEventListener("click", () => pdfInput.click());
+      
+      // Handle PDF file selection and processing
+      pdfInput.addEventListener("change", async (e) => {
+        if (!e.target.files.length) return;
+        const f = e.target.files[0];
+        try {
+          showO();
+          const pdf = await pdfjsLib.getDocument({
+            data: await f.arrayBuffer(),
+          }).promise;
+          outputArea.value = await extractText(pdf);
+          uploadView.style.display = "none";
+          resultView.style.display = "block";
+        } catch (err) {
+          alert("Failed to extract PDF text: " + err.message);
+        } finally {
+          hideO();
+        }
+      });
+      
+      // Handle close button - return to upload view
+      closeBtn.addEventListener("click", () => {
+        resultView.style.display = "none";
+        uploadView.style.display = "flex";
+        outputArea.value = "";
+        pdfInput.value = "";
+      });
+    </script>
+
+    <!-- AI summarization functionality -->
+    <script type="module" src="js/aisimplify-action.js"></script>
+  </body>
+</html>

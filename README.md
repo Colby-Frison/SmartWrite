@@ -13,42 +13,66 @@ SmartWrite is an innovative document processing and AI-powered workspace that he
 - Secure local storage with optional cloud sync
 - File tree navigation and organization
 - Smart AI model management with automatic fallbacks
+- AiSimplify PDF summarization: AI-powered tool to extract and summarize PDF content
+
 
 ## Project Structure
 ```
 SmartWrite/
 ├── frontend/
 │   ├── src/
-│   │   ├── js/                # Modular JavaScript files
-│   │   │   ├── main.js        # Main entry point
-│   │   │   ├── state.js       # Shared state management
-│   │   │   ├── modal.js       # Modal functionality
-│   │   │   ├── settings.js    # Settings functionality
-│   │   │   ├── sidebar.js     # Sidebar functionality
-│   │   │   ├── theme.js       # Theme functionality
-│   │   │   ├── chat.js        # Chat functionality
-│   │   │   ├── pdf.js         # PDF viewer functionality
-│   │   │   └── files.js       # File management functionality
+│   │   └── js/                # Core frontend modules
+│   │       ├── main.js        # Main entry point
+│   │       ├── state.js       # Shared state management
+│   │       ├── chat.js        # Chat functionality
+│   │       ├── pdf.js         # PDF viewer and text extraction
+│   │       ├── files.js       # File management
+│   │       └── ...            # Other modules
 │   └── public/
 │       ├── assets/
 │       │   ├── styles/        # CSS stylesheets
 │       │   │   ├── style.css
 │       │   │   └── workspace.css
-│       │   └── js/           # JavaScript modules
+│       │   └── js/            # Client-side scripts
 │       │       ├── theme.js
-│       │       └── model-manager.js  # AI model management
-│       ├── index.html        # Main entry point
-│       ├── workspace.html    # Main workspace interface
-│       └── ... (other HTML files)
+│       │       └── model-manager.js
+│       ├── js/                # Feature-specific scripts
+│       │   └── aisimplify-action.js  # AiSimplify interactions
+│       ├── AiSimplify.html    # PDF summarization UI
+│       ├── home.html          # Home page
+│       ├── workspace.html     # Workspace interface
+│       └── ...                # Other HTML files
 ├── backend/
 │   └── src/
-│       └── js/              # Node.js/Electron backend
-│           ├── main.js      # Main Electron process
-│           └── preload.js   # Electron preload script
-├── .env                     # Environment configuration
+│       └── js/                # Server-side code
+│           ├── api.js         # Express API endpoints
+│           ├── main.js        # Server process entry
+│           └── preload.js     # Electron preload script
+├── tests/
+│   ├── pdf/                   # AiSimplify feature tests
+│   │   ├── Aisimplify-html.test.js
+│   │   ├── Aisimplify-action.test.js
+│   │   ├── runAiSimplifyTests.js
+│   │   └── AiSimplifyREADME.md
+│   └── code-quality/          # Code quality tests
+│       ├── commentQuality.test.js
+│       ├── runCodeQualityTests.js
+│       └── README.md
+├── test/                      # Legacy or additional tests
+├── docs/                      # Project documentation
+├── .env                       # Environment configuration
 ├── .gitignore
-└── package.json            # Project dependencies and scripts
+├── jest.config.js             # Jest configuration
+├── package.json               # Project dependencies and scripts
+└── vite.config.js             # Vite development setup
 ```
+## AiSimplify
+AiSimplify is a dedicated feature for AI-powered summarization of PDF documents:
+
+1. Client-side extraction: Uses PDF.js to extract text from uploaded PDF files directly in the browser.
+2. Backend summarization: Sends the extracted text to the Express API endpoint at `/api/summarize`, which invokes Google's Gemini model to generate a concise summary.
+3. Structured output: The summary is formatted with bullet points, headings, and subheadings for clarity and readability.
+4. Clipboard support: Users can copy the generated summary to the clipboard for easy sharing or further editing.
 
 ## PDF Viewer Features
 The SmartWrite PDF viewer includes advanced functionality:

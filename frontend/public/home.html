@@ -1,252 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SmartWrite - AI-Powered PDF Analysis</title>
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="/assets/styles/style.css">
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="/assets/styles/style.css" />
+
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body>
-    <!-- Navigation Bar -->
-    <!-- Contains logo, main navigation links, and user menu -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <!-- Inline tweaks for the stacked CTA buttons -->
+    <style>
+      /* Keep the hero's two buttons in a vertical stack */
+      .cta-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem; /* space between buttons */
+        align-items: flex-start;
+        margin-top: 1.5rem;
+      }
+      .cta-button.secondary {
+        background: #5b5bff; /* adjust to suit your palette */
+      }
+      .cta-button.secondary:hover {
+        background: #4949e6;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ────────────────── Navigation Bar ────────────────── -->
     <nav class="navbar">
-        <a href="home.html" class="brand">
-            <i class="fas fa-feather-alt"></i>
-            SmartWrite
-        </a>
-        <div class="nav-links">
-            <!-- Main Navigation Menu -->
-            <div class="nav-menu">
-                <a href="about.html">About</a>
-                <a href="help.html">Help</a>
-                <a href="faq.html">FAQ</a>
-            </div>
-            <!-- User Account Menu -->
-            
+      <a href="home.html" class="brand">
+        <i class="fas fa-feather-alt"></i> SmartWrite
+      </a>
+
+      <div class="nav-links">
+        <div class="nav-menu">
+          <a href="about.html">About</a>
+          <a href="help.html">Help</a>
+          <a href="faq.html">FAQ</a>
         </div>
+      </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- ────────────────── Main Content ────────────────── -->
     <main>
-        <!-- Hero Section - Main landing area -->
-        <section class="hero">
-            <div class="hero-content">
-                <h1>Transform Your PDF Experience</h1>
-                <p>Analyze, extract, and understand your PDF documents with the power of AI</p>
-                <a href="workspace.html" class="cta-button">Go to Workspace</a>
-            </div>
-        </section>
+      <!-- ── Hero Section ── -->
+      <section class="hero">
+        <div class="hero-content">
+          <h1>Transform Your PDF Experience</h1>
+          <p>
+            Analyze, extract, and understand your PDF documents with the power
+            of AI
+          </p>
 
-        <!-- Features Section - Why Choose SmartWrite -->
-        <section class="features">
-            <h2>Why Choose SmartWrite?</h2>
-            <div class="feature-container">
-                <!-- Main Feature - Primary selling point -->
-                <div class="feature-main">
-                    <div class="feature-card primary">
-                        <i class="fas fa-brain"></i>
-                        <h3>AI-Powered Analysis</h3>
-                        <p>Advanced algorithms analyze your PDFs for deeper insights, providing comprehensive understanding of your documents through cutting-edge AI technology.</p>
-                    </div>
-                </div>
-                <!-- Secondary Features - Additional benefits -->
-                <div class="feature-secondary">
-                    <div class="feature-card">
-                        <i class="fas fa-bolt"></i>
-                        <h3>Fast Processing</h3>
-                        <p>Get results quickly with our optimized processing engine</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-lock"></i>
-                        <h3>Secure & Private</h3>
-                        <p>Your documents are encrypted and processed securely</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-file-alt"></i>
-                        <h3>Multiple File Support</h3>
-                        <p>Process multiple PDFs simultaneously</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+          <!-- Stacked call-to-action buttons -->
+          <div class="cta-stack">
+            <a href="workspace.html" class="cta-button">Go to Workspace</a>
+            <a href="AiSimplify.html" class="cta-button">AiSimplify</a>
+          </div>
+        </div>
+      </section>
 
-        <!-- How It Works Section - Process explanation -->
-        <section class="how-it-works">
-            <h2>How It Works</h2>
-            <div class="steps">
-                <!-- Step 1 -->
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Upload</h3>
-                    <p>Upload your PDF documents to our secure platform</p>
-                </div>
-                <!-- Step 2 -->
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Process</h3>
-                    <p>Our AI analyzes and extracts key information</p>
-                </div>
-                <!-- Step 3 -->
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Results</h3>
-                    <p>Get comprehensive insights and analysis</p>
-                </div>
+      <!-- ── Features Section ── -->
+      <section class="features">
+        <h2>Why Choose SmartWrite?</h2>
+        <div class="feature-container">
+          <div class="feature-main">
+            <div class="feature-card primary">
+              <i class="fas fa-brain"></i>
+              <h3>AI-Powered Analysis</h3>
+              <p>
+                Advanced algorithms analyze your PDFs for deeper insights,
+                providing comprehensive understanding of your documents through
+                cutting-edge AI technology.
+              </p>
             </div>
-        </section>
+          </div>
 
-        <!-- Call to Action Section -->
-        <section class="cta-section">
-            <h2>Ready to Get Started?</h2>
-            <p>Transform your PDF documents into actionable insights today</p>
-            <a href="workspace.html" class="cta-button">Launch Workspace</a>
-        </section>
+          <div class="feature-secondary">
+            <div class="feature-card">
+              <i class="fas fa-bolt"></i>
+              <h3>Fast Processing</h3>
+              <p>Get results quickly with our optimized processing engine</p>
+            </div>
+            <div class="feature-card">
+              <i class="fas fa-lock"></i>
+              <h3>Secure & Private</h3>
+              <p>Your documents are encrypted and processed securely</p>
+            </div>
+            <div class="feature-card">
+              <i class="fas fa-file-alt"></i>
+              <h3>Multiple File Support</h3>
+              <p>Process multiple PDFs simultaneously</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── How-It-Works Section ── -->
+      <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Upload</h3>
+            <p>Upload your PDF documents to our secure platform</p>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Process</h3>
+            <p>Our AI analyzes and extracts key information</p>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Results</h3>
+            <p>Get comprehensive insights and analysis</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Call-to-Action Section ── -->
+      <section class="cta-section">
+        <h2>Ready to Get Started?</h2>
+        <p>Transform your PDF documents into actionable insights today</p>
+        <a href="workspace.html" class="cta-button">Launch Workspace</a>
+      </section>
     </main>
 
-    <!-- Footer -->
+    <!-- ────────────────── Footer ────────────────── -->
     <footer>
-        <!-- Footer Content Grid -->
-        <div class="footer-content">
-            <!-- Company Info -->
-            <div class="footer-section">
-                <h4>SmartWrite</h4>
-                <p>AI-powered PDF analysis and insights</p>
-            </div>
-            <!-- Quick Links -->
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <a href="about.html">About</a>
-                <a href="help.html">Help</a>
-                <a href="faq.html">FAQ</a>
-            </div>
-            <!-- Contact Information -->
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <a href="#" id="emailLink">support@smartwrite.com</a>
-            </div>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>SmartWrite</h4>
+          <p>AI-powered PDF analysis and insights</p>
         </div>
-        <!-- Copyright Notice -->
-        <div class="footer-bottom">
-            <p>&copy; 2025 SmartWrite. All rights reserved.</p>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <a href="about.html">About</a>
+          <a href="help.html">Help</a>
+          <a href="faq.html">FAQ</a>
         </div>
+        <div class="footer-section">
+          <h4>Contact</h4>
+          <a href="#" id="emailLink">support@smartwrite.com</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 SmartWrite. All rights reserved.</p>
+      </div>
     </footer>
 
-    <!-- Error Popup -->
+    <!-- ── Error Popup (unchanged) ── -->
     <div id="errorPopup" class="error-popup">
-        <div class="error-popup-content">
-            <span class="error-popup-close">&times;</span>
-            <div class="error-popup-icon">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <div class="error-popup-message">
-                No email yet, come back later.
-            </div>
+      <div class="error-popup-content">
+        <span class="error-popup-close">&times;</span>
+        <div class="error-popup-icon">
+          <i class="fas fa-exclamation-circle"></i>
         </div>
+        <div class="error-popup-message">No email yet, come back later.</div>
+      </div>
     </div>
 
-    <script>
-        // Email error popup functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const emailLink = document.getElementById('emailLink');
-            const errorPopup = document.getElementById('errorPopup');
-            const closeBtn = document.querySelector('.error-popup-close');
-            
-            // Show popup when email is clicked
-            emailLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                errorPopup.classList.add('show');
-                
-                // Auto-hide after 3 seconds
-                setTimeout(() => {
-                    errorPopup.classList.remove('show');
-                }, 3000);
-            });
-            
-            // Close popup when X is clicked
-            closeBtn.addEventListener('click', function() {
-                errorPopup.classList.remove('show');
-            });
-            
-            // Close popup when clicking outside
-            window.addEventListener('click', function(e) {
-                if (e.target === errorPopup) {
-                    errorPopup.classList.remove('show');
-                }
-            });
-        });
-    </script>
-
+    <!-- Inline styles & script for popup (unchanged) -->
     <style>
-        /* Error Popup Styles */
-        .error-popup {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+      .error-popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .error-popup.show {
+        display: flex;
+        opacity: 1;
+      }
+      .error-popup-content {
+        background: #1a1820;
+        border-radius: 12px;
+        padding: 30px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        position: relative;
+        border: 1px solid rgba(134, 117, 233, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        transform: translateY(20px);
+        animation: popup-slide-in 0.3s forwards;
+      }
+      @keyframes popup-slide-in {
+        to {
+          transform: translateY(0);
         }
-        
-        .error-popup.show {
-            display: flex;
-            opacity: 1;
-        }
-        
-        .error-popup-content {
-            background: #1a1820;
-            border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            position: relative;
-            border: 1px solid rgba(134, 117, 233, 0.2);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            transform: translateY(20px);
-            animation: popup-slide-in 0.3s forwards;
-        }
-        
-        @keyframes popup-slide-in {
-            to { transform: translateY(0); }
-        }
-        
-        .error-popup-close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #b8b8b8;
-            transition: color 0.3s ease;
-        }
-        
-        .error-popup-close:hover {
-            color: #ff6b6b;
-        }
-        
-        .error-popup-icon {
-            font-size: 48px;
-            color: #ff6b6b;
-            margin-bottom: 20px;
-        }
-        
-        .error-popup-message {
-            font-size: 18px;
-            color: #ffffff;
-            margin-bottom: 10px;
-        }
+      }
+      .error-popup-close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #b8b8b8;
+        transition: color 0.3s;
+      }
+      .error-popup-close:hover {
+        color: #ff6b6b;
+      }
+      .error-popup-icon {
+        font-size: 48px;
+        color: #ff6b6b;
+        margin-bottom: 20px;
+      }
+      .error-popup-message {
+        font-size: 18px;
+        color: #fff;
+        margin-bottom: 10px;
+      }
     </style>
 
-    <!-- Scripts -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const emailLink = document.getElementById("emailLink");
+        const errorPopup = document.getElementById("errorPopup");
+        const closeBtn = document.querySelector(".error-popup-close");
+
+        emailLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          errorPopup.classList.add("show");
+          setTimeout(() => errorPopup.classList.remove("show"), 3000);
+        });
+
+        closeBtn.addEventListener("click", () =>
+          errorPopup.classList.remove("show")
+        );
+        window.addEventListener("click", (e) => {
+          if (e.target === errorPopup) errorPopup.classList.remove("show");
+        });
+      });
+    </script>
+
+    <!-- Theme script -->
     <script src="/assets/js/theme.js"></script>
-</body>
-</html> 
+  </body>
+</html>

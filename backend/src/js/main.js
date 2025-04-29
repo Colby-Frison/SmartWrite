@@ -1,3 +1,13 @@
+require('dotenv').config();                                        // JS512
+const express = require('express');                                // JS512
+const summarizeRoute = require('./summarize');                     // JS512
+// ── Lightweight API server (runs alongside Electron) ──          // JS512
+const api = express();                                             // JS512
+api.use(express.json());                                           // JS512
+api.use('/api/summarize', summarizeRoute);                         // JS512
+const PORT = process.env.PORT || 3001;                             // JS512
+api.listen(PORT, () => console.log(`API listening on ${PORT}`));   // JS512
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 

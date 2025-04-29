@@ -9,7 +9,8 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "postinstall": "electron-builder install-app-deps",
-    "test": "jest"
+    "test": "jest",
+    "api": "node backend/src/js/api.js"
   },
   "author": "Your Team Name",
   "license": "ISC",
@@ -21,6 +22,10 @@
     "jest-environment-jsdom": "^29.7.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
     "pdf.js": "^0.1.0"
   },
   "build": {
